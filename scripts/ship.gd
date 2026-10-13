@@ -54,6 +54,8 @@ var is_destroyed: bool = false
 
 ## Inventory holds cargo/items; equipped modules live in module_slots.
 var inventory: Array = []
+var cargo_inventory: Array[Dictionary] = []
+var salvage_inventory: Array[Dictionary] = []
 var module_slots: Array[ShipModule] = []
 var weapon_instances: Array[Node] = []
 var weapon_instances_by_slot: Dictionary = {}
@@ -385,3 +387,48 @@ func _load_active_build() -> bool:
 		if module != null and not install_module(module, slot_index):
 			push_warning("Could not install saved module in slot %d." % slot_index)
 	return true
+
+
+
+## Delivery cargo and salvage use separate capacity pools.
+func add_cargo_item(item: Variant, units: int = 1, is_salvage: bool = false) -> bool:
+	if item == null or units <= 0:
+		return false
+	var used_units: int = get_salvage_used_units() if is_salvage else get_cargo_used_units()
+	var capacity: int = salvage_hold_capacity if is_salvage else cargo_hold_capacity
+	if used_units + units > capacity:
+		return false
+	var entry: Dictionary = {"item": item, "units": units}
+	if is_salvage:
+		salvage_inventory.append(entry)
+	else:
+		cargo_inventory.append(entry)
+	return true
+
+
+func remove_cargo_item(item: Variant, is_salvage: bool = false) -> bool:
+	var items: Array[Dictionary] = salvage_inventory if is_salvage else cargo_inventory
+	for index: int in range(items.size()):
+		if items[index].get("item") == item:
+			items.remove_at(index)
+			if is_salvage:
+				salvage_inventory = items
+			else:
+				cargo_inventory = items
+			return true
+	return false
+
+
+func get_cargo_used_units() -> int:
+	return _get_used_units(cargo_inventory)
+
+
+func get_salvage_used_units() -> int:
+	return _get_used_units(salvage_inventory)
+
+
+func _get_used_units(items: Array[Dictionary]) -> int:
+	var total_units: int = 0
+	for entry: Dictionary in items:
+		total_units += int(entry.get("units", 0))
+	return total_units
