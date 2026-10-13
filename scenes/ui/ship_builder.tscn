@@ -67,7 +67,6 @@ theme_override_constants/separation = 16
 [node name="HullPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent"]
 custom_minimum_size = Vector2(360, 0)
 layout_mode = 2
-theme_override_styles/panel = null
 
 [node name="HullVBox" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel"]
 layout_mode = 2
@@ -78,10 +77,11 @@ layout_mode = 2
 text = "HULL"
 theme_override_font_sizes/font_size = 18
 
-[node name="HullPicker" type="OptionButton" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox" unique_name_in_owner = true]
+[node name="HullPicker" type="OptionButton" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"
+]
 layout_mode = 2
 size_flags_horizontal = 3
-
+unique_name_in_owner = true
 [node name="PreviewPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
 custom_minimum_size = Vector2(0, 230)
 layout_mode = 2
@@ -91,11 +91,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PreviewShip" type="Polygon2D" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas" unique_name_in_owner = true]
+[node name="PreviewShip" type="Polygon2D" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas"
+]
 position = Vector2(170, 104)
 polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
 color = Color(0.35, 0.85, 1, 1)
-
+unique_name_in_owner = true
 [node name="PreviewCaption" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas"]
 layout_mode = 1
 anchors_preset = 10
@@ -107,22 +108,23 @@ text = "HULL PREVIEW"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.55, 0.67, 0.78, 1)
 
-[node name="HullDescription" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox" unique_name_in_owner = true]
+[node name="HullDescription" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"
+]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 text = "Select a hull to view its details."
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.76, 0.82, 0.89, 1)
-
+unique_name_in_owner = true
 [node name="StatsPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
 layout_mode = 2
 
-[node name="StatsLabel" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/StatsPanel" unique_name_in_owner = true]
+[node name="StatsLabel" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/StatsPanel"
+]
 layout_mode = 2
 text = "HULL       --\nSHIELDS    --\nSPEED      --\nACCEL.     --\nCARGO      --\nSALVAGE    --"
-theme_override_fonts/font = null
 theme_override_font_sizes/font_size = 15
-
+unique_name_in_owner = true
 [node name="ModulesPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -142,11 +144,12 @@ text = "Each slot accepts only compatible modules. Empty slots are allowed."
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
 
-[node name="SlotList" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox" unique_name_in_owner = true]
+[node name="SlotList" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox"
+]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
-
+unique_name_in_owner = true
 [node name="FooterPanel" type="PanelContainer" parent="MarginContainer/RootVBox"]
 layout_mode = 2
 
@@ -158,13 +161,14 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BuildNameInput" type="LineEdit" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls" unique_name_in_owner = true]
+[node name="BuildNameInput" type="LineEdit" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"
+]
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 placeholder_text = "Build name (e.g. Fast Runner)"
 text = "My Courier"
-
+unique_name_in_owner = true
 [node name="SaveButton" type="Button" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
 layout_mode = 2
 text = "Save & Set Active"
@@ -173,18 +177,20 @@ text = "Save & Set Active"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SavedBuildPicker" type="OptionButton" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls" unique_name_in_owner = true]
+[node name="SavedBuildPicker" type="OptionButton" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"
+]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-
+unique_name_in_owner = true
 [node name="LoadButton" type="Button" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
 layout_mode = 2
 text = "Load Build"
 
-[node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer" unique_name_in_owner = true]
+[node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer"
+]
 layout_mode = 2
 text = "Saved builds are stored locally on this device."
 theme_override_colors/font_color = Color(0.62, 0.83, 0.72, 1)
-
+unique_name_in_owner = true
 [connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/SaveButton" to="." method="_on_save_pressed"]
 [connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/LoadButton" to="." method="_on_load_pressed"]
