@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/heavy_cannon.tscn" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"heavy_cannon"
+display_name = "Heavy Cannon"
+description = "A slow, hard-hitting shell that splashes reduced damage onto nearby enemies."
+category = 0
+rarity = 2
+weapon_scene = ExtResource("2_weapon")
