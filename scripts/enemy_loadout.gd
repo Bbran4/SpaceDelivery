@@ -24,7 +24,7 @@ class_name EnemyLoadout
 ])
 
 
-func apply_to_ship(ship: Ship) -> void:
+func apply_to_ship(ship: Variant) -> void:
 	if ship == null:
 		return
 	ship.ship_name = archetype_name
