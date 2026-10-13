@@ -30,21 +30,23 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_cooldown = maxf(_cooldown - delta, 0.0)
-	var target: Ship = _find_target()
-	if target == null or _cooldown > 0.0:
+	if _cooldown > 0.0:
 		return
 
+	var target: Ship = _find_target()
 	if ship.is_in_group("player_ship"):
 		var controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
 		if controller != null and controller.movement_mode == PlayerController.MovementMode.KEYBOARD:
-			var aim_position: Vector2 = controller.get_aim_position()
-			if ship.global_position.distance_to(aim_position) > weapon_data.range:
-				return
-			_fire_at(target, aim_position)
-		else:
-			_fire_at(target, target.global_position)
-	else:
-		_fire_at(target, target.global_position)
+			# Keyboard mode is cursor-aimed: always fire toward the cursor, even
+			# when no hostile ship is currently inside this weapon's range.
+			_fire_at(target, controller.get_aim_position())
+			_cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.1)
+			return
+
+	if target == null:
+		return
+
+	_fire_at(target, target.global_position)
 	_cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.1)
 
 
