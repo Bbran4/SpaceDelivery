@@ -9,6 +9,7 @@ display_name = "Starter Courier"
 description = "A balanced delivery hull with one slot for each major module type."
 rarity = 0
 preview_color = Color(0.35, 0.85, 1, 1)
+preview_polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
 max_hull = 100.0
 max_shield = 50.0
 shield_recharge_rate = 8.0
