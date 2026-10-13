@@ -39,7 +39,9 @@ signal builder_closed
 @onready var build_name_input: LineEdit = %BuildNameInput
 @onready var saved_build_picker: OptionButton = %SavedBuildPicker
 @onready var status_label: Label = %StatusLabel
-@onready var modules_panel: PanelContainer = %ModulesPanel
+@onready var module_title: Label = $Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox/ModulesTitle
+@onready var module_hint: Label = $Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox/ModulesHint
+@onready var module_scroll: ScrollContainer = %ModuleScroll
 @onready var close_button: Button = %CloseButton
 
 var selected_slot_index: int = -1
@@ -53,7 +55,9 @@ func _ready() -> void:
 	resized.connect(_update_layout)
 	preview_canvas.resized.connect(_center_ship_preview)
 	_update_layout()
-	modules_panel.visible = false
+	module_title.visible = false
+	module_hint.visible = false
+	module_scroll.visible = false
 	close_button.pressed.connect(_on_back_pressed)
 	_center_ship_preview()
 	_populate_hulls()
@@ -92,7 +96,9 @@ func _on_hull_selected(index: int) -> void:
 		selected_module_paths[slot_index] = ""
 	_update_hull_preview()
 	selected_slot_index = -1
-	modules_panel.visible = false
+	module_title.visible = false
+	module_hint.visible = false
+	module_scroll.visible = false
 	_rebuild_slot_groups()
 	_rebuild_module_groups()
 	_refresh_stats()
@@ -240,7 +246,9 @@ func open_module_picker(slot_index: int) -> void:
 	if selected_hull == null or slot_index < 0 or slot_index >= selected_hull.slot_categories.size():
 		return
 	selected_slot_index = slot_index
-	modules_panel.visible = true
+	module_title.visible = true
+	module_hint.visible = true
+	module_scroll.visible = true
 	_rebuild_module_groups()
 	status_label.text = "Choose a compatible module for slot %d." % (slot_index + 1)
 
@@ -256,7 +264,9 @@ func equip_module(slot_index: int, module_path: String) -> void:
 	selected_modules[slot_index] = module
 	_rebuild_slot_groups()
 	_refresh_stats()
-	modules_panel.visible = false
+	module_title.visible = false
+	module_hint.visible = false
+	module_scroll.visible = false
 	selected_slot_index = -1
 	_rebuild_module_groups()
 	status_label.text = "Equipped %s in slot %d." % [module.display_name, slot_index + 1] if module != null else "Slot %d cleared." % (slot_index + 1)
