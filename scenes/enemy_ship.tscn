@@ -17,6 +17,8 @@ acceleration = 350.0
 turn_rate = 150.0
 shield_recharge_rate = 8.0
 shield_recharge_delay = 2.0
+hull_recharge_rate = 2.0
+hull_recharge_delay = 5.0
 starting_weapon_module = ExtResource("3_weapon_module")
 
 [node name="ShipVisual" type="Polygon2D" parent="."]
