@@ -1,20 +1,20 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dg3ycwbm8bu27"]
 
-[ext_resource type="Script" path="res://Scripts/ship.gd" id="1_ship"]
-[ext_resource type="Script" path="res://Scripts/player_controller.gd" id="2_controller"]
+[ext_resource type="Script" uid="uid://bjnkwjf5oqwjb" path="res://Scripts/ship.gd" id="1_ship"]
+[ext_resource type="Script" uid="uid://dy2drfp7j0ad6" path="res://Scripts/player_controller.gd" id="2_controller"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_collision"]
 radius = 14.0
 
-[node name="PlayerShip" type="CharacterBody2D"]
+[node name="PlayerShip" type="CharacterBody2D" unique_id=916538766]
 script = ExtResource("1_ship")
 
-[node name="ShipVisual" type="Polygon2D" parent="."]
-polygon = PackedVector2Array(18, 0, -12, -11, -7, 0, -12, 11)
+[node name="ShipVisual" type="Polygon2D" parent="." unique_id=902474622]
 color = Color(0.35, 0.85, 1, 1)
+polygon = PackedVector2Array(18, 0, -12, -11, -7, 0, -12, 11)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1885369647]
 shape = SubResource("CircleShape2D_collision")
 
-[node name="PlayerController" type="Node" parent="."]
+[node name="PlayerController" type="Node" parent="." unique_id=1341499898]
 script = ExtResource("2_controller")
