@@ -34,7 +34,17 @@ func _physics_process(delta: float) -> void:
 	if target == null or _cooldown > 0.0:
 		return
 
-	_fire_at(target)
+	if ship.is_in_group("player_ship"):
+		var controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
+		if controller != null and controller.movement_mode == PlayerController.MovementMode.KEYBOARD:
+			var aim_position: Vector2 = controller.get_aim_position()
+			if ship.global_position.distance_to(aim_position) > weapon_data.range:
+				return
+			_fire_at(target, aim_position)
+		else:
+			_fire_at(target, target.global_position)
+	else:
+		_fire_at(target, target.global_position)
 	_cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.1)
 
 
@@ -70,7 +80,7 @@ func _find_nearest_target_in_range() -> Ship:
 	return nearest_target
 
 
-func _fire_at(target: Ship) -> void:
+func _fire_at(target: Ship, aim_position: Vector2) -> void:
 	var projectile: ShipProjectile = projectile_scene.instantiate() as ShipProjectile
 	if projectile == null:
 		return
@@ -84,7 +94,7 @@ func _fire_at(target: Ship) -> void:
 	projectile.visual_scale = weapon_data.projectile_scale
 	projectile.target_group = _target_group
 	projectile.global_position = global_position
-	projectile.global_rotation = global_position.direction_to(target.global_position).angle()
+	projectile.global_rotation = global_position.direction_to(aim_position).angle()
 	get_tree().current_scene.add_child(projectile)
 	if ship.has_signal("weapon_fired"):
 		ship.weapon_fired.emit(self, target)
