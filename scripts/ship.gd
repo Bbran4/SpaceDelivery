@@ -19,6 +19,8 @@ signal module_uninstalled(module: ShipModule, slot_index: int)
 @export_range(0.0, 100000.0, 1.0) var max_shield: float = 50.0
 @export_range(0.0, 10000.0, 1.0) var shield_recharge_rate: float = 0.0
 @export_range(0.0, 10000.0, 1.0) var shield_recharge_delay: float = 3.0
+@export_range(0.0, 10000.0, 1.0) var hull_recharge_rate: float = 0.0
+@export_range(0.0, 10000.0, 1.0) var hull_recharge_delay: float = 5.0
 
 @export_group("Combat")
 @export_range(0.0, 10000.0, 0.1) var damage: float = 10.0
@@ -71,6 +73,7 @@ func _physics_process(delta: float) -> void:
 
 	_time_since_last_hit += delta
 	_update_shield_recharge(delta)
+	_update_hull_recharge(delta)
 	_apply_movement(delta)
 	move_and_slide()
 
@@ -164,6 +167,17 @@ func _update_shield_recharge(delta: float) -> void:
 	if _time_since_last_hit < shield_recharge_delay:
 		return
 	restore_shield(shield_recharge_rate * delta)
+
+
+func _update_hull_recharge(delta: float) -> void:
+	if hull_recharge_rate <= 0.0 or current_hull >= max_hull:
+		return
+	if _time_since_last_hit < hull_recharge_delay:
+		return
+	var previous_hull: float = current_hull
+	current_hull = minf(max_hull, current_hull + hull_recharge_rate * delta)
+	if current_hull > previous_hull:
+		hull_changed.emit(current_hull, max_hull)
 
 
 func _destroy() -> void:
