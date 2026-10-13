@@ -11,6 +11,8 @@ signal damaged(amount: float, hull_damage: float, shield_damage: float)
 signal repaired(amount: float)
 signal destroyed
 signal weapon_fired(weapon: Node, target: Node2D)
+signal module_installed(module: ShipModule, slot_index: int)
+signal module_uninstalled(module: ShipModule, slot_index: int)
 
 @export_group("Durability")
 @export_range(1.0, 100000.0, 1.0) var max_hull: float = 100.0
@@ -31,18 +33,16 @@ signal weapon_fired(weapon: Node, target: Node2D)
 @export_range(0.0, 1440.0, 1.0) var turn_rate: float = 180.0
 
 @export_group("Ship Loadout")
-@export_range(0, 32, 1) var weapon_slot_count: int = 2
 @export_range(0, 32, 1) var module_slot_count: int = 4
 
 var current_hull: float
 var current_shield: float
 var is_destroyed: bool = false
 
-## Inventory entries can initially be Dictionaries or Resources. A dedicated
-## Item/Module Resource type can replace this flexible representation later.
+## Inventory holds cargo/items; equipped modules live in module_slots.
 var inventory: Array = []
-var weapon_slots: Array[Node] = []
-var module_slots: Array[Resource] = []
+var module_slots: Array[ShipModule] = []
+var weapon_instances: Array[Node] = []
 
 var _movement_input: Vector2 = Vector2.ZERO
 var _turn_input: float = 0.0
@@ -52,7 +52,6 @@ var _time_since_last_hit: float = 999999.0
 func _ready() -> void:
 	current_hull = max_hull
 	current_shield = max_shield
-	weapon_slots.resize(weapon_slot_count)
 	module_slots.resize(module_slot_count)
 	hull_changed.emit(current_hull, max_hull)
 	shield_changed.emit(current_shield, max_shield)
@@ -173,37 +172,43 @@ func remove_item(item: Variant) -> bool:
 	return true
 
 
-func install_weapon(weapon: Node, slot_index: int) -> bool:
-	if weapon == null or slot_index < 0 or slot_index >= weapon_slots.size():
-		return false
-	if weapon_slots[slot_index] != null:
-		return false
-
-	weapon_slots[slot_index] = weapon
-	if weapon.get_parent() == null:
-		add_child(weapon)
-	return true
-
-
-func uninstall_weapon(slot_index: int) -> Node:
-	if slot_index < 0 or slot_index >= weapon_slots.size():
-		return null
-
-	var weapon := weapon_slots[slot_index]
-	weapon_slots[slot_index] = null
-	if weapon != null and weapon.get_parent() == self:
-		remove_child(weapon)
-	return weapon
-
-
-func install_module(module: Resource, slot_index: int) -> bool:
+## Installs any module category into a module slot. Weapon modules may
+## optionally spawn their weapon_scene as a runtime child of this ship.
+func install_module(module: ShipModule, slot_index: int) -> bool:
 	if module == null or slot_index < 0 or slot_index >= module_slots.size():
 		return false
 	if module_slots[slot_index] != null:
 		return false
 
 	module_slots[slot_index] = module
+	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
+		var weapon_instance := module.weapon_scene.instantiate()
+		if weapon_instance is Node:
+			add_child(weapon_instance)
+			weapon_instances.append(weapon_instance)
+	module_installed.emit(module, slot_index)
 	return true
+
+
+func uninstall_module(slot_index: int) -> ShipModule:
+	if slot_index < 0 or slot_index >= module_slots.size():
+		return null
+
+	var module := module_slots[slot_index]
+	if module == null:
+		return null
+
+	module_slots[slot_index] = null
+	# Runtime weapon instances should ideally be associated with their module
+	# in a later weapon manager; clear the current simple runtime list here.
+	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
+		for weapon in weapon_instances:
+			if is_instance_valid(weapon):
+				weapon.queue_free()
+		weapon_instances.clear()
+
+	module_uninstalled.emit(module, slot_index)
+	return module
 
 
 func is_target_in_attack_range(target: Node2D) -> bool:
