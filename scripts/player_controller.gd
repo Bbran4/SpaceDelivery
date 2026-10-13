@@ -20,7 +20,7 @@ enum MovementMode {
 @export var thrust_reverse_action: StringName = &"down"
 
 @export_group("Mouse Movement")
-@export_range(0.0, 500.0, 1.0) var mouse_stop_distance: float = 70.0
+@export_range(0.0, 800.0, 1.0) var mouse_stop_distance: float = 140.0
 @export_range(1.0, 10.0, 0.1) var mouse_turn_rate_multiplier: float = 4.0
 ## Approximate time for mouse steering to correct velocity toward the target.
 @export_range(0.1, 2.0, 0.05) var mouse_velocity_response_time: float = 0.4
