@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"salvage_rack"
+display_name = "Salvage Rack"
+description = "Adds dedicated capacity for goods recovered from wrecks and space debris."
+category = 3
+rarity = 1
+salvage_capacity_bonus = 12
