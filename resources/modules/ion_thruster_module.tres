@@ -9,4 +9,4 @@ display_name = "Ion Thruster"
 description = "Improves cruising speed and acceleration."
 category = 2
 rarity = 0
-stat_modifiers = {"movement_speed": 35.0, "acceleration": 100.0}
+stat_modifiers = {"movement_speed": 35.0, "acceleration": 100.0, "turn_rate": 25.0}
