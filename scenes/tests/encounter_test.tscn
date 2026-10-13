@@ -1,0 +1,25 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/player_ship.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://scenes/enemy_ship.tscn" id="3_fighter"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/scout.tscn" id="4_scout"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/heavy.tscn" id="5_heavy"]
+[ext_resource type="Script" path="res://scripts/encounter_spawner.gd" id="6_spawner"]
+
+[node name="EncounterTest" type="Node2D"]
+
+[node name="PlayerShip" parent="." instance=ExtResource("1_player")]
+position = Vector2(576, 324)
+
+[node name="EncounterSpawner" type="Node2D" parent="."]
+position = Vector2(850, 324)
+script = ExtResource("6_spawner")
+enemy_scenes = Array[PackedScene]([ExtResource("4_scout"), ExtResource("3_fighter"), ExtResource("5_heavy")])
+spawn_count = 6
+spawn_radius = 180.0
+spawn_on_ready = true
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+
+[node name="ShipHUD" parent="HUDLayer" instance=ExtResource("2_hud")]
