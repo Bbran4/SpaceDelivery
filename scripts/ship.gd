@@ -186,6 +186,7 @@ func _destroy() -> void:
 	is_destroyed = true
 	velocity = Vector2.ZERO
 	destroyed.emit()
+	queue_free()
 
 
 ## Adds an item to the ship's inventory. Item representation is intentionally
