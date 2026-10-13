@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SalvageItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/salvage_item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+item_id = &"scrap_components"
+display_name = "Scrap Components"
+description = "Common parts stripped from a raider's ship."
+rarity = 0
+credit_value = 8
