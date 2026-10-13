@@ -225,7 +225,7 @@ func add_credits(amount: int) -> void:
 
 
 func _spawn_reward_drops() -> void:
-	if reward_table == null or not is_in_group("enemy"):
+	if not is_in_group("enemy"):
 		return
 	var loot_parent: Node = get_tree().current_scene
 	if loot_parent == null:
@@ -233,15 +233,19 @@ func _spawn_reward_drops() -> void:
 	if loot_parent == null:
 		return
 
+	var minimum_credits: int = reward_table.minimum_credits if reward_table != null else 5
+	var maximum_credits: int = reward_table.maximum_credits if reward_table != null else 12
 	var currency_drop: LootPickup = LOOT_PICKUP_SCENE.instantiate() as LootPickup
 	if currency_drop != null:
 		currency_drop.configure_currency(randi_range(
-			mini(reward_table.minimum_credits, reward_table.maximum_credits),
-			maxi(reward_table.minimum_credits, reward_table.maximum_credits)
+			mini(minimum_credits, maximum_credits),
+			maxi(minimum_credits, maximum_credits)
 		))
 		loot_parent.add_child(currency_drop)
 		currency_drop.global_position = global_position + Vector2(randf_range(-12.0, 12.0), randf_range(-12.0, 12.0))
 
+	if reward_table == null:
+		return
 	var salvage_item: SalvageItemData = reward_table.roll_item()
 	if salvage_item == null:
 		return
