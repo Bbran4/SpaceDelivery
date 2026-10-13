@@ -147,6 +147,14 @@ func _find_enemy_under_mouse() -> Ship:
 	return null
 
 
+## World-space point used by player weapons for aiming. In keyboard mode the
+## crosshair is the mouse reticle; HUD selection remains a separate hover target.
+func get_aim_position() -> Vector2:
+	if ship == null:
+		return Vector2.ZERO
+	return ship.get_global_mouse_position()
+
+
 func _get_player_weapon_range() -> float:
 	var maximum_range: float = 300.0
 	for weapon_node: Node in ship.weapon_instances:
