@@ -77,8 +77,7 @@ layout_mode = 2
 text = "HULL"
 theme_override_font_sizes/font_size = 18
 
-[node name="HullPicker" type="OptionButton" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"
-]
+[node name="HullPicker" type="OptionButton" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 unique_name_in_owner = true
@@ -91,8 +90,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PreviewShip" type="Polygon2D" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas"
-]
+[node name="PreviewShip" type="Polygon2D" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas"]
 position = Vector2(170, 104)
 polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
 color = Color(0.35, 0.85, 1, 1)
@@ -108,8 +106,7 @@ text = "HULL PREVIEW"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.55, 0.67, 0.78, 1)
 
-[node name="HullDescription" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"
-]
+[node name="HullDescription" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 text = "Select a hull to view its details."
@@ -119,8 +116,7 @@ unique_name_in_owner = true
 [node name="StatsPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
 layout_mode = 2
 
-[node name="StatsLabel" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/StatsPanel"
-]
+[node name="StatsLabel" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/StatsPanel"]
 layout_mode = 2
 text = "HULL       --\nSHIELDS    --\nSPEED      --\nACCEL.     --\nCARGO      --\nSALVAGE    --"
 theme_override_font_sizes/font_size = 15
@@ -144,8 +140,7 @@ text = "Each slot accepts only compatible modules. Empty slots are allowed."
 autowrap_mode = 3
 theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
 
-[node name="SlotList" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox"
-]
+[node name="SlotList" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 10
@@ -161,8 +156,7 @@ theme_override_constants/separation = 8
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BuildNameInput" type="LineEdit" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"
-]
+[node name="BuildNameInput" type="LineEdit" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
 size_flags_horizontal = 2
@@ -177,8 +171,7 @@ text = "Save & Set Active"
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SavedBuildPicker" type="OptionButton" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"
-]
+[node name="SavedBuildPicker" type="OptionButton" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 unique_name_in_owner = true
@@ -186,8 +179,7 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Load Build"
 
-[node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer"
-]
+[node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer"]
 layout_mode = 2
 text = "Saved builds are stored locally on this device."
 theme_override_colors/font_color = Color(0.62, 0.83, 0.72, 1)
