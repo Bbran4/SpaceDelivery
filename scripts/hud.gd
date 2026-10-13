@@ -9,6 +9,7 @@ class_name ShipHUD
 @onready var hull_bar: ProgressBar = %HullBar
 @onready var shield_label: Label = %ShieldLabel
 @onready var shield_bar: ProgressBar = %ShieldBar
+@onready var credits_label: Label = %CreditsLabel
 
 
 func _ready() -> void:
@@ -23,10 +24,12 @@ func _ready() -> void:
 
 	ship.hull_changed.connect(_on_hull_changed)
 	ship.shield_changed.connect(_on_shield_changed)
+	ship.credits_changed.connect(_on_credits_changed)
 
 	# Signals may have fired before the HUD entered the scene tree.
 	_on_hull_changed(ship.current_hull, ship.max_hull)
 	_on_shield_changed(ship.current_shield, ship.max_shield)
+	_on_credits_changed(ship.credits)
 
 
 func _on_hull_changed(current_hull: float, maximum_hull: float) -> void:
@@ -39,6 +42,10 @@ func _on_shield_changed(current_shield: float, maximum_shield: float) -> void:
 	shield_bar.max_value = maximum_shield
 	shield_bar.value = current_shield
 	shield_label.text = "SHIELD  %s / %s" % [_format_value(current_shield), _format_value(maximum_shield)]
+
+
+func _on_credits_changed(total_credits: int) -> void:
+	credits_label.text = "CREDITS  %d" % total_credits
 
 
 func _format_value(value: float) -> String:
