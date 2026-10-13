@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/rapid_fire_laser.tscn" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"rapid_laser"
+display_name = "Rapid-fire Laser"
+description = "A fast-firing light laser that excels at steady pressure, but deals little damage per shot."
+category = 0
+rarity = 1
+weapon_scene = ExtResource("2_weapon")
