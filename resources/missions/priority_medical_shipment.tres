@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/mission_definition.gd" id="1_mission"]
+[ext_resource type="Script" path="res://scripts/mission_route_node.gd" id="2_node"]
+
+[sub_resource type="Resource" id="dispatch"]
+script = ExtResource("2_node")
+node_id = &"dispatch"
+title = "Contract Dispatch"
+description = "Cargo manifest verified. Departure clearance pending."
+node_kind = 0
+next_node_ids = PackedStringArray("junction")
+risk = 0
+
+[sub_resource type="Resource" id="junction"]
+script = ExtResource("2_node")
+node_id = &"junction"
+title = "Route Junction"
+description = "Select a route through the delivery corridor."
+node_kind = 2
+next_node_ids = PackedStringArray("quiet_corridor", "salvage_lane")
+risk = 0
+
+[sub_resource type="Resource" id="quiet_corridor"]
+script = ExtResource("2_node")
+node_id = &"quiet_corridor"
+title = "Quiet Corridor"
+description = "Lower chance of hostile contact. Little salvage expected."
+node_kind = 1
+next_node_ids = PackedStringArray("merge")
+risk = 1
+bonus_credits = 15
+
+[sub_resource type="Resource" id="salvage_lane"]
+script = ExtResource("2_node")
+node_id = &"salvage_lane"
+title = "Salvage Lane"
+description = "Unstable wreck field. Greater threat, better recovery prospects."
+node_kind = 1
+next_node_ids = PackedStringArray("merge")
+risk = 3
+bonus_credits = 65
+
+[sub_resource type="Resource" id="merge"]
+script = ExtResource("2_node")
+node_id = &"merge"
+title = "Delivery Approach"
+description = "Both routes converge for the final approach."
+node_kind = 1
+next_node_ids = PackedStringArray("destination")
+risk = 1
+
+[sub_resource type="Resource" id="destination"]
+script = ExtResource("2_node")
+node_id = &"destination"
+title = "Destination Dock"
+description = "Deliver the sealed medical shipment."
+node_kind = 3
+next_node_ids = PackedStringArray()
+risk = 0
+
+[resource]
+script = ExtResource("1_mission")
+mission_id = &"medical_priority"
+title = "Priority Medical Shipment"
+client_name = "Helix Regional Clinics"
+cargo_description = "Temperature-controlled medical supplies"
+destination_name = "Vesper Clinic Ring"
+briefing = "A clinic network is running low on essential supplies. The shipment is sealed, time-sensitive, and accompanied by a very specific liability waiver."
+base_reward_credits = 240
+risk_label = "Standard"
+start_node_id = &"dispatch"
+destination_node_id = &"destination"
+route_nodes = Array[ExtResource("2_node")]([SubResource("dispatch"), SubResource("junction"), SubResource("quiet_corridor"), SubResource("salvage_lane"), SubResource("merge"), SubResource("destination")])
