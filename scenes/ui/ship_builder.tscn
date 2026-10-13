@@ -190,6 +190,7 @@ text = "Select a slot first, then drag a compatible module onto it."
 autowrap_mode = 3
 
 [node name="ModuleScroll" type="ScrollContainer" parent="Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox" unique_id=419325434]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
