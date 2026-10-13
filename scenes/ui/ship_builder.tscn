@@ -58,6 +58,11 @@ theme_override_font_sizes/font_size = 12
 text = "Build your courier. Drag modules into compatible slots."
 autowrap_mode = 3
 
+[node name="CloseButton" type="Button" parent="Margin/Layout/Header" unique_id=2000000001]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CLOSE  ✕"
+
 [node name="HullPicker" type="OptionButton" parent="Margin/Layout/Header" unique_id=399998445]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 0)
@@ -175,13 +180,13 @@ theme_override_constants/separation = 8
 [node name="ModulesTitle" type="Label" parent="Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox" unique_id=975923330]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "AVAILABLE MODULES"
+text = "SELECT MODULE"
 
 [node name="ModulesHint" type="Label" parent="Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox" unique_id=813838522]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
 theme_override_font_sizes/font_size = 11
-text = "Drag a module onto a slot."
+text = "Select a slot first, then drag a compatible module onto it."
 autowrap_mode = 3
 
 [node name="ModuleScroll" type="ScrollContainer" parent="Margin/Layout/BodyScroll/Body/ModulesPanel/ModulesVBox" unique_id=419325434]
