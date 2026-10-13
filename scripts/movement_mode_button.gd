@@ -1,5 +1,4 @@
 extends Button
-class_name MovementModeButton
 
 ## HUD control for switching the active player movement mode.
 
