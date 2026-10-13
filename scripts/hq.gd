@@ -300,11 +300,10 @@ func _on_deliver_pressed() -> void:
 		return
 	var selected_branch: MissionRouteNode = selected_mission.get_route_node(selected_branch_node_id)
 	var branch_name: String = selected_branch.title if selected_branch != null else "Default route"
-	status_label.text = "READY FOR DEPARTURE  /  %s  /  %s" % [
+	status_label.text = "CONTRACT READY  /  %s  /  %s  /  LAUNCH FLOW COMES NEXT" % [
 		selected_mission.title,
 		branch_name,
 	]
-	push_warning("Mission launch is the next implementation step; the selected contract and route are ready.")
 
 
 func _on_shipyard_pressed() -> void:
