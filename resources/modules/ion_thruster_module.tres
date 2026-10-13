@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"ion_thruster"
+display_name = "Ion Thruster"
+description = "Improves cruising speed and acceleration."
+category = 2
+rarity = 0
+stat_modifiers = {"movement_speed": 35.0, "acceleration": 100.0}
