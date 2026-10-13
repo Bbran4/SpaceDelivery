@@ -3,6 +3,7 @@
 [ext_resource type="PackedScene" uid="uid://dg3ycwbm8bu27" path="res://scenes/player/player_ship.tscn" id="1_player"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://scenes/enemy_ship.tscn" id="3_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="4_ship_builder"]
 
 [node name="HUDTest" type="Node2D" unique_id=1857477402]
 
@@ -14,8 +15,6 @@ position = Vector2(850, 180)
 
 [node name="EnemyShip2" parent="." unique_id=14316996 instance=ExtResource("3_enemy")]
 position = Vector2(925, 407)
-
-[ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="4_ship_builder"]
 
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=1358177469]
 
