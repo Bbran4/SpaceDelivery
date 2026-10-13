@@ -39,6 +39,17 @@ func _physics_process(delta: float) -> void:
 
 
 func _find_target() -> Ship:
+	if ship.is_in_group("player_ship"):
+		var controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
+		if controller == null:
+			return null
+		var selected_target: Ship = controller.current_target
+		if selected_target == null or selected_target.is_destroyed:
+			return null
+		if ship.global_position.distance_to(selected_target.global_position) > weapon_data.range:
+			return null
+		return selected_target
+
 	var nearest_target: Ship
 	var nearest_distance: float = weapon_data.range
 
