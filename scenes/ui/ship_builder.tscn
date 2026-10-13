@@ -62,7 +62,8 @@ text = "Build your courier. Drag modules into compatible slots."
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
 
-[node name="HullPicker" type="OptionButton" parent="OuterMargin/Root/Header" unique_name_in_owner = true]
+[node name="HullPicker" type="OptionButton" parent="OuterMargin/Root/Header"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
 
@@ -96,7 +97,8 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="SlotGroups" type="VBoxContainer" parent="OuterMargin/Root/MainContent/SlotsPanel/SlotsVBox/SlotScroll" unique_name_in_owner = true]
+[node name="SlotGroups" type="VBoxContainer" parent="OuterMargin/Root/MainContent/SlotsPanel/SlotsVBox/SlotScroll"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
@@ -122,11 +124,13 @@ size_flags_vertical = 3
 size_flags_horizontal = 3
 clip_contents = true
 
-[node name="PreviewShip" type="Polygon2D" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox/PreviewCanvas" unique_name_in_owner = true]
+[node name="PreviewShip" type="Polygon2D" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox/PreviewCanvas"]
+unique_name_in_owner = true
 polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
 color = Color(0.35, 0.85, 1, 1)
 
-[node name="HullDescription" type="Label" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox" unique_name_in_owner = true]
+[node name="HullDescription" type="Label" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 text = "Select a hull to inspect its details."
@@ -138,7 +142,8 @@ theme_override_colors/font_color = Color(0.76, 0.82, 0.89, 1)
 [node name="StatsPanel" type="PanelContainer" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox"]
 layout_mode = 2
 
-[node name="StatsLabel" type="Label" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox/StatsPanel" unique_name_in_owner = true]
+[node name="StatsLabel" type="Label" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox/StatsPanel"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "HULL --   SHIELDS --   SPEED --   CARGO --   SALVAGE --"
 horizontal_alignment = 1
@@ -170,7 +175,8 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ModuleGroups" type="VBoxContainer" parent="OuterMargin/Root/MainContent/ModulesPanel/ModulesVBox" unique_name_in_owner = true]
+[node name="ModuleGroups" type="VBoxContainer" parent="OuterMargin/Root/MainContent/ModulesPanel/ModulesVBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
@@ -184,7 +190,8 @@ theme_override_constants/separation = 5
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="BuildNameInput" type="LineEdit" parent="OuterMargin/Root/Footer/BuildControls" unique_name_in_owner = true]
+[node name="BuildNameInput" type="LineEdit" parent="OuterMargin/Root/Footer/BuildControls"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(170, 0)
 layout_mode = 2
 size_flags_horizontal = 2
@@ -195,7 +202,8 @@ text = "My Courier"
 layout_mode = 2
 text = "Save & Set Active"
 
-[node name="SavedBuildPicker" type="OptionButton" parent="OuterMargin/Root/Footer/BuildControls" unique_name_in_owner = true]
+[node name="SavedBuildPicker" type="OptionButton" parent="OuterMargin/Root/Footer/BuildControls"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -208,7 +216,8 @@ text = "Load Build"
 layout_mode = 2
 text = "Test Flight"
 
-[node name="StatusLabel" type="Label" parent="OuterMargin/Root/Footer" unique_name_in_owner = true]
+[node name="StatusLabel" type="Label" parent="OuterMargin/Root/Footer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 22)
 layout_mode = 2
 text = "Saved builds are stored locally on this device."
