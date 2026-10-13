@@ -348,6 +348,25 @@ func _apply_module_stats() -> void:
 		cargo_hold_capacity += module.cargo_capacity_bonus
 		salvage_hold_capacity += module.salvage_capacity_bonus
 	module_slot_count = module_slots.size()
+	# Player ships require installed systems: hull stats alone do not grant shields or propulsion.
+	if is_in_group("player_ship"):
+		var has_shield_module: bool = false
+		var has_engine_module: bool = false
+		for installed_module: ShipModule in module_slots:
+			if installed_module == null:
+				continue
+			if installed_module.category == ShipModule.Category.DEFENSE:
+				has_shield_module = true
+			elif installed_module.category == ShipModule.Category.ENGINE:
+				has_engine_module = true
+		if not has_shield_module:
+			max_shield = 0.0
+			shield_recharge_rate = 0.0
+			current_shield = 0.0
+		if not has_engine_module:
+			movement_speed = 0.0
+			acceleration = 0.0
+			turn_rate = 0.0
 	current_hull = minf(current_hull, max_hull)
 	current_shield = minf(current_shield, max_shield)
 	if is_inside_tree():
