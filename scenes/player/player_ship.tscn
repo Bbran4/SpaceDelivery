@@ -13,6 +13,8 @@ radius = 14.0
 
 [node name="PlayerShip" type="CharacterBody2D" unique_id=442917953 groups=["player_ship"]]
 script = ExtResource("1_ship")
+shield_recharge_rate = 8.0
+shield_recharge_delay = 2.0
 starting_weapon_module = ExtResource("4_weapon_module")
 
 [node name="ShipVisual" type="Polygon2D" parent="." unique_id=1345558751]
