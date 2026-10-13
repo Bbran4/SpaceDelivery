@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+[ext_resource type="PackedScene" path="res://scenes/weapons/basic_weapon.tscn" id="2_weapon"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"basic_laser"
+display_name = "Basic Laser"
+description = "A reliable starter weapon that automatically targets hostile ships."
+category = 0
+rarity = 0
+weapon_scene = ExtResource("2_weapon")
