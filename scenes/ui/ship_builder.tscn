@@ -179,6 +179,10 @@ unique_name_in_owner = true
 layout_mode = 2
 text = "Load Build"
 
+[node name="TestFlightButton" type="Button" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
+layout_mode = 2
+text = "Launch Test Flight"
+
 [node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer"]
 layout_mode = 2
 text = "Saved builds are stored locally on this device."
@@ -186,3 +190,5 @@ theme_override_colors/font_color = Color(0.62, 0.83, 0.72, 1)
 unique_name_in_owner = true
 [connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/SaveButton" to="." method="_on_save_pressed"]
 [connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/LoadButton" to="." method="_on_load_pressed"]
+
+[connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/TestFlightButton" to="." method="_on_back_pressed"]
