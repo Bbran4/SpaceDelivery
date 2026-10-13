@@ -13,6 +13,9 @@ signal destroyed
 signal weapon_fired(weapon: Node, target: Node2D)
 signal module_installed(module: ShipModule, slot_index: int)
 signal module_uninstalled(module: ShipModule, slot_index: int)
+signal credits_changed(total_credits: int)
+
+const LOOT_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/loot_pickup.tscn")
 
 @export var ship_name: String = "Ship"
 @export var hull_data: ShipHull
@@ -48,9 +51,13 @@ var salvage_hold_capacity: int = 10
 @export_range(0, 32, 1) var module_slot_count: int = 4
 @export var starting_weapon_module: ShipModule
 
+@export_group("Rewards")
+@export var reward_table: EnemyRewardTable
+
 var current_hull: float
 var current_shield: float
 var is_destroyed: bool = false
+var credits: int = 0
 
 ## Inventory holds cargo/items; equipped modules live in module_slots.
 var inventory: Array = []
@@ -204,8 +211,46 @@ func _destroy() -> void:
 		return
 	is_destroyed = true
 	velocity = Vector2.ZERO
+	_spawn_reward_drops()
 	destroyed.emit()
 	queue_free()
+
+
+## Adds credits earned from combat or other rewards.
+func add_credits(amount: int) -> void:
+	if amount <= 0:
+		return
+	credits += amount
+	credits_changed.emit(credits)
+
+
+func _spawn_reward_drops() -> void:
+	if reward_table == null or not is_in_group("enemy"):
+		return
+	var loot_parent: Node = get_tree().current_scene
+	if loot_parent == null:
+		loot_parent = get_parent()
+	if loot_parent == null:
+		return
+
+	var currency_drop: LootPickup = LOOT_PICKUP_SCENE.instantiate() as LootPickup
+	if currency_drop != null:
+		currency_drop.configure_currency(randi_range(
+			mini(reward_table.minimum_credits, reward_table.maximum_credits),
+			maxi(reward_table.minimum_credits, reward_table.maximum_credits)
+		))
+		loot_parent.add_child(currency_drop)
+		currency_drop.global_position = global_position + Vector2(randf_range(-12.0, 12.0), randf_range(-12.0, 12.0))
+
+	var salvage_item: SalvageItemData = reward_table.roll_item()
+	if salvage_item == null:
+		return
+	var item_drop: LootPickup = LOOT_PICKUP_SCENE.instantiate() as LootPickup
+	if item_drop == null:
+		return
+	item_drop.configure_item(salvage_item)
+	loot_parent.add_child(item_drop)
+	item_drop.global_position = global_position + Vector2(randf_range(-18.0, 18.0), randf_range(-18.0, 18.0))
 
 
 ## Adds an item to the ship's inventory. Item representation is intentionally
