@@ -32,7 +32,12 @@ func set_slot_content(title: String, module: ShipModule, path: String) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		if builder != null:
-			builder.call("equip_module", slot_index, "")
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if builder != null:
+				builder.call("open_module_picker", slot_index)
+			accept_event()
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if builder != null:
+				builder.call("equip_module", slot_index, "")
 			accept_event()
