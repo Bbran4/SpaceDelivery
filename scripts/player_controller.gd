@@ -64,24 +64,20 @@ func _process_mouse_movement() -> void:
 	var turn_input: float = 0.0
 
 	if not to_mouse.is_zero_approx():
-		var angle_difference: float = wrapf(to_mouse.angle() - ship.rotation, -PI, PI)
-		var effective_turn_rate: float = ship.turn_rate * mouse_turn_rate_multiplier
-		var full_turn_angle: float = deg_to_rad(maxf(effective_turn_rate, 1.0))
+		var angle_difference: float = wrapf(to_mouse.angle() - ship.global_rotation, -PI, PI)
+		var full_turn_angle: float = deg_to_rad(maxf(ship.turn_rate, 1.0))
 		turn_input = clampf(angle_difference / full_turn_angle, -1.0, 1.0)
 
 		var direction_to_mouse: Vector2 = to_mouse / distance_to_mouse
 		var distance_outside_stop_zone: float = maxf(distance_to_mouse - mouse_stop_distance, 0.0)
-		var desired_speed: float = ship.movement_speed
+		var desired_speed: float = 0.0
 
 		if ship.acceleration > 0.0:
-			# Use the braking-distance equation so desired speed falls as the
-			# ship approaches the cursor, rather than braking at the last moment.
+			# Begin braking early enough to stop inside the cursor's stop zone.
 			desired_speed = minf(
 				ship.movement_speed,
 				sqrt(2.0 * ship.acceleration * distance_outside_stop_zone)
 			)
-		elif distance_outside_stop_zone <= 0.0:
-			desired_speed = 0.0
 
 		var desired_velocity: Vector2 = direction_to_mouse * desired_speed
 		var velocity_error: Vector2 = desired_velocity - ship.velocity
@@ -91,7 +87,11 @@ func _process_mouse_movement() -> void:
 		)
 		movement_direction = (velocity_error / response_acceleration).limit_length(1.0)
 
-	ship.set_movement_input(movement_direction, turn_input)
+	ship.set_movement_input(
+		movement_direction,
+		turn_input,
+		mouse_turn_rate_multiplier
+	)
 
 
 func toggle_movement_mode() -> void:
