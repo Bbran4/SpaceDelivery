@@ -37,9 +37,12 @@ func _physics_process(delta: float) -> void:
 	if ship.is_in_group("player_ship"):
 		var controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
 		if controller != null and controller.movement_mode == PlayerController.MovementMode.KEYBOARD:
-			# Keyboard mode is cursor-aimed: always fire toward the cursor, even
-			# when no hostile ship is currently inside this weapon's range.
-			_fire_at(target, controller.get_aim_position())
+			# Fire only when the cursor is over an enemy. Weapon range does
+			# not gate this cursor-aimed shot.
+			var hovered_enemy: Ship = controller.current_target
+			if hovered_enemy == null or hovered_enemy.is_destroyed:
+				return
+			_fire_at(hovered_enemy, controller.get_aim_position())
 			_cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.1)
 			return
 
