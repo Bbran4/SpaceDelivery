@@ -33,7 +33,11 @@ func _on_target_changed(new_target: Ship) -> void:
 
 
 func _process(_delta: float) -> void:
-	if not is_instance_valid(target) or target.is_destroyed:
+	if target == null:
+		return
+	if not is_instance_valid(target) or target.is_destroyed or not target.is_inside_tree():
+		target = null
+		_show_no_target()
 		return
 	_update_target_readout()
 
