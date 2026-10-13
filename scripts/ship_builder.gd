@@ -26,6 +26,8 @@ const CATEGORY_ORDER: Array[int] = [
 ]
 const NARROW_WIDTH: float = 820.0
 
+signal builder_closed
+
 @onready var body: BoxContainer = %Body
 @onready var hull_picker: OptionButton = %HullPicker
 @onready var preview_ship: Polygon2D = %PreviewShip
@@ -37,6 +39,10 @@ const NARROW_WIDTH: float = 820.0
 @onready var build_name_input: LineEdit = %BuildNameInput
 @onready var saved_build_picker: OptionButton = %SavedBuildPicker
 @onready var status_label: Label = %StatusLabel
+@onready var modules_panel: PanelContainer = %ModulesPanel
+@onready var close_button: Button = %CloseButton
+
+var selected_slot_index: int = -1
 
 var selected_hull: ShipHull
 var selected_modules: Array[ShipModule] = []
@@ -47,6 +53,8 @@ func _ready() -> void:
 	resized.connect(_update_layout)
 	preview_canvas.resized.connect(_center_ship_preview)
 	_update_layout()
+	modules_panel.visible = false
+	close_button.pressed.connect(_on_back_pressed)
 	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
@@ -83,9 +91,17 @@ func _on_hull_selected(index: int) -> void:
 	for slot_index: int in range(selected_module_paths.size()):
 		selected_module_paths[slot_index] = ""
 	_update_hull_preview()
+	selected_slot_index = -1
+	modules_panel.visible = false
 	_rebuild_slot_groups()
 	_rebuild_module_groups()
 	_refresh_stats()
+
+
+func show_builder() -> void:
+	visible = true
+	if selected_hull == null and hull_picker.item_count > 0:
+		_on_hull_selected(hull_picker.selected if hull_picker.selected >= 0 else 0)
 
 
 func _center_ship_preview() -> void:
@@ -171,6 +187,11 @@ func _rebuild_slot_groups() -> void:
 func _rebuild_module_groups() -> void:
 	_clear_container(module_groups)
 	for category: int in CATEGORY_ORDER:
+		if selected_slot_index < 0 or selected_slot_index >= selected_hull.slot_categories.size():
+			continue
+		var selected_category: int = selected_hull.slot_categories[selected_slot_index]
+		if not _category_fits(selected_category, category):
+			continue
 		var matching_paths: Array[String] = []
 		for module_path: String in MODULE_PATHS:
 			var module: ShipModule = load(module_path) as ShipModule
@@ -215,6 +236,15 @@ func _rebuild_module_groups() -> void:
 		module_groups.add_child(group)
 
 
+func open_module_picker(slot_index: int) -> void:
+	if selected_hull == null or slot_index < 0 or slot_index >= selected_hull.slot_categories.size():
+		return
+	selected_slot_index = slot_index
+	modules_panel.visible = true
+	_rebuild_module_groups()
+	status_label.text = "Choose a compatible module for slot %d." % (slot_index + 1)
+
+
 func equip_module(slot_index: int, module_path: String) -> void:
 	if selected_hull == null or slot_index < 0 or slot_index >= selected_modules.size():
 		return
@@ -226,6 +256,9 @@ func equip_module(slot_index: int, module_path: String) -> void:
 	selected_modules[slot_index] = module
 	_rebuild_slot_groups()
 	_refresh_stats()
+	modules_panel.visible = false
+	selected_slot_index = -1
+	_rebuild_module_groups()
 	status_label.text = "Equipped %s in slot %d." % [module.display_name, slot_index + 1] if module != null else "Slot %d cleared." % (slot_index + 1)
 
 
@@ -385,4 +418,7 @@ func _clear_container(container: Node) -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/tests/hud_test.tscn")
+	visible = false
+	modules_panel.visible = false
+	selected_slot_index = -1
+	builder_closed.emit()
