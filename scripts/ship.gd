@@ -236,11 +236,20 @@ func install_module(module: ShipModule, slot_index: int) -> bool:
 	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
 		var weapon_instance: Node = module.weapon_scene.instantiate()
 		if weapon_instance != null:
+			var ship_weapon: ShipWeapon = weapon_instance as ShipWeapon
+			if ship_weapon != null:
+				ship_weapon.position = _get_weapon_mount_offset(slot_index)
 			add_child(weapon_instance)
 			weapon_instances.append(weapon_instance)
 			weapon_instances_by_slot[slot_index] = weapon_instance
 	module_installed.emit(module, slot_index)
 	return true
+
+
+## Spreads weapon mounts vertically so multiple equipped guns are visually distinct.
+func _get_weapon_mount_offset(slot_index: int) -> Vector2:
+	var centered_slot: float = float(slot_index) - (float(module_slots.size() - 1) * 0.5)
+	return Vector2(-4.0, centered_slot * 7.0)
 
 
 func uninstall_module(slot_index: int) -> ShipModule:
