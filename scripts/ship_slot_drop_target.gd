@@ -19,7 +19,7 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	if not data is Dictionary:
 		return
-	builder.equip_module(slot_index, str(data.get("module_path", "")))
+	builder.call("equip_module", slot_index, str(data.get("module_path", "")))
 
 
 func set_slot_content(title: String, module: ShipModule, path: String) -> void:
