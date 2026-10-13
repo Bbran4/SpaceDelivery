@@ -14,6 +14,8 @@ signal weapon_fired(weapon: Node, target: Node2D)
 signal module_installed(module: ShipModule, slot_index: int)
 signal module_uninstalled(module: ShipModule, slot_index: int)
 
+@export var ship_name: String = "Ship"
+
 @export_group("Durability")
 @export_range(1.0, 100000.0, 1.0) var max_hull: float = 100.0
 @export_range(0.0, 100000.0, 1.0) var max_shield: float = 50.0
