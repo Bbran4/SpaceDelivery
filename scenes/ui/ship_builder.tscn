@@ -35,7 +35,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 theme_override_constants/separation = 12
 
-[node name="TitleBlock" type="VBoxContainer" parent="."]
+[node name="TitleBlock" type="VBoxContainer" parent="Header"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 2
@@ -53,7 +53,7 @@ text = "Build your courier. Drag modules into compatible slots."
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
 
-[node name="HullPicker" type="OptionButton" parent="."]
+[node name="HullPicker" type="OptionButton" parent="Header"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
@@ -73,7 +73,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10
 
-[node name="SlotsPanel" type="PanelContainer" parent="."]
+[node name="SlotsPanel" type="PanelContainer" parent="MainContent"]
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -105,7 +105,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="CenterPanel" type="PanelContainer" parent="."]
+[node name="CenterPanel" type="PanelContainer" parent="MainContent"]
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -154,7 +154,7 @@ horizontal_alignment = 1
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 13
 
-[node name="ModulesPanel" type="PanelContainer" parent="."]
+[node name="ModulesPanel" type="PanelContainer" parent="MainContent"]
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -200,7 +200,7 @@ offset_bottom = 0.0
 grow_horizontal = 2
 theme_override_constants/separation = 5
 
-[node name="BuildControls" type="HBoxContainer" parent="."]
+[node name="BuildControls" type="HBoxContainer" parent="Footer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -230,7 +230,7 @@ text = "Load Build"
 layout_mode = 2
 text = "Test Flight"
 
-[node name="StatusLabel" type="Label" parent="."]
+[node name="StatusLabel" type="Label" parent="Footer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
