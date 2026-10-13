@@ -15,6 +15,22 @@ position = Vector2(850, 180)
 [node name="EnemyShip2" parent="." unique_id=14316996 instance=ExtResource("3_enemy")]
 position = Vector2(925, 407)
 
+[ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="4_ship_builder"]
+
 [node name="HUDLayer" type="CanvasLayer" parent="." unique_id=1358177469]
 
 [node name="ShipHUD" parent="HUDLayer" unique_id=1189854607 instance=ExtResource("2_hud")]
+
+[node name="ShipyardLayer" type="CanvasLayer" parent="." unique_id=2000000002]
+
+[node name="ShipyardButton" type="Button" parent="ShipyardLayer" unique_id=2000000003]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 156.0
+offset_bottom = 54.0
+text = "SHIPYARD"
+
+[node name="ShipBuilder" parent="ShipyardLayer" instance=ExtResource("4_ship_builder")]
+visible = false
+
+[connection signal="pressed" from="ShipyardLayer/ShipyardButton" to="ShipyardLayer/ShipBuilder" method="show_builder"]
