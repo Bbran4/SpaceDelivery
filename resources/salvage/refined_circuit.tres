@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SalvageItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/salvage_item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+item_id = &"refined_circuit"
+display_name = "Refined Circuit"
+description = "A quality electronic component useful for ship upgrades."
+rarity = 1
+credit_value = 35
