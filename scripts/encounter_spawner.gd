@@ -1,0 +1,39 @@
+extends Node2D
+class_name EncounterSpawner
+
+## Lightweight test-only spawner. Cycles through configured enemy scenes so a
+## single encounter can contain several archetypes without duplicating Ship code.
+
+@export var enemy_scenes: Array[PackedScene] = []
+@export_range(1, 50, 1) var spawn_count: int = 6
+@export_range(0.0, 1000.0, 10.0) var spawn_radius: float = 180.0
+@export var spawn_on_ready: bool = true
+
+
+func _ready() -> void:
+	if spawn_on_ready:
+		spawn_encounter.call_deferred()
+
+
+func spawn_encounter() -> void:
+	if enemy_scenes.is_empty():
+		push_warning("EncounterSpawner has no enemy scenes assigned.")
+		return
+
+	var scene_root: Node = get_tree().current_scene
+	if scene_root == null:
+		scene_root = get_parent()
+	if scene_root == null:
+		return
+
+	for index: int in range(spawn_count):
+		var enemy_scene: PackedScene = enemy_scenes[index % enemy_scenes.size()]
+		if enemy_scene == null:
+			continue
+		var enemy: Ship = enemy_scene.instantiate() as Ship
+		if enemy == null:
+			push_warning("Encounter scene root must inherit from Ship.")
+			continue
+		scene_root.add_child(enemy)
+		var angle: float = TAU * float(index) / float(spawn_count)
+		enemy.global_position = global_position + Vector2.RIGHT.rotated(angle) * spawn_radius
