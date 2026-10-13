@@ -60,6 +60,7 @@ func _on_hull_selected(index: int) -> void:
 	for slot_index: int in range(selected_module_paths.size()):
 		selected_module_paths[slot_index] = ""
 	preview_ship.color = selected_hull.preview_color
+		preview_ship.polygon = selected_hull.preview_polygon
 	preview_ship.polygon = selected_hull.preview_polygon
 	hull_description.text = "%s\n%s" % [selected_hull.description, "Rarity: " + _rarity_name(selected_hull.rarity)]
 	_rebuild_slot_list()
@@ -178,6 +179,7 @@ func _on_load_pressed() -> void:
 			selected_module_paths[slot_index] = module_path
 			selected_modules[slot_index] = load(module_path) as ShipModule if not module_path.is_empty() else null
 		preview_ship.color = selected_hull.preview_color
+		preview_ship.polygon = selected_hull.preview_polygon
 		hull_description.text = "%s\n%s" % [selected_hull.description, "Rarity: " + _rarity_name(selected_hull.rarity)]
 		_rebuild_slot_list()
 		_sync_slot_pickers()
