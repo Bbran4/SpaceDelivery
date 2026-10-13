@@ -1,6 +1,8 @@
 extends Control
 class_name HQScreen
 
+const MISSION_FLIGHT_SCENE: String = "res://scenes/mission_flight.tscn"
+
 const MISSION_PATHS: Array[String] = [
 	"res://resources/missions/priority_medical_shipment.tres",
 	"res://resources/missions/fragile_relay_components.tres",
@@ -299,11 +301,21 @@ func _on_deliver_pressed() -> void:
 		deliver_button.disabled = true
 		return
 	var selected_branch: MissionRouteNode = selected_mission.get_route_node(selected_branch_node_id)
-	var branch_name: String = selected_branch.title if selected_branch != null else "Default route"
-	status_label.text = "CONTRACT READY  /  %s  /  %s  /  LAUNCH FLOW COMES NEXT" % [
+	if selected_branch == null:
+		status_label.text = "ROUTE ERROR  /  PLEASE SELECT THIS CONTRACT AGAIN"
+		return
+
+	MissionRunState.begin_mission(selected_mission, selected_branch_node_id)
+	deliver_button.disabled = true
+	status_label.text = "DISPATCHING  /  %s  /  %s" % [
 		selected_mission.title,
-		branch_name,
+		selected_branch.title,
 	]
+	var change_error: Error = get_tree().change_scene_to_file(MISSION_FLIGHT_SCENE)
+	if change_error != OK:
+		MissionRunState.clear_mission()
+		deliver_button.disabled = false
+		status_label.text = "LAUNCH FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error
 
 
 func _on_shipyard_pressed() -> void:
