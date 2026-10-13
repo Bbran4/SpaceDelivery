@@ -12,6 +12,7 @@ const MODULE_PATHS: Array[String] = [
 	"res://resources/modules/ion_thruster_module.tres",
 	"res://resources/modules/cargo_expansion_module.tres",
 	"res://resources/modules/salvage_rack_module.tres",
+	"res://resources/modules/navigation_computer_module.tres",
 ]
 
 @onready var hull_picker: OptionButton = %HullPicker
