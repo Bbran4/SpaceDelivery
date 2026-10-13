@@ -58,82 +58,88 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
 
-[node name="MainContent" type="HBoxContainer" parent="."]
+[node name="SlotsPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
-anchor_left = 0.0
+anchor_left = 0.02
 anchor_top = 0.155
-anchor_right = 1.0
+anchor_right = 0.27
 anchor_bottom = 0.835
-offset_left = 18.0
+offset_left = 0.0
 offset_top = 0.0
-offset_right = -18.0
+offset_right = 0.0
 offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
 
-[node name="SlotsPanel" type="PanelContainer" parent="MainContent"]
-custom_minimum_size = Vector2(0, 0)
+[node name="SlotsVBox" type="VBoxContainer" parent="SlotsPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="SlotsVBox" type="VBoxContainer" parent="MainContent/SlotsPanel"]
-layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="SlotsTitle" type="Label" parent="MainContent/SlotsPanel/SlotsVBox"]
+[node name="SlotsTitle" type="Label" parent="SlotsPanel/SlotsVBox"]
 layout_mode = 2
 text = "YOUR SLOTS"
 theme_override_font_sizes/font_size = 16
 
-[node name="SlotsHint" type="Label" parent="MainContent/SlotsPanel/SlotsVBox"]
+[node name="SlotsHint" type="Label" parent="SlotsPanel/SlotsVBox"]
 layout_mode = 2
 text = "Drop compatible modules here."
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
 
-[node name="SlotScroll" type="ScrollContainer" parent="MainContent/SlotsPanel/SlotsVBox"]
+[node name="SlotScroll" type="ScrollContainer" parent="SlotsPanel/SlotsVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="SlotGroups" type="VBoxContainer" parent="MainContent/SlotsPanel/SlotsVBox/SlotScroll"]
+[node name="SlotGroups" type="VBoxContainer" parent="SlotsPanel/SlotsVBox/SlotScroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="CenterPanel" type="PanelContainer" parent="MainContent"]
-custom_minimum_size = Vector2(0, 0)
+[node name="CenterPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.285
+anchor_top = 0.155
+anchor_right = 0.715
+anchor_bottom = 0.835
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterVBox" type="VBoxContainer" parent="CenterPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.2
-
-[node name="CenterVBox" type="VBoxContainer" parent="MainContent/CenterPanel"]
-layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="ShipTitle" type="Label" parent="MainContent/CenterPanel/CenterVBox"]
+[node name="ShipTitle" type="Label" parent="CenterPanel/CenterVBox"]
 layout_mode = 2
 text = "HULL PREVIEW"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 
-[node name="PreviewCanvas" type="Control" parent="MainContent/CenterPanel/CenterVBox"]
+[node name="PreviewCanvas" type="Control" parent="CenterPanel/CenterVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_horizontal = 3
 clip_contents = true
 
-[node name="PreviewShip" type="Polygon2D" parent="MainContent/CenterPanel/CenterVBox/PreviewCanvas"]
+[node name="PreviewShip" type="Polygon2D" parent="CenterPanel/CenterVBox/PreviewCanvas"]
 unique_name_in_owner = true
 polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
 color = Color(0.35, 0.85, 1, 1)
 
-[node name="HullDescription" type="Label" parent="MainContent/CenterPanel/CenterVBox"]
+[node name="HullDescription" type="Label" parent="CenterPanel/CenterVBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
@@ -143,10 +149,10 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.76, 0.82, 0.89, 1)
 
-[node name="StatsPanel" type="PanelContainer" parent="MainContent/CenterPanel/CenterVBox"]
+[node name="StatsPanel" type="PanelContainer" parent="CenterPanel/CenterVBox"]
 layout_mode = 2
 
-[node name="StatsLabel" type="Label" parent="MainContent/CenterPanel/CenterVBox/StatsPanel"]
+[node name="StatsLabel" type="Label" parent="CenterPanel/CenterVBox/StatsPanel"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "HULL --   SHIELDS --   SPEED --   CARGO --   SALVAGE --"
@@ -154,33 +160,44 @@ horizontal_alignment = 1
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 13
 
-[node name="ModulesPanel" type="PanelContainer" parent="MainContent"]
-custom_minimum_size = Vector2(0, 0)
+[node name="ModulesPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.73
+anchor_top = 0.155
+anchor_right = 0.98
+anchor_bottom = 0.835
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ModulesVBox" type="VBoxContainer" parent="ModulesPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
-
-[node name="ModulesVBox" type="VBoxContainer" parent="MainContent/ModulesPanel"]
-layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="ModulesTitle" type="Label" parent="MainContent/ModulesPanel/ModulesVBox"]
+[node name="ModulesTitle" type="Label" parent="ModulesPanel/ModulesVBox"]
 layout_mode = 2
 text = "AVAILABLE MODULES"
 theme_override_font_sizes/font_size = 16
 
-[node name="ModulesHint" type="Label" parent="MainContent/ModulesPanel/ModulesVBox"]
+[node name="ModulesHint" type="Label" parent="ModulesPanel/ModulesVBox"]
 layout_mode = 2
 text = "Drag a module onto a slot."
 autowrap_mode = 3
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.6, 0.7, 0.8, 1)
 
-[node name="ModuleScroll" type="ScrollContainer" parent="MainContent/ModulesPanel/ModulesVBox"]
+[node name="ModuleScroll" type="ScrollContainer" parent="ModulesPanel/ModulesVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="ModuleGroups" type="VBoxContainer" parent="MainContent/ModulesPanel/ModulesVBox"]
+[node name="ModuleGroups" type="VBoxContainer" parent="ModulesPanel/ModulesVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
