@@ -1,0 +1,190 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_builder.gd" id="1_builder"]
+
+[node name="ShipBuilder" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_builder")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.035, 0.055, 0.085, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="RootVBox" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/RootVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="MarginContainer/RootVBox/Header"]
+layout_mode = 2
+text = "SHIP BUILDER"
+theme_override_font_sizes/font_size = 26
+
+[node name="HeaderSpacer" type="Control" parent="MarginContainer/RootVBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Subtitle" type="Label" parent="MarginContainer/RootVBox/Header"]
+layout_mode = 2
+text = "Configure your courier. Save a build to make it your active ship."
+theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
+
+[node name="MainContent" type="HBoxContainer" parent="MarginContainer/RootVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="HullPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent"]
+custom_minimum_size = Vector2(360, 0)
+layout_mode = 2
+theme_override_styles/panel = null
+
+[node name="HullVBox" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HullTitle" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
+layout_mode = 2
+text = "HULL"
+theme_override_font_sizes/font_size = 18
+
+[node name="HullPicker" type="OptionButton" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox" unique_name_in_owner = true]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PreviewPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
+custom_minimum_size = Vector2(0, 230)
+layout_mode = 2
+
+[node name="PreviewCanvas" type="Control" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PreviewShip" type="Polygon2D" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas" unique_name_in_owner = true]
+position = Vector2(170, 104)
+polygon = PackedVector2Array(62, 0, -35, -34, -22, 0, -35, 34)
+color = Color(0.35, 0.85, 1, 1)
+
+[node name="PreviewCaption" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/PreviewPanel/PreviewCanvas"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 164.0
+offset_bottom = 192.0
+grow_horizontal = 2
+text = "HULL PREVIEW"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.55, 0.67, 0.78, 1)
+
+[node name="HullDescription" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox" unique_name_in_owner = true]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+text = "Select a hull to view its details."
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.76, 0.82, 0.89, 1)
+
+[node name="StatsPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox"]
+layout_mode = 2
+
+[node name="StatsLabel" type="Label" parent="MarginContainer/RootVBox/MainContent/HullPanel/HullVBox/StatsPanel" unique_name_in_owner = true]
+layout_mode = 2
+text = "HULL       --\nSHIELDS    --\nSPEED      --\nACCEL.     --\nCARGO      --\nSALVAGE    --"
+theme_override_fonts/font = null
+theme_override_font_sizes/font_size = 15
+
+[node name="ModulesPanel" type="PanelContainer" parent="MarginContainer/RootVBox/MainContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ModulesVBox" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ModulesTitle" type="Label" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox"]
+layout_mode = 2
+text = "MODULE SLOTS"
+theme_override_font_sizes/font_size = 18
+
+[node name="ModulesHint" type="Label" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox"]
+layout_mode = 2
+text = "Each slot accepts only compatible modules. Empty slots are allowed."
+autowrap_mode = 3
+theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
+
+[node name="SlotList" type="VBoxContainer" parent="MarginContainer/RootVBox/MainContent/ModulesPanel/ModulesVBox" unique_name_in_owner = true]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="FooterPanel" type="PanelContainer" parent="MarginContainer/RootVBox"]
+layout_mode = 2
+
+[node name="Footer" type="VBoxContainer" parent="MarginContainer/RootVBox/FooterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BuildControls" type="HBoxContainer" parent="MarginContainer/RootVBox/FooterPanel/Footer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BuildNameInput" type="LineEdit" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls" unique_name_in_owner = true]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+placeholder_text = "Build name (e.g. Fast Runner)"
+text = "My Courier"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
+layout_mode = 2
+text = "Save & Set Active"
+
+[node name="FooterSpacer" type="Control" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SavedBuildPicker" type="OptionButton" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls" unique_name_in_owner = true]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="LoadButton" type="Button" parent="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls"]
+layout_mode = 2
+text = "Load Build"
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/RootVBox/FooterPanel/Footer" unique_name_in_owner = true]
+layout_mode = 2
+text = "Saved builds are stored locally on this device."
+theme_override_colors/font_color = Color(0.62, 0.83, 0.72, 1)
+
+[connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/SaveButton" to="." method="_on_save_pressed"]
+[connection signal="pressed" from="MarginContainer/RootVBox/FooterPanel/Footer/BuildControls/LoadButton" to="." method="_on_load_pressed"]
