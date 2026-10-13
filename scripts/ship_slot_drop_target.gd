@@ -3,7 +3,7 @@ class_name ShipSlotDropTarget
 
 var slot_index: int = -1
 var accepted_category: int = -1
-var builder: ShipBuilder
+var builder: Control
 var slot_title: Label
 var module_title: Label
 var module_path: String = ""
@@ -28,3 +28,11 @@ func set_slot_content(title: String, module: ShipModule, path: String) -> void:
 		slot_title.text = title
 	if module_title != null:
 		module_title.text = "Empty slot · drop module here" if module == null else module.display_name
+
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		if builder != null:
+			builder.call("equip_module", slot_index, "")
+			accept_event()
