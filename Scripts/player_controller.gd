@@ -7,10 +7,10 @@ class_name PlayerController
 @export var ship: Ship
 
 @export_group("Input")
-@export var turn_left_action: StringName = &"ui_left"
-@export var turn_right_action: StringName = &"ui_right"
-@export var thrust_forward_action: StringName = &"ui_up"
-@export var thrust_reverse_action: StringName = &"ui_down"
+@export var turn_left_action: StringName = &"left"
+@export var turn_right_action: StringName = &"right"
+@export var thrust_forward_action: StringName = &"up"
+@export var thrust_reverse_action: StringName = &"down"
 
 
 func _ready() -> void:
