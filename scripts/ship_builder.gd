@@ -24,6 +24,7 @@ const CATEGORY_ORDER: Array[int] = [
 
 @onready var hull_picker: OptionButton = %HullPicker
 @onready var preview_ship: Polygon2D = %PreviewShip
+@onready var preview_canvas: Control = %PreviewCanvas
 @onready var hull_description: Label = %HullDescription
 @onready var stats_label: Label = %StatsLabel
 @onready var slot_groups: VBoxContainer = %SlotGroups
@@ -38,6 +39,8 @@ var selected_module_paths: Array[String] = []
 
 
 func _ready() -> void:
+	preview_canvas.resized.connect(_center_ship_preview)
+	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
 	if hull_picker.item_count > 0:
@@ -73,11 +76,17 @@ func _on_hull_selected(index: int) -> void:
 	_refresh_stats()
 
 
+func _center_ship_preview() -> void:
+	if is_instance_valid(preview_canvas) and is_instance_valid(preview_ship):
+		preview_ship.position = preview_canvas.size / 2.0
+
+
 func _update_hull_preview() -> void:
 	if selected_hull == null:
 		return
 	preview_ship.color = selected_hull.preview_color
 	preview_ship.polygon = selected_hull.preview_polygon
+	_center_ship_preview()
 	hull_description.text = "%s\nRarity: %s" % [
 		selected_hull.description,
 		_rarity_name(selected_hull.rarity),
