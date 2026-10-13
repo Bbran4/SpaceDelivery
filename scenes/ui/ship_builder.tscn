@@ -119,6 +119,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 
 [node name="PreviewCanvas" type="Control" parent="OuterMargin/Root/MainContent/CenterPanel/CenterVBox"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_horizontal = 3
