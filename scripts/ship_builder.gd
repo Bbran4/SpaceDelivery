@@ -8,6 +8,9 @@ const HULL_PATHS: Array[String] = [
 ]
 const MODULE_PATHS: Array[String] = [
 	"res://resources/modules/basic_laser_module.tres",
+	"res://resources/modules/rapid_laser_module.tres",
+	"res://resources/modules/heavy_cannon_module.tres",
+	"res://resources/modules/long_range_lance_module.tres",
 	"res://resources/modules/shield_generator_module.tres",
 	"res://resources/modules/ion_thruster_module.tres",
 	"res://resources/modules/cargo_expansion_module.tres",
