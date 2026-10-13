@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/target_reticle.gd" id="1_reticle"]
+
+[node name="TargetReticle" type="Node2D"]
+script = ExtResource("1_reticle")
+
+[node name="TopLeft" type="Line2D" parent="."]
+default_color = Color(0.35, 0.9, 1, 1)
+width = 2.0
+points = PackedVector2Array(-25, -14, -25, -25, -14, -25)
+
+[node name="TopRight" type="Line2D" parent="."]
+default_color = Color(0.35, 0.9, 1, 1)
+width = 2.0
+points = PackedVector2Array(14, -25, 25, -25, 25, -14)
+
+[node name="BottomRight" type="Line2D" parent="."]
+default_color = Color(0.35, 0.9, 1, 1)
+width = 2.0
+points = PackedVector2Array(25, 14, 25, 25, 14, 25)
+
+[node name="BottomLeft" type="Line2D" parent="."]
+default_color = Color(0.35, 0.9, 1, 1)
+width = 2.0
+points = PackedVector2Array(-14, 25, -25, 25, -25, 14)
