@@ -10,6 +10,7 @@ radius = 14.0
 
 [node name="EnemyShip" type="CharacterBody2D" groups=["enemy"]]
 script = ExtResource("1_ship")
+ship_name = "Raider"
 max_hull = 20.0
 max_shield = 10.0
 movement_speed = 160.0
