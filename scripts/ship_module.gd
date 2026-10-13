@@ -36,3 +36,4 @@ enum Rarity {
 
 ## Optional cargo capacity granted by this module.
 @export_range(0, 100000, 1) var cargo_capacity_bonus: int = 0
+@export_range(0, 100000, 1) var salvage_capacity_bonus: int = 0
