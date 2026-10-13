@@ -176,3 +176,67 @@ Confirmed from the project files:
 - **Windows graphics driver:** Direct3D 12
 
 The scripting language, 2D or 3D choice, startup scene, save format, and important gameplay scripts should be documented once confirmed.
+
+
+## Procedural Generation Design Notes
+
+Reference: [Video on procedural generation and game design](https://youtu.be/442FHQ-rymM?si=KcyazgQl7kRDs7zw). These notes summarize the transcript supplied for this project and apply its principles to SpaceDelivery's mission routes.
+
+### Core principle: design possibilities, not just random content
+
+Procedural generation is not simply choosing random rooms, enemies, or rewards. Randomness creates variety, but does not understand fun, fairness, pacing, or encounter quality. The designer's job is to define the rules and relationships that make the generated result feel intentional.
+
+**Protect what matters; randomize what doesn't.** Guarantee essential mission structure and fair conditions, while allowing variation in encounters, route choices, rewards, and details. A generated mission should surprise the player without feeling arbitrary or breaking the game's logic.
+
+### Rules, constraints, and validation
+
+A useful procedural system combines:
+- **Randomness and seeds:** provide variation; a fixed seed can reproduce a route for debugging and testing.
+- **Design rules and constraints:** prevent invalid or undesirable outcomes.
+- **Weights and probabilities:** make some events common, some rare, and some impossible in specific contexts.
+- **Validation and testing:** check that generated routes are reachable, completable, and within intended limits.
+
+For SpaceDelivery, critical constraints could include:
+- Every route starts at the delivery contract and reaches the destination.
+- Branches eventually merge into a shared final approach or destination.
+- Every chosen path is connected and completable.
+- Encounter difficulty and rewards fit the mission's intended risk.
+- Essential resources or opportunities appear before challenges that require them.
+- Avoid repeatedly stacking the most demanding encounters without recovery or variation.
+
+### Generate an experience with pacing
+
+A route should have rhythm rather than feel like a list of unrelated random encounters. Plan for pressure, relief, discovery, escalation, and payoff. Use encounter history to influence what can appear next. For example, after a demanding fight, a refuelling or rescue opportunity may be more appropriate than another extreme battle; repeated encounter types or high-value rewards can be temporarily less likely.
+
+The system should consider **what kind of encounter belongs here**, not only which encounter to pick. Enemy combinations should account for space, range, movement pressure, synergy, and difficulty. Rewards should consider recent rewards and the player's condition, rather than relying only on fixed independent chances.
+
+### Meaningful route choices and consequences
+
+Branches should represent real trade-offs, such as:
+- A safer route with lower rewards versus a dangerous route with better salvage.
+- A station stop that restores the ship but costs time or credits.
+- Helping a stranded ship for a possible ally or future benefit versus bypassing it.
+- Investigating a derelict for loot while risking an ambush.
+
+Where possible, a choice should influence later nodes or outcomes. Record simple route flags such as `rescued_crew`, `route_alerted`, `spent_credits`, `cargo_damaged`, or `earned_ally`. Later encounters, dialogue, available assistance, or rewards can react to these flags. This makes the route feel connected and gives choices a memory.
+
+### Build from purpose to variation
+
+For authored mission templates, decide the destination, mission theme, major turning point, and final challenge first. Then build the branches that lead there. Give each node a purpose in the overall journey. Randomize within that structure rather than generating an unconstrained tree of unrelated encounters.
+
+A practical approach for SpaceDelivery is a **hybrid system**:
+1. Define a coherent mission structure and required beats.
+2. Generate or select branches from encounter options that fit each beat.
+3. Apply constraints and weights based on mission theme, cargo, route risk, and recent events.
+4. Validate reachability, pacing, and reward/difficulty bounds.
+5. Use seeds and automated batches of generated routes to reproduce bugs and identify patterns, then playtest representative results.
+
+### Traditional procedural generation versus AI
+
+Traditional procedural generation uses developer-defined algorithms, rules, probabilities, and constraints; it does not inherently require machine learning or generative AI. The algorithm is machinery, not a substitute for design. AI may be combined with procedural systems, but SpaceDelivery can build a strong route generator using explicit, testable rules.
+
+### Testing philosophy
+
+One good generated route does not prove the generator works. Test many seeds and look for patterns: unreachable nodes, repeated encounters, difficulty spikes, rewards arriving too early or too late, long stretches without relief, and dominant or unrewarding choices. Automated checks can measure structural properties, but human playtesting is still needed to judge whether a route feels engaging.
+
+**Guiding question:** Before asking “How do we randomize this?”, ask “What must remain true for this mission to feel like SpaceDelivery?” The route generator should encode those design promises, then use randomness to explore the space between them.
