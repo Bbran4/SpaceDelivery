@@ -53,6 +53,7 @@ var salvage_hold_capacity: int = 10
 
 @export_group("Rewards")
 @export var reward_table: EnemyRewardTable
+@export var enemy_loadout: EnemyLoadout
 
 var current_hull: float
 var current_shield: float
@@ -75,6 +76,8 @@ var _base_stats: Dictionary = {}
 
 
 func _ready() -> void:
+	if enemy_loadout != null and is_in_group("enemy"):
+		enemy_loadout.apply_to_ship(self)
 	var loaded_saved_build: bool = false
 	if is_in_group("player_ship"):
 		loaded_saved_build = _load_active_build()
