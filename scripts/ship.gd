@@ -286,9 +286,13 @@ func install_module(module: ShipModule, slot_index: int) -> bool:
 	var previous_max_shield: float = max_shield
 	module_slots[slot_index] = module
 	_apply_module_stats()
-	if module.category == ShipModule.Category.DEFENSE and previous_max_shield <= 0.0 and max_shield > 0.0:
-		current_shield = max_shield
-		shield_changed.emit(current_shield, max_shield)
+	# Shield-capacity modifiers increase the ship's existing shield pool rather
+	# than requiring a defense module to enable shields.
+	var shield_capacity_change: float = max_shield - previous_max_shield
+	if shield_capacity_change > 0.0:
+		current_shield += shield_capacity_change
+	current_shield = clampf(current_shield, 0.0, max_shield)
+	shield_changed.emit(current_shield, max_shield)
 	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
 		var weapon_instance: Node = module.weapon_scene.instantiate()
 		if weapon_instance != null:
@@ -316,6 +320,7 @@ func uninstall_module(slot_index: int) -> ShipModule:
 	if module == null:
 		return null
 
+	var previous_max_shield: float = max_shield
 	module_slots[slot_index] = null
 	if module.category == ShipModule.Category.WEAPON and weapon_instances_by_slot.has(slot_index):
 		var weapon: Node = weapon_instances_by_slot[slot_index] as Node
@@ -326,6 +331,8 @@ func uninstall_module(slot_index: int) -> ShipModule:
 
 	module_uninstalled.emit(module, slot_index)
 	_apply_module_stats()
+	current_shield = minf(current_shield, max_shield)
+	shield_changed.emit(current_shield, max_shield)
 	return module
 
 
@@ -404,25 +411,6 @@ func _apply_module_stats() -> void:
 		cargo_hold_capacity += module.cargo_capacity_bonus
 		salvage_hold_capacity += module.salvage_capacity_bonus
 	module_slot_count = module_slots.size()
-	# Player ships require installed systems: hull stats alone do not grant shields or propulsion.
-	if is_in_group("player_ship"):
-		var has_shield_module: bool = false
-		var has_engine_module: bool = false
-		for installed_module: ShipModule in module_slots:
-			if installed_module == null:
-				continue
-			if installed_module.category == ShipModule.Category.DEFENSE:
-				has_shield_module = true
-			elif installed_module.category == ShipModule.Category.ENGINE:
-				has_engine_module = true
-		if not has_shield_module:
-			max_shield = 0.0
-			shield_recharge_rate = 0.0
-			current_shield = 0.0
-		if not has_engine_module:
-			movement_speed = 0.0
-			acceleration = 0.0
-			turn_rate = 0.0
 	current_hull = minf(current_hull, max_hull)
 	current_shield = minf(current_shield, max_shield)
 	if is_inside_tree():
