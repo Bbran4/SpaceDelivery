@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"shield_generator"
+display_name = "Shield Generator"
+description = "Adds shield capacity and improves shield recharge."
+category = 1
+rarity = 0
+stat_modifiers = {"max_shield": 35.0, "shield_recharge_rate": 3.0}
