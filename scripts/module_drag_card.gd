@@ -3,7 +3,7 @@ class_name ModuleDragCard
 
 var module_path: String = ""
 var module_data: ShipModule
-var builder: ShipBuilder
+var builder: Control
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
