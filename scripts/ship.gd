@@ -15,6 +15,11 @@ signal module_installed(module: ShipModule, slot_index: int)
 signal module_uninstalled(module: ShipModule, slot_index: int)
 
 @export var ship_name: String = "Ship"
+@export var hull_data: ShipHull
+
+var hull_rarity: int = ShipHull.Rarity.COMMON
+var cargo_hold_capacity: int = 20
+var salvage_hold_capacity: int = 10
 
 @export_group("Durability")
 @export_range(1.0, 100000.0, 1.0) var max_hull: float = 100.0
@@ -56,12 +61,17 @@ var _movement_input: Vector2 = Vector2.ZERO
 var _turn_input: float = 0.0
 var _turn_rate_multiplier: float = 1.0
 var _time_since_last_hit: float = 999999.0
+var _base_stats: Dictionary = {}
 
 
 func _ready() -> void:
+	if hull_data != null:
+		apply_hull(hull_data)
+	else:
+		_capture_base_stats()
+		module_slots.resize(module_slot_count)
 	current_hull = max_hull
 	current_shield = max_shield
-	module_slots.resize(module_slot_count)
 	hull_changed.emit(current_hull, max_hull)
 	shield_changed.emit(current_shield, max_shield)
 	if starting_weapon_module != null and module_slot_count > 0:
@@ -205,18 +215,20 @@ func remove_item(item: Variant) -> bool:
 	return true
 
 
-## Installs any module category into a module slot. Weapon modules may
-## optionally spawn their weapon_scene as a runtime child of this ship.
+## Installs a module only when its category is compatible with the hull slot.
 func install_module(module: ShipModule, slot_index: int) -> bool:
 	if module == null or slot_index < 0 or slot_index >= module_slots.size():
 		return false
 	if module_slots[slot_index] != null:
 		return false
+	if not _slot_accepts_module(slot_index, module):
+		return false
 
 	module_slots[slot_index] = module
+	_apply_module_stats()
 	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
 		var weapon_instance: Node = module.weapon_scene.instantiate()
-		if weapon_instance is Node:
+		if weapon_instance != null:
 			add_child(weapon_instance)
 			weapon_instances.append(weapon_instance)
 	module_installed.emit(module, slot_index)
@@ -241,8 +253,102 @@ func uninstall_module(slot_index: int) -> ShipModule:
 		weapon_instances.clear()
 
 	module_uninstalled.emit(module, slot_index)
+	_apply_module_stats()
 	return module
 
 
 func is_target_in_attack_range(target: Node2D) -> bool:
 	return is_instance_valid(target) and global_position.distance_to(target.global_position) <= attack_range
+
+
+
+func _capture_base_stats() -> void:
+	_base_stats = {
+		"max_hull": max_hull,
+		"max_shield": max_shield,
+		"shield_recharge_rate": shield_recharge_rate,
+		"shield_recharge_delay": shield_recharge_delay,
+		"movement_speed": movement_speed,
+		"acceleration": acceleration,
+		"linear_drag": linear_drag,
+		"turn_rate": turn_rate,
+		"module_slot_count": module_slot_count,
+	}
+	if cargo_hold_capacity <= 0:
+		cargo_hold_capacity = 20
+	if salvage_hold_capacity <= 0:
+		salvage_hold_capacity = 10
+
+
+func apply_hull(new_hull: ShipHull) -> void:
+	if new_hull == null:
+		return
+	hull_data = new_hull
+	ship_name = new_hull.display_name
+	hull_rarity = new_hull.rarity
+	max_hull = new_hull.max_hull
+	max_shield = new_hull.max_shield
+	shield_recharge_rate = new_hull.shield_recharge_rate
+	shield_recharge_delay = new_hull.shield_recharge_delay
+	movement_speed = new_hull.movement_speed
+	acceleration = new_hull.acceleration
+	linear_drag = new_hull.linear_drag
+	turn_rate = new_hull.turn_rate
+	cargo_hold_capacity = new_hull.cargo_hold_capacity
+	salvage_hold_capacity = new_hull.salvage_hold_capacity
+	module_slot_count = new_hull.slot_categories.size()
+	module_slots.clear()
+	module_slots.resize(module_slot_count)
+	_base_stats.clear()
+	_capture_base_stats()
+	_apply_module_stats()
+
+
+func _slot_accepts_module(slot_index: int, module: ShipModule) -> bool:
+	if hull_data == null or slot_index >= hull_data.slot_categories.size():
+		return true
+	var accepted_category: int = hull_data.slot_categories[slot_index]
+	return accepted_category == -1 or accepted_category == module.category
+
+
+func _apply_module_stats() -> void:
+	if _base_stats.is_empty():
+		_capture_base_stats()
+	for stat_name: String in _base_stats.keys():
+		set(stat_name, _base_stats[stat_name])
+	cargo_hold_capacity = hull_data.cargo_hold_capacity if hull_data != null else 20
+	salvage_hold_capacity = hull_data.salvage_hold_capacity if hull_data != null else 10
+	for module: ShipModule in module_slots:
+		if module == null:
+			continue
+		for stat_name: Variant in module.stat_modifiers.keys():
+			var key: String = str(stat_name)
+			if _base_stats.has(key):
+				set(key, float(get(key)) + float(module.stat_modifiers[stat_name]))
+		cargo_hold_capacity += module.cargo_capacity_bonus
+		salvage_hold_capacity += module.salvage_capacity_bonus
+	module_slot_count = module_slots.size()
+	if is_inside_tree():
+		hull_changed.emit(current_hull, max_hull)
+		shield_changed.emit(current_shield, max_shield)
+
+
+func get_slot_category(slot_index: int) -> int:
+	if hull_data == null or slot_index < 0 or slot_index >= hull_data.slot_categories.size():
+		return -1
+	return hull_data.slot_categories[slot_index]
+
+
+func clear_loadout() -> void:
+	for slot_index: int in range(module_slots.size()):
+		if module_slots[slot_index] != null:
+			uninstall_module(slot_index)
+
+
+func apply_loadout(hull: ShipHull, modules: Array[ShipModule]) -> void:
+	clear_loadout()
+	if hull != null:
+		apply_hull(hull)
+	for slot_index: int in range(mini(modules.size(), module_slots.size())):
+		if modules[slot_index] != null:
+			install_module(modules[slot_index], slot_index)
