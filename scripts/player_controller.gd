@@ -21,6 +21,9 @@ enum MovementMode {
 
 @export_group("Mouse Movement")
 @export_range(0.0, 500.0, 1.0) var mouse_stop_distance: float = 70.0
+@export_range(1.0, 10.0, 0.1) var mouse_turn_rate_multiplier: float = 3.0
+## Approximate time for mouse steering to correct velocity toward the target.
+@export_range(0.1, 2.0, 0.05) var mouse_velocity_response_time: float = 0.4
 
 var movement_mode: MovementMode = MovementMode.KEYBOARD
 
@@ -58,22 +61,35 @@ func _process_mouse_movement() -> void:
 	var to_mouse: Vector2 = mouse_position - ship.global_position
 	var distance_to_mouse: float = to_mouse.length()
 	var movement_direction: Vector2 = Vector2.ZERO
-	var turn_input: float = ship.steer_toward_point(mouse_position)
+	var turn_input: float = 0.0
 
-	if distance_to_mouse > 0.0:
+	if not to_mouse.is_zero_approx():
+		var angle_difference: float = wrapf(to_mouse.angle() - ship.rotation, -PI, PI)
+		var effective_turn_rate: float = ship.turn_rate * mouse_turn_rate_multiplier
+		var full_turn_angle: float = deg_to_rad(maxf(effective_turn_rate, 1.0))
+		turn_input = clampf(angle_difference / full_turn_angle, -1.0, 1.0)
+
 		var direction_to_mouse: Vector2 = to_mouse / distance_to_mouse
-		var forward_speed_toward_mouse: float = ship.velocity.dot(direction_to_mouse)
-		var stopping_distance: float = 0.0
+		var distance_outside_stop_zone: float = maxf(distance_to_mouse - mouse_stop_distance, 0.0)
+		var desired_speed: float = ship.movement_speed
 
-		if ship.acceleration > 0.0 and forward_speed_toward_mouse > 0.0:
-			stopping_distance = (forward_speed_toward_mouse * forward_speed_toward_mouse) / (2.0 * ship.acceleration)
+		if ship.acceleration > 0.0:
+			# Use the braking-distance equation so desired speed falls as the
+			# ship approaches the cursor, rather than braking at the last moment.
+			desired_speed = minf(
+				ship.movement_speed,
+				sqrt(2.0 * ship.acceleration * distance_outside_stop_zone)
+			)
+		elif distance_outside_stop_zone <= 0.0:
+			desired_speed = 0.0
 
-		var should_brake: bool = distance_to_mouse <= mouse_stop_distance + stopping_distance and forward_speed_toward_mouse > 0.0
-		if should_brake:
-			if not ship.velocity.is_zero_approx():
-				movement_direction = -ship.velocity.normalized()
-		elif distance_to_mouse > mouse_stop_distance:
-			movement_direction = direction_to_mouse
+		var desired_velocity: Vector2 = direction_to_mouse * desired_speed
+		var velocity_error: Vector2 = desired_velocity - ship.velocity
+		var response_acceleration: float = maxf(
+			ship.acceleration * mouse_velocity_response_time,
+			1.0
+		)
+		movement_direction = (velocity_error / response_acceleration).limit_length(1.0)
 
 	ship.set_movement_input(movement_direction, turn_input)
 
