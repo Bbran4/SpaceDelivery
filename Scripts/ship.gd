@@ -78,17 +78,17 @@ func set_movement_input(direction: Vector2, turn: float = 0.0) -> void:
 ## Convenience method for steering toward a world-space point.
 ## Ships are assumed to face local +X (right) by default.
 func steer_toward_point(world_position: Vector2) -> float:
-	var to_target := world_position - global_position
+	var to_target : Vector2 = world_position - global_position
 	if to_target.is_zero_approx():
 		return 0.0
-	var angle_difference := wrapf(to_target.angle() - rotation, -PI, PI)
+	var angle_difference : float = wrapf(to_target.angle() - rotation, -PI, PI)
 	return clampf(angle_difference / deg_to_rad(maxf(turn_rate, 1.0)), -1.0, 1.0)
 
 
 func _apply_movement(delta: float) -> void:
 	rotation += deg_to_rad(turn_rate) * _turn_input * delta
 
-	var desired_velocity := _movement_input * movement_speed
+	var desired_velocity : Vector2 = _movement_input * movement_speed
 	velocity = velocity.move_toward(desired_velocity, acceleration * delta)
 
 
@@ -98,12 +98,12 @@ func take_damage(amount: float) -> void:
 		return
 
 	_time_since_last_hit = 0.0
-	var remaining_damage := amount
-	var shield_damage := minf(current_shield, remaining_damage)
+	var remaining_damage : float = amount
+	var shield_damage : float = minf(current_shield, remaining_damage)
 	current_shield -= shield_damage
 	remaining_damage -= shield_damage
 
-	var hull_damage := minf(current_hull, remaining_damage)
+	var hull_damage : float = minf(current_hull, remaining_damage)
 	current_hull -= hull_damage
 
 	shield_changed.emit(current_shield, max_shield)
@@ -120,9 +120,9 @@ func repair(amount: float) -> float:
 	if is_destroyed or amount <= 0.0:
 		return 0.0
 
-	var previous_hull := current_hull
+	var previous_hull : float = current_hull
 	current_hull = minf(max_hull, current_hull + amount)
-	var repaired_amount := current_hull - previous_hull
+	var repaired_amount : float = current_hull - previous_hull
 	if repaired_amount > 0.0:
 		hull_changed.emit(current_hull, max_hull)
 		repaired.emit(repaired_amount)
@@ -134,9 +134,9 @@ func restore_shield(amount: float) -> float:
 	if is_destroyed or amount <= 0.0:
 		return 0.0
 
-	var previous_shield := current_shield
+	var previous_shield : float = current_shield
 	current_shield = minf(max_shield, current_shield + amount)
-	var restored_amount := current_shield - previous_shield
+	var restored_amount : float = current_shield - previous_shield
 	if restored_amount > 0.0:
 		shield_changed.emit(current_shield, max_shield)
 	return restored_amount
@@ -165,7 +165,7 @@ func add_item(item: Variant) -> void:
 
 
 func remove_item(item: Variant) -> bool:
-	var index := inventory.find(item)
+	var index : int = inventory.find(item)
 	if index == -1:
 		return false
 	inventory.remove_at(index)
@@ -182,7 +182,7 @@ func install_module(module: ShipModule, slot_index: int) -> bool:
 
 	module_slots[slot_index] = module
 	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
-		var weapon_instance := module.weapon_scene.instantiate()
+		var weapon_instance : Node = module.weapon_scene.instantiate()
 		if weapon_instance is Node:
 			add_child(weapon_instance)
 			weapon_instances.append(weapon_instance)
