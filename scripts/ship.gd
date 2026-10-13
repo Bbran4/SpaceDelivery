@@ -65,16 +65,20 @@ var _base_stats: Dictionary = {}
 
 
 func _ready() -> void:
-	if hull_data != null:
-		apply_hull(hull_data)
-	else:
-		_capture_base_stats()
-		module_slots.resize(module_slot_count)
+	var loaded_saved_build: bool = false
+	if is_in_group("player_ship"):
+		loaded_saved_build = _load_active_build()
+	if not loaded_saved_build:
+		if hull_data != null:
+			apply_hull(hull_data)
+		else:
+			_capture_base_stats()
+			module_slots.resize(module_slot_count)
 	current_hull = max_hull
 	current_shield = max_shield
 	hull_changed.emit(current_hull, max_hull)
 	shield_changed.emit(current_shield, max_shield)
-	if starting_weapon_module != null and module_slot_count > 0:
+	if not loaded_saved_build and starting_weapon_module != null and module_slot_count > 0:
 		install_module(starting_weapon_module, 0)
 
 
@@ -352,3 +356,25 @@ func apply_loadout(hull: ShipHull, modules: Array[ShipModule]) -> void:
 	for slot_index: int in range(mini(modules.size(), module_slots.size())):
 		if modules[slot_index] != null:
 			install_module(modules[slot_index], slot_index)
+
+
+
+func _load_active_build() -> bool:
+	var build: Dictionary = ShipBuildStore.get_active_build()
+	if build.is_empty():
+		return false
+	var hull_path: String = str(build.get("hull_path", ""))
+	var loaded_hull: ShipHull = load(hull_path) as ShipHull if not hull_path.is_empty() else null
+	if loaded_hull == null:
+		push_warning("Saved ship build references a missing hull: " + hull_path)
+		return false
+	apply_hull(loaded_hull)
+	var module_paths: Variant = build.get("module_paths", PackedStringArray())
+	for slot_index: int in range(mini(module_paths.size(), module_slots.size())):
+		var module_path: String = str(module_paths[slot_index])
+		if module_path.is_empty():
+			continue
+		var module: ShipModule = load(module_path) as ShipModule
+		if module != null and not install_module(module, slot_index):
+			push_warning("Could not install saved module in slot %d." % slot_index)
+	return true
