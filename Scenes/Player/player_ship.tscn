@@ -1,20 +1,23 @@
-[gd_scene format=3 uid="uid://dg3ycwbm8bu27"]
+[gd_scene load_steps=5 format=3]
 
-[ext_resource type="Script" uid="uid://bjnkwjf5oqwjb" path="res://scripts/ship.gd" id="1_ship"]
-[ext_resource type="Script" uid="uid://dy2drfp7j0ad6" path="res://scripts/player_controller.gd" id="2_controller"]
+[ext_resource type="Script" path="res://Scripts/ship.gd" id="1_ship"]
+[ext_resource type="Script" path="res://Scripts/player_controller.gd" id="2_controller"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/movement_mode_hud.tscn" id="3_movement_hud"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_collision"]
 radius = 14.0
 
-[node name="PlayerShip" type="CharacterBody2D" unique_id=916538766]
+[node name="PlayerShip" type="CharacterBody2D"]
 script = ExtResource("1_ship")
 
-[node name="ShipVisual" type="Polygon2D" parent="." unique_id=902474622]
-color = Color(0.35, 0.85, 1, 1)
+[node name="ShipVisual" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(18, 0, -12, -11, -7, 0, -12, 11)
+color = Color(0.35, 0.85, 1, 1)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1885369647]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_collision")
 
-[node name="PlayerController" type="Node" parent="." unique_id=1341499898]
+[node name="PlayerController" type="Node" parent="."]
 script = ExtResource("2_controller")
+
+[node name="MovementModeHUD" parent="." instance=ExtResource("3_movement_hud")]
