@@ -223,7 +223,6 @@ func _refresh_route_preview() -> void:
 			branch_button.custom_minimum_size = Vector2(0, 64)
 			branch_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			branch_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-			branch_button.autowrap_mode = true
 			branch_button.pressed.connect(_on_branch_selected.bind(branch.node_id))
 			branch_row.add_child(branch_button)
 		route_preview.add_child(branch_row)
