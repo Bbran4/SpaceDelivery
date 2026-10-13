@@ -32,7 +32,6 @@ var movement_mode: MovementMode = MovementMode.KEYBOARD
 var current_target: Ship
 var _reticle: TargetReticle
 var _cycled_target: Ship
-var _hud_target: Ship
 
 
 func _ready() -> void:
@@ -99,7 +98,6 @@ func _update_targeting() -> void:
 	if new_target != null:
 		if new_target != current_target:
 			current_target = new_target
-			_hud_target = new_target
 			target_changed.emit(current_target)
 	elif movement_mode == MovementMode.MOUSE:
 		if is_instance_valid(current_target) or current_target != null:
@@ -108,12 +106,11 @@ func _update_targeting() -> void:
 	else:
 		current_target = null
 
-	if movement_mode == MovementMode.KEYBOARD and is_instance_valid(_hud_target):
-		if not is_instance_valid(_hud_target) or _hud_target.is_destroyed or not _hud_target.is_inside_tree():
-			_hud_target = null
+	if current_target != null and not is_instance_valid(current_target):
+		current_target = null
+		if movement_mode == MovementMode.MOUSE:
 			target_changed.emit(null)
-
-	if is_instance_valid(current_target) and (current_target.is_destroyed or not current_target.is_inside_tree()):
+	elif is_instance_valid(current_target) and (current_target.is_destroyed or not current_target.is_inside_tree()):
 		current_target = null
 		if movement_mode == MovementMode.MOUSE:
 			target_changed.emit(null)
