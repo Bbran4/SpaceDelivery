@@ -429,6 +429,8 @@ func _clear_container(container: Node) -> void:
 
 func _on_back_pressed() -> void:
 	visible = false
-	modules_panel.visible = false
+	module_title.visible = false
+	module_hint.visible = false
+	module_scroll.visible = false
 	selected_slot_index = -1
 	builder_closed.emit()
