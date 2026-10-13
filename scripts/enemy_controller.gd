@@ -5,6 +5,7 @@ class_name EnemyController
 
 @export var ship: Ship
 @export_range(0.0, 2000.0, 1.0) var preferred_distance: float = 180.0
+@export_range(1.0, 89.0, 1.0) var pursuit_angle_tolerance: float = 65.0
 
 var target: Ship
 
@@ -12,6 +13,9 @@ var target: Ship
 func _ready() -> void:
 	if ship == null:
 		ship = get_parent() as Ship
+	if ship != null and ship.enemy_loadout != null:
+		preferred_distance = ship.enemy_loadout.preferred_distance
+		pursuit_angle_tolerance = ship.enemy_loadout.pursuit_angle_tolerance
 
 	var player_controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
 	if player_controller != null:
@@ -39,7 +43,7 @@ func _physics_process(_delta: float) -> void:
 	)
 
 	var movement_direction: Vector2 = Vector2.ZERO
-	if distance_to_target > preferred_distance and absf(angle_difference) < deg_to_rad(65.0):
+	if distance_to_target > preferred_distance and absf(angle_difference) < deg_to_rad(pursuit_angle_tolerance):
 		movement_direction = Vector2.RIGHT.rotated(ship.global_rotation)
 
 	ship.set_movement_input(movement_direction, turn_input)
