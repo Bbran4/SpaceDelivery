@@ -41,13 +41,13 @@ func _ready() -> void:
 	if target_reticle_scene != null and get_tree().current_scene != null:
 		_reticle = target_reticle_scene.instantiate() as TargetReticle
 		if _reticle != null:
-			get_tree().current_scene.add_child(_reticle)
+			get_tree().current_scene.add_child.call_deferred(_reticle)
 			_reticle.player_ship = ship
 			_reticle.target_radius = mouse_target_radius
 
 	if target_hud_scene != null and get_tree().current_scene != null:
 		var target_hud: Node = target_hud_scene.instantiate()
-		get_tree().current_scene.add_child(target_hud)
+		get_tree().current_scene.add_child.call_deferred(target_hud)
 
 
 func _process(_delta: float) -> void:
@@ -79,7 +79,7 @@ func _physics_process(_delta: float) -> void:
 func _update_targeting() -> void:
 	var new_target: Ship
 	if movement_mode == MovementMode.MOUSE:
-		if is_instance_valid(_cycled_target) and not _cycled_target.is_destroyed:
+		if is_instance_valid(_cycled_target) and not _cycled_target.is_destroyed and _cycled_target.is_inside_tree():
 			if ship.global_position.distance_to(_cycled_target.global_position) <= _get_player_weapon_range():
 				new_target = _cycled_target
 			else:
@@ -91,11 +91,14 @@ func _update_targeting() -> void:
 	else:
 		new_target = _find_enemy_under_mouse()
 
+	if not is_instance_valid(new_target):
+		new_target = null
+
 	if new_target != current_target:
 		current_target = new_target
 		target_changed.emit(current_target)
 
-	if _reticle != null:
+	if is_instance_valid(_reticle):
 		if movement_mode == MovementMode.MOUSE:
 			_reticle.follow_mouse = false
 			_reticle.target = current_target
@@ -109,7 +112,7 @@ func _find_nearest_enemy_in_range() -> Ship:
 	var nearest_distance: float = _get_player_weapon_range()
 	for node: Node in get_tree().get_nodes_in_group("enemy"):
 		var enemy: Ship = node as Ship
-		if enemy == null or enemy.is_destroyed:
+		if enemy == null or enemy.is_destroyed or not enemy.is_inside_tree():
 			continue
 		var distance: float = ship.global_position.distance_to(enemy.global_position)
 		if distance <= nearest_distance:
@@ -142,7 +145,7 @@ func _cycle_target() -> void:
 	var enemies: Array[Ship] = []
 	for node: Node in get_tree().get_nodes_in_group("enemy"):
 		var enemy: Ship = node as Ship
-		if enemy != null and not enemy.is_destroyed and ship.global_position.distance_to(enemy.global_position) <= _get_player_weapon_range():
+		if enemy != null and not enemy.is_destroyed and enemy.is_inside_tree() and ship.global_position.distance_to(enemy.global_position) <= _get_player_weapon_range():
 			enemies.append(enemy)
 	if enemies.is_empty():
 		_cycled_target = null
