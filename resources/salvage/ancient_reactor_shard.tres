@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SalvageItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/salvage_item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+item_id = &"ancient_reactor_shard"
+display_name = "Ancient Reactor Shard"
+description = "An exceptionally rare reactor fragment with unusual energy properties."
+rarity = 4
+credit_value = 500
