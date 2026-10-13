@@ -1,10 +1,12 @@
-[gd_scene load_steps=7 format=3 uid="uid://dg3ycwbm8bu27"]
+[gd_scene load_steps=9 format=3 uid="uid://dg3ycwbm8bu27"]
 
 [ext_resource type="Script" uid="uid://bjnkwjf5oqwjb" path="res://scripts/ship.gd" id="1_ship"]
 [ext_resource type="Script" uid="uid://dy2drfp7j0ad6" path="res://scripts/player_controller.gd" id="2_controller"]
 [ext_resource type="PackedScene" path="res://scenes/ui/movement_mode_hud.tscn" id="3_movement_hud"]
 [ext_resource type="Resource" path="res://resources/modules/basic_laser_module.tres" id="4_weapon_module"]
 [ext_resource type="Script" path="res://scripts/camera_shake.gd" id="5_camera_shake"]
+[ext_resource type="PackedScene" path="res://scenes/ui/target_reticle.tscn" id="6_target_reticle"]
+[ext_resource type="PackedScene" path="res://scenes/ui/target_hud.tscn" id="7_target_hud"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_collision"]
 radius = 14.0
@@ -22,6 +24,8 @@ shape = SubResource("CircleShape2D_collision")
 
 [node name="PlayerController" type="Node" parent="." unique_id=1179589106]
 script = ExtResource("2_controller")
+target_reticle_scene = ExtResource("6_target_reticle")
+target_hud_scene = ExtResource("7_target_hud")
 
 [node name="MovementModeHUD" parent="." unique_id=636178795 instance=ExtResource("3_movement_hud")]
 
