@@ -56,6 +56,7 @@ var is_destroyed: bool = false
 var inventory: Array = []
 var module_slots: Array[ShipModule] = []
 var weapon_instances: Array[Node] = []
+var weapon_instances_by_slot: Dictionary = {}
 
 var _movement_input: Vector2 = Vector2.ZERO
 var _turn_input: float = 0.0
@@ -235,6 +236,7 @@ func install_module(module: ShipModule, slot_index: int) -> bool:
 		if weapon_instance != null:
 			add_child(weapon_instance)
 			weapon_instances.append(weapon_instance)
+			weapon_instances_by_slot[slot_index] = weapon_instance
 	module_installed.emit(module, slot_index)
 	return true
 
@@ -248,13 +250,12 @@ func uninstall_module(slot_index: int) -> ShipModule:
 		return null
 
 	module_slots[slot_index] = null
-	# Runtime weapon instances should ideally be associated with their module
-	# in a later weapon manager; clear the current simple runtime list here.
-	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
-		for weapon in weapon_instances:
-			if is_instance_valid(weapon):
-				weapon.queue_free()
-		weapon_instances.clear()
+	if module.category == ShipModule.Category.WEAPON and weapon_instances_by_slot.has(slot_index):
+		var weapon: Node = weapon_instances_by_slot[slot_index] as Node
+		if is_instance_valid(weapon):
+			weapon.queue_free()
+		weapon_instances.erase(weapon)
+		weapon_instances_by_slot.erase(slot_index)
 
 	module_uninstalled.emit(module, slot_index)
 	_apply_module_stats()
@@ -288,6 +289,10 @@ func apply_hull(new_hull: ShipHull) -> void:
 	if new_hull == null:
 		return
 	hull_data = new_hull
+	var ship_visual: Polygon2D = get_node_or_null("ShipVisual") as Polygon2D
+	if ship_visual != null:
+		ship_visual.color = new_hull.preview_color
+		ship_visual.polygon = new_hull.preview_polygon
 	ship_name = new_hull.display_name
 	hull_rarity = new_hull.rarity
 	max_hull = new_hull.max_hull
@@ -332,6 +337,8 @@ func _apply_module_stats() -> void:
 		cargo_hold_capacity += module.cargo_capacity_bonus
 		salvage_hold_capacity += module.salvage_capacity_bonus
 	module_slot_count = module_slots.size()
+	current_hull = minf(current_hull, max_hull)
+	current_shield = minf(current_shield, max_shield)
 	if is_inside_tree():
 		hull_changed.emit(current_hull, max_hull)
 		shield_changed.emit(current_shield, max_shield)
