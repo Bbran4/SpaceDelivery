@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyRewardTable" load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy_reward_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://scripts/salvage_item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/salvage/scrap_components.tres" id="3_common"]
+[ext_resource type="Resource" path="res://resources/salvage/refined_circuit.tres" id="4_uncommon"]
+[ext_resource type="Resource" path="res://resources/salvage/targeting_crystal.tres" id="5_rare"]
+[ext_resource type="Resource" path="res://resources/salvage/ancient_reactor_shard.tres" id="6_legendary"]
+
+[resource]
+script = ExtResource("1_table")
+minimum_credits = 8
+maximum_credits = 18
+drop_die_sides = 8
+drop_success_face = 1
+legendary_chance = 0.02
+rare_chance = 0.08
+uncommon_chance = 0.15
+common_chance = 0.25
+legendary_items = Array[ExtResource("2_item")]([ExtResource("6_legendary")])
+rare_items = Array[ExtResource("2_item")]([ExtResource("5_rare")])
+uncommon_items = Array[ExtResource("2_item")]([ExtResource("4_uncommon")])
+common_items = Array[ExtResource("2_item")]([ExtResource("3_common")])
