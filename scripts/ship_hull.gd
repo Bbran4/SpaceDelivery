@@ -16,6 +16,7 @@ enum Rarity {
 @export_multiline var description: String = "A dependable small delivery ship."
 @export var rarity: Rarity = Rarity.COMMON
 @export var preview_color: Color = Color(0.35, 0.85, 1.0, 1.0)
+@export var preview_polygon: PackedVector2Array = PackedVector2Array([Vector2(62, 0), Vector2(-35, -34), Vector2(-22, 0), Vector2(-35, 34)])
 
 @export_group("Base Stats")
 @export_range(1.0, 100000.0, 1.0) var max_hull: float = 100.0
