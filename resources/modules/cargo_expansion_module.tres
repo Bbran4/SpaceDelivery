@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"cargo_expansion"
+display_name = "Cargo Expansion"
+description = "Adds room for more contracted deliveries."
+category = 3
+rarity = 0
+cargo_capacity_bonus = 12
