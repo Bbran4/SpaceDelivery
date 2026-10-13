@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ShipModule" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_module.gd" id="1_module"]
+
+[resource]
+script = ExtResource("1_module")
+module_id = &"navigation_computer"
+display_name = "Navigation Computer"
+description = "Improves handling and helps locate recoverable cargo."
+category = 4
+rarity = 1
+stat_modifiers = {"movement_speed": 10.0, "turn_rate": 30.0}
+salvage_capacity_bonus = 5
