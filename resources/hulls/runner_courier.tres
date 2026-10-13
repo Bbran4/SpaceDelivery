@@ -9,6 +9,7 @@ display_name = "Runner Courier"
 description = "A nimble hull for time-sensitive deliveries, with less built-in cargo space."
 rarity = 2
 preview_color = Color(0.55, 0.95, 0.65, 1)
+preview_polygon = PackedVector2Array(65, 0, -18, -24, -42, -10, -32, 0, -42, 10, -18, 24)
 max_hull = 80.0
 max_shield = 65.0
 shield_recharge_rate = 10.0
