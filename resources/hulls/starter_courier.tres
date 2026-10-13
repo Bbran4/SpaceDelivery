@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ShipHull" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ship_hull.gd" id="1_hull"]
+
+[resource]
+script = ExtResource("1_hull")
+hull_id = &"starter_courier"
+display_name = "Starter Courier"
+description = "A balanced delivery hull with one slot for each major module type."
+rarity = 0
+preview_color = Color(0.35, 0.85, 1, 1)
+max_hull = 100.0
+max_shield = 50.0
+shield_recharge_rate = 8.0
+shield_recharge_delay = 2.0
+movement_speed = 220.0
+acceleration = 500.0
+linear_drag = 35.0
+turn_rate = 180.0
+cargo_hold_capacity = 20
+salvage_hold_capacity = 10
+slot_categories = Array[int]([0, 1, 2, 3, 4])
