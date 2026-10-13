@@ -232,7 +232,7 @@ text = "Load Build"
 
 [node name="TestFlightButton" type="Button" parent="Margin/Layout/Footer/BuildControls" unique_id=1575735951]
 layout_mode = 2
-text = "Test Flight"
+text = "Return to HQ"
 
 [node name="StatusLabel" type="Label" parent="Margin/Layout/Footer" unique_id=756130612]
 unique_name_in_owner = true
