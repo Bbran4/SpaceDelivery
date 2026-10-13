@@ -24,6 +24,10 @@ func _process(delta: float) -> void:
 		has_target = true
 
 	visible = has_target
+	if follow_mouse:
+		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN if has_target else Input.MOUSE_MODE_VISIBLE)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	if has_target:
 		_progress = fposmod(_progress + delta / maxf(progress_cycle_seconds, 0.01), 1.0)
 	else:
@@ -57,3 +61,7 @@ func _is_enemy_under_mouse() -> bool:
 		if global_position.distance_to(enemy.global_position) <= target_radius:
 			return true
 	return false
+
+
+func _exit_tree() -> void:
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
