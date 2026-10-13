@@ -33,7 +33,6 @@ func _physics_process(delta: float) -> void:
 	if _cooldown > 0.0:
 		return
 
-	var target: Ship = _find_target()
 	if ship.is_in_group("player_ship"):
 		var controller: PlayerController = get_tree().get_first_node_in_group("player_controller") as PlayerController
 		if controller != null and controller.movement_mode == PlayerController.MovementMode.KEYBOARD:
@@ -46,6 +45,7 @@ func _physics_process(delta: float) -> void:
 			_cooldown = 1.0 / maxf(weapon_data.fire_rate, 0.1)
 			return
 
+	var target: Ship = _find_target()
 	if target == null:
 		return
 
