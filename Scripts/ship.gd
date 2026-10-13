@@ -28,7 +28,10 @@ signal module_uninstalled(module: ShipModule, slot_index: int)
 
 @export_group("Movement")
 @export_range(0.0, 10000.0, 1.0) var movement_speed: float = 220.0
+## Acceleration applied along the ship's facing direction when thrust is used.
 @export_range(0.0, 10000.0, 1.0) var acceleration: float = 500.0
+## Passive slowdown applied while no thrust input is active, in pixels per second squared.
+@export_range(0.0, 2000.0, 1.0) var linear_drag: float = 35.0
 ## Maximum turning speed in degrees per second.
 @export_range(0.0, 1440.0, 1.0) var turn_rate: float = 180.0
 
@@ -88,8 +91,12 @@ func steer_toward_point(world_position: Vector2) -> float:
 func _apply_movement(delta: float) -> void:
 	rotation += deg_to_rad(turn_rate) * _turn_input * delta
 
-	var desired_velocity : Vector2 = _movement_input * movement_speed
-	velocity = velocity.move_toward(desired_velocity, acceleration * delta)
+	if not _movement_input.is_zero_approx():
+		velocity += _movement_input * acceleration * delta
+	else:
+		velocity = velocity.move_toward(Vector2.ZERO, linear_drag * delta)
+
+	velocity = velocity.limit_length(movement_speed)
 
 
 ## Damage consumes shields first, then hull. Negative damage is ignored.
