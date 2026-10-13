@@ -73,6 +73,10 @@ func _fire_at(target: Ship) -> void:
 	projectile.damage = weapon_data.projectile_damage
 	projectile.speed = weapon_data.projectile_speed
 	projectile.lifetime = weapon_data.projectile_lifetime
+	projectile.impact_radius = weapon_data.impact_radius
+	projectile.visual_style = weapon_data.projectile_style
+	projectile.visual_color = weapon_data.projectile_color
+	projectile.visual_scale = weapon_data.projectile_scale
 	projectile.target_group = _target_group
 	projectile.global_position = global_position
 	projectile.global_rotation = global_position.direction_to(target.global_position).angle()
