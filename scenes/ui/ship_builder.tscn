@@ -42,7 +42,7 @@ layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="Header" type="HBoxContainer" parent="OuterMargin/Root"]
-custom_minimum_size = Vector2(0, 42)
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 theme_override_constants/separation = 12
 
@@ -53,11 +53,13 @@ theme_override_constants/separation = 2
 
 [node name="Title" type="Label" parent="OuterMargin/Root/Header/TitleBlock"]
 layout_mode = 2
+clip_text = false
 text = "SHIP BUILDER"
 theme_override_font_sizes/font_size = 24
 
 [node name="Subtitle" type="Label" parent="OuterMargin/Root/Header/TitleBlock"]
 layout_mode = 2
+clip_text = false
 text = "Build your courier. Drag modules into compatible slots."
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.62, 0.73, 0.84, 1)
@@ -183,7 +185,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
 [node name="Footer" type="VBoxContainer" parent="OuterMargin/Root"]
-custom_minimum_size = Vector2(0, 68)
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
 theme_override_constants/separation = 5
 
@@ -219,8 +221,10 @@ text = "Test Flight"
 
 [node name="StatusLabel" type="Label" parent="OuterMargin/Root/Footer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 22)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 text = "Saved builds are stored locally on this device."
 autowrap_mode = 3
 clip_text = false
