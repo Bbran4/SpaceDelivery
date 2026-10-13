@@ -37,6 +37,7 @@ signal module_uninstalled(module: ShipModule, slot_index: int)
 
 @export_group("Ship Loadout")
 @export_range(0, 32, 1) var module_slot_count: int = 4
+@export var starting_weapon_module: ShipModule
 
 var current_hull: float
 var current_shield: float
@@ -59,6 +60,8 @@ func _ready() -> void:
 	module_slots.resize(module_slot_count)
 	hull_changed.emit(current_hull, max_hull)
 	shield_changed.emit(current_shield, max_shield)
+	if starting_weapon_module != null and module_slot_count > 0:
+		install_module(starting_weapon_module, 0)
 
 
 func _physics_process(delta: float) -> void:
