@@ -231,8 +231,12 @@ func install_module(module: ShipModule, slot_index: int) -> bool:
 	if not _slot_accepts_module(slot_index, module):
 		return false
 
+	var previous_max_shield: float = max_shield
 	module_slots[slot_index] = module
 	_apply_module_stats()
+	if module.category == ShipModule.Category.DEFENSE and previous_max_shield <= 0.0 and max_shield > 0.0:
+		current_shield = max_shield
+		shield_changed.emit(current_shield, max_shield)
 	if module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
 		var weapon_instance: Node = module.weapon_scene.instantiate()
 		if weapon_instance != null:
