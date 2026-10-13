@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_data.gd" id="1_data"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "Heavy Cannon"
+fire_rate = 0.55
+range = 420.0
+projectile_damage = 30.0
+projectile_speed = 380.0
+projectile_lifetime = 1.2
+projectile_style = 1
+projectile_color = Color(1, 0.38, 0.12, 1)
+projectile_scale = 1.45
+impact_radius = 44.0
