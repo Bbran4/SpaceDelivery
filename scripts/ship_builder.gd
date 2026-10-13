@@ -21,7 +21,9 @@ const CATEGORY_ORDER: Array[int] = [
 	ShipModule.Category.CARGO,
 	ShipModule.Category.UTILITY,
 ]
+const NARROW_WIDTH: float = 820.0
 
+@onready var body: BoxContainer = %Body
 @onready var hull_picker: OptionButton = %HullPicker
 @onready var preview_ship: Polygon2D = %PreviewShip
 @onready var preview_canvas: Control = %PreviewCanvas
@@ -39,12 +41,19 @@ var selected_module_paths: Array[String] = []
 
 
 func _ready() -> void:
+	resized.connect(_update_layout)
 	preview_canvas.resized.connect(_center_ship_preview)
+	_update_layout()
 	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
 	if hull_picker.item_count > 0:
 		_on_hull_selected(0)
+
+
+func _update_layout() -> void:
+	# Three columns on wide windows, stacked panels (scrollable) on narrow ones.
+	body.vertical = size.x < NARROW_WIDTH
 
 
 func _populate_hulls() -> void:
@@ -77,8 +86,19 @@ func _on_hull_selected(index: int) -> void:
 
 
 func _center_ship_preview() -> void:
-	if is_instance_valid(preview_canvas) and is_instance_valid(preview_ship):
-		preview_ship.position = preview_canvas.size / 2.0
+	if not is_instance_valid(preview_canvas) or not is_instance_valid(preview_ship):
+		return
+	preview_ship.position = preview_canvas.size / 2.0
+	var bounds: Rect2 = Rect2()
+	for i: int in range(preview_ship.polygon.size()):
+		var point: Vector2 = preview_ship.polygon[i]
+		bounds = Rect2(point, Vector2.ZERO) if i == 0 else bounds.expand(point)
+	if bounds.size.x > 0.0 and bounds.size.y > 0.0:
+		var fit: float = minf(
+			preview_canvas.size.x * 0.7 / bounds.size.x,
+			preview_canvas.size.y * 0.7 / bounds.size.y
+		)
+		preview_ship.scale = Vector2.ONE * clampf(fit, 0.4, 3.0)
 
 
 func _update_hull_preview() -> void:
