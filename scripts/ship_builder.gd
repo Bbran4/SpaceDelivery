@@ -60,6 +60,7 @@ func _on_hull_selected(index: int) -> void:
 	for slot_index: int in range(selected_module_paths.size()):
 		selected_module_paths[slot_index] = ""
 	preview_ship.color = selected_hull.preview_color
+	preview_ship.polygon = selected_hull.preview_polygon
 	hull_description.text = "%s\n%s" % [selected_hull.description, "Rarity: " + _rarity_name(selected_hull.rarity)]
 	_rebuild_slot_list()
 	_refresh_stats()
@@ -67,6 +68,7 @@ func _on_hull_selected(index: int) -> void:
 
 func _rebuild_slot_list() -> void:
 	for child: Node in slot_list.get_children():
+		slot_list.remove_child(child)
 		child.queue_free()
 	if selected_hull == null:
 		return
