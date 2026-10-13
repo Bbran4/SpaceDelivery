@@ -44,12 +44,17 @@ func _find_target() -> Ship:
 		if controller == null:
 			return null
 		var selected_target: Ship = controller.current_target
-		if selected_target == null or selected_target.is_destroyed:
-			return null
-		if ship.global_position.distance_to(selected_target.global_position) > weapon_data.range:
-			return null
-		return selected_target
+		if selected_target != null and not selected_target.is_destroyed:
+			if ship.global_position.distance_to(selected_target.global_position) <= weapon_data.range:
+				return selected_target
+		# If the selected target was destroyed or is outside this weapon's range,
+		# this weapon independently acquires another hostile target.
+		return _find_nearest_target_in_range()
 
+	return _find_nearest_target_in_range()
+
+
+func _find_nearest_target_in_range() -> Ship:
 	var nearest_target: Ship
 	var nearest_distance: float = weapon_data.range
 
