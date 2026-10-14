@@ -171,6 +171,7 @@ func _run_batch(seed_count: int) -> void:
 		for example: String in failure_examples:
 			output += "[color=red]%s[/color]\n" % example
 		output += "\n"
+		print(output)
 		results.text = output
 		await get_tree().process_frame
 
