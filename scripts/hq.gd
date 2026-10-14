@@ -26,6 +26,7 @@ var selected_details: VBoxContainer
 var deliver_button: Button
 var weapon_warning_label: Label
 var test_flight_warning_label: Label
+var cargo_capacity_warning_label: Label
 
 
 func _ready() -> void:
@@ -131,6 +132,15 @@ func _build_deliver_button() -> void:
 
 
 func _build_weapon_warnings() -> void:
+	cargo_capacity_warning_label = Label.new()
+	cargo_capacity_warning_label.text = "INSUFFICIENT CARGO CAPACITY FOR SELECTED CONTRACT"
+	cargo_capacity_warning_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.24))
+	cargo_capacity_warning_label.add_theme_font_size_override("font_size", 12)
+	cargo_capacity_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cargo_capacity_warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	services.add_child(cargo_capacity_warning_label)
+	cargo_capacity_warning_label.visible = false
+	services.move_child(cargo_capacity_warning_label, services.get_children().find(deliver_button))
 	weapon_warning_label = Label.new()
 	weapon_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
 	weapon_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
@@ -152,14 +162,30 @@ func _refresh_weapon_gates() -> void:
 	var has_weapon: bool = not active_build.is_empty()
 	if active_build.is_empty():
 		has_weapon = ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
+	var has_capacity: bool = selected_mission == null or _active_ship_cargo_capacity() >= selected_mission.cargo_capacity_required
 	if is_instance_valid(deliver_button):
-		deliver_button.disabled = selected_mission == null or not has_weapon
+		deliver_button.disabled = selected_mission == null or not has_weapon or not has_capacity
+	if is_instance_valid(cargo_capacity_warning_label):
+		cargo_capacity_warning_label.visible = selected_mission != null and has_weapon and not has_capacity
 	if is_instance_valid(test_flight_button):
 		test_flight_button.disabled = not has_weapon
 	if is_instance_valid(weapon_warning_label):
 		weapon_warning_label.visible = not has_weapon
 	if is_instance_valid(test_flight_warning_label):
 		test_flight_warning_label.visible = not has_weapon
+
+
+func _active_ship_cargo_capacity() -> int:
+	var build: Dictionary = ShipBuildStore.get_active_build()
+	if not build.is_empty():
+		return ShipBuildStore.get_cargo_capacity(
+			str(build.get("hull_path", "")),
+			build.get("module_paths", PackedStringArray())
+		)
+	return ShipBuildStore.get_cargo_capacity(
+		"res://resources/hulls/starter_courier.tres",
+		PackedStringArray(["res://resources/modules/basic_laser_module.tres"])
+	)
 
 
 func _show_salvage_recovery() -> void:
@@ -283,7 +309,7 @@ func _refresh_selected_details() -> void:
 	selected_details.add_child(client_label)
 
 	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
+	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nCARGO CAPACITY REQUIRED  /  %d UNITS\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
 		selected_mission.cargo_name,
 		selected_mission.cargo_type,
 		selected_mission.cargo_description,
@@ -291,6 +317,7 @@ func _refresh_selected_details() -> void:
 		selected_mission.destination_name,
 		selected_mission.base_reward_credits,
 		selected_mission.risk_label,
+		selected_mission.cargo_capacity_required,
 		selected_mission.minimum_delivery_integrity_percent,
 		selected_mission.full_reward_integrity_percent,
 		selected_mission.damaged_cargo_payout_penalty_percent,
