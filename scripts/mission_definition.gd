@@ -9,7 +9,7 @@ class_name MissionDefinition
 @export var client_name: String = ""
 @export var cargo_name: String = "Undeclared Cargo"
 @export var cargo_type: String = "General Freight"
-@export_enum("Standard", "Fragile", "Bulk", "Valuable") var cargo_variant: int = CargoRules.CargoVariant.STANDARD
+@export_enum("Standard", "Fragile", "Bulk", "Valuable") var cargo_variant: int = 0
 @export var cargo_description: String = ""
 @export_range(0, 1000000, 1) var cargo_value_credits: int = 0
 @export_range(1, 100000, 1) var cargo_capacity_required: int = 1
