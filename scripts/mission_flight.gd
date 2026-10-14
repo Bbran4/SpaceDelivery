@@ -224,15 +224,22 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		MissionRunState.save_ship_condition(player_ship)
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 
-	var credits_before_payout: int = MissionRunState.total_credits
-	if is_instance_valid(player_ship):
-		credits_before_payout = player_ship.credits
-
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
 	var route_bonus: int = selected_branch.bonus_credits if selected_branch != null else 0
 	var credits_collected: int = 0
 	if is_instance_valid(player_ship):
 		credits_collected = maxi(0, player_ship.credits - credits_at_encounter_start)
+
+	# Salvage-profile routes include a recoverable cache, paid only when the delivery succeeds.
+	var salvage_recovered: int = 50 if success and selected_branch != null and selected_branch.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE else 0
+	if salvage_recovered > 0 and is_instance_valid(player_ship):
+		player_ship.credits += salvage_recovered
+		player_ship.credits_changed.emit(player_ship.credits)
+
+	var credits_before_payout: int = MissionRunState.total_credits
+	if is_instance_valid(player_ship):
+		credits_before_payout = player_ship.credits
+
 	var cargo_penalty_percent: int = 0
 	if success and cargo_integrity < float(mission.full_reward_integrity_percent):
 		cargo_penalty_percent = mission.damaged_cargo_payout_penalty_percent
@@ -244,7 +251,8 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		result_message,
 		cargo_condition,
 		cargo_penalty_percent,
-		credits_collected
+		credits_collected,
+		salvage_recovered
 	)
 
 	if is_instance_valid(player_ship):
@@ -376,8 +384,9 @@ func _show_result_screen(result: Dictionary) -> void:
 	content.add_child(message_label)
 
 	var payout_label: Label = Label.new()
-	payout_label.text = "SALVAGED CREDITS  /  +%d CR\nCONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
+	payout_label.text = "SALVAGED CREDITS  /  +%d CR\nROUTE CACHE  /  +%d CR\nCONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
 		int(result.get("credits_collected", 0)),
+		int(result.get("salvage_recovered", 0)),
 		int(result.get("base_reward", 0)),
 		int(result.get("route_bonus", 0)),
 		int(result.get("cargo_penalty", 0)),
