@@ -333,7 +333,10 @@ func _on_deliver_pressed() -> void:
 		status_label.text = "CONTRACT INVALID  /  %s" % ObjectiveTracker.last_error
 		deliver_button.disabled = true
 		return
-	MissionRunState.begin_mission(selected_mission)
+	if not MissionRunState.begin_mission(selected_mission):
+		status_label.text = "ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG"
+		deliver_button.disabled = false
+		return
 	deliver_button.disabled = true
 	status_label.text = "GENERATING ROUTE INTELLIGENCE  /  %s" % selected_mission.title.to_upper()
 	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
