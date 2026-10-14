@@ -34,6 +34,7 @@ title = "Valuable Courier Package"
 client_name = "Asterion Private Logistics"
 cargo_name = "Quantum Navigation Core"
 cargo_type = "High-Value Electronics"
+cargo_variant = 3
 cargo_description = "A compact navigation core with an extravagant declared value and a remarkably ordinary shipping label."
 cargo_value_credits = 1250
 cargo_damage_sensitivity = 1.0
