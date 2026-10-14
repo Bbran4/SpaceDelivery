@@ -255,7 +255,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		credits_collected += maxi(0, player_ship.credits - credits_at_encounter_start)
 
 	# Salvage-profile routes include a recoverable cache, paid only when the delivery succeeds.
-	var salvage_recovered: int = 50 if success and selected_branch != null and selected_branch.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE else 0
+	var salvage_recovered: int = 50 if selected_branch != null and selected_branch.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE else 0
 	var credits_before_payout: int = MissionRunState.total_credits
 	if is_instance_valid(player_ship):
 		credits_before_payout = player_ship.credits
