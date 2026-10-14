@@ -211,6 +211,7 @@ func _on_enemy_destroyed() -> void:
 	if mission_resolved:
 		return
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
+	ObjectiveTracker.report_enemy_destroyed(mission, remaining_enemies)
 	if remaining_enemies == 0:
 		# Leave flight and loot pickups active until the pilot chooses to proceed.
 		_show_destination_button()
