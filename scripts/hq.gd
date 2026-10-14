@@ -32,6 +32,7 @@ func _ready() -> void:
 	_build_mission_board()
 	_build_deliver_button()
 	_refresh_campaign_status()
+	ship_builder.builder_closed.connect(_refresh_weapon_gates)
 	_show_salvage_recovery()
 	_build_weapon_warnings()
 	_refresh_weapon_gates()
@@ -130,7 +131,7 @@ func _build_weapon_warnings() -> void:
 	weapon_warning_label.add_theme_font_size_override("font_size", 12)
 	weapon_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	services.add_child(weapon_warning_label)
-	services.move_child(weapon_warning_label, maxi(0, services.get_child_count() - 3))
+	services.move_child(weapon_warning_label, services.get_children().find(deliver_button))
 	test_flight_warning_label = Label.new()
 	test_flight_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
 	test_flight_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
