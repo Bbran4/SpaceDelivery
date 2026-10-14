@@ -20,7 +20,7 @@ static func save_build(
 	make_active: bool = true
 ) -> Error:
 	var clean_name: String = build_name.strip_edges()
-	if clean_name.is_empty():
+	if clean_name.is_empty() or not build_has_weapon(hull_path, module_paths):
 		return ERR_INVALID_PARAMETER
 	var config: ConfigFile = ConfigFile.new()
 	var load_error: Error = config.load(SAVE_PATH)
@@ -45,11 +45,31 @@ static func load_build(build_name: String) -> Dictionary:
 	var section: String = _section_for_name(build_name)
 	if not config.has_section(section):
 		return {}
-	return {
+	var build: Dictionary = {
 		"name": build_name,
 		"hull_path": str(config.get_value(section, "hull_path", "")),
 		"module_paths": config.get_value(section, "module_paths", PackedStringArray()),
 	}
+	if not build_has_weapon(str(build.get("hull_path", "")), build.get("module_paths", PackedStringArray())):
+		return {}
+	return build
+
+
+static func build_has_weapon(hull_path: String, module_paths: Variant) -> bool:
+	var hull: ShipHull = load(hull_path) as ShipHull if not hull_path.is_empty() else null
+	if hull == null:
+		return false
+	for slot_index: int in range(mini(hull.slot_categories.size(), module_paths.size())):
+		var module_path: String = str(module_paths[slot_index])
+		if module_path.is_empty():
+			continue
+		var module: ShipModule = load(module_path) as ShipModule
+		if module == null or module.category != ShipModule.Category.WEAPON or module.weapon_scene == null:
+			continue
+		var slot_category: int = hull.slot_categories[slot_index]
+		if slot_category == -1 or slot_category == ShipModule.Category.WEAPON:
+			return true
+	return false
 
 
 static func get_active_build() -> Dictionary:
