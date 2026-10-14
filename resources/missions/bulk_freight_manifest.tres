@@ -34,6 +34,7 @@ title = "Bulk Freight Manifest"
 client_name = "Orion Industrial Exchange"
 cargo_name = "Modular Refinery Components"
 cargo_type = "Industrial Freight"
+cargo_variant = 2
 cargo_description = "A secured stack of modular refinery components. The freight is robust, but it needs a larger hold and a wider turning circle."
 cargo_value_credits = 680
 cargo_damage_sensitivity = 0.9
