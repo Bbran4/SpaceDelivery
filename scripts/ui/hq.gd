@@ -4,15 +4,17 @@ class_name HQScreen
 const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
 
 @onready var ship_builder: ShipBuilder = %ShipBuilder
-@onready var upgrades_overlay: Control = %UpgradesOverlay
-@onready var welcome_content: VBoxContainer = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent
-@onready var welcome_text: Label = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent/WelcomeText
-@onready var status_panel: PanelContainer = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent/StatusPanel
-@onready var status_label: Label = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent/StatusPanel/StatusLabel
-@onready var services: VBoxContainer = $Margin/Layout/MainContent/ServicesPanel/Services
-@onready var test_flight_button: Button = $Margin/Layout/MainContent/ServicesPanel/Services/TestFlightButton
-@onready var footer_label: Label = $Margin/Layout/Footer/FooterLabel
-@onready var account_balance_label: Label = $Margin/Layout/Header/AccountBalance
+@onready var welcome_content: VBoxContainer = %WelcomeContent
+@onready var welcome_text: Label = %WelcomeText
+@onready var status_panel: PanelContainer = %StatusPanel
+@onready var status_label: Label = %StatusLabel
+@onready var mission_actions: VBoxContainer = %MissionActions
+@onready var center_actions: VBoxContainer = %CenterActions
+@onready var skill_tree: VBoxContainer = %SkillTree
+@onready var skill_credits_label: Label = %SkillCredits
+@onready var test_flight_button: Button = %TestFlightButton
+@onready var footer_label: Label = %FooterLabel
+@onready var account_balance_label: Label = %AccountBalance
 
 var available_missions: Array[MissionDefinition] = []
 var selected_mission: MissionDefinition
@@ -28,16 +30,16 @@ func _ready() -> void:
 	_load_missions()
 	_build_mission_board()
 	_build_deliver_button()
-	_refresh_campaign_status()
-	ship_builder.builder_closed.connect(_refresh_weapon_gates)
-	_show_salvage_recovery()
 	_build_weapon_warnings()
+	_refresh_campaign_status()
+	ship_builder.build_changed.connect(_refresh_weapon_gates)
+	_show_salvage_recovery()
 	_refresh_weapon_gates()
+	_build_skill_tree()
 
 
 func _refresh_campaign_status() -> void:
-	account_balance_label.text = "CREDITS  /  %s CR" % _format_credits(MissionRunState.total_credits)
-	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %s CR" % _format_credits(MissionRunState.total_credits)
+	_refresh_balance_labels()
 	if MissionRunState.last_mission_result.is_empty():
 		return
 
@@ -50,6 +52,13 @@ func _refresh_campaign_status() -> void:
 		mission_title.to_upper(),
 		payout,
 	]
+
+
+func _refresh_balance_labels() -> void:
+	var credits: String = _format_credits(MissionRunState.total_credits)
+	account_balance_label.text = "CREDITS  /  %s CR" % credits
+	skill_credits_label.text = "CREDITS: %s" % credits
+	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %s CR" % credits
 
 
 func _format_credits(amount: int) -> String:
@@ -69,7 +78,7 @@ func _build_mission_board() -> void:
 	scroll.name = "MissionBoardScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 430)
+	scroll.custom_minimum_size = Vector2(0, 260)
 
 	var board_content: VBoxContainer = VBoxContainer.new()
 	board_content.name = "MissionBoardContent"
@@ -107,8 +116,7 @@ func _build_deliver_button() -> void:
 	deliver_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	deliver_button.disabled = true
 	deliver_button.pressed.connect(_on_deliver_pressed)
-	services.add_child(deliver_button)
-	services.move_child(deliver_button, services.get_child_count() - 2)
+	mission_actions.add_child(deliver_button)
 
 
 func _build_weapon_warnings() -> void:
@@ -118,23 +126,23 @@ func _build_weapon_warnings() -> void:
 	cargo_capacity_warning_label.add_theme_font_size_override("font_size", 12)
 	cargo_capacity_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cargo_capacity_warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	services.add_child(cargo_capacity_warning_label)
+	mission_actions.add_child(cargo_capacity_warning_label)
 	cargo_capacity_warning_label.visible = false
-	services.move_child(cargo_capacity_warning_label, services.get_children().find(deliver_button))
+	mission_actions.move_child(cargo_capacity_warning_label, deliver_button.get_index())
 	weapon_warning_label = Label.new()
 	weapon_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
 	weapon_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
 	weapon_warning_label.add_theme_font_size_override("font_size", 12)
 	weapon_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	services.add_child(weapon_warning_label)
-	services.move_child(weapon_warning_label, services.get_children().find(deliver_button))
+	mission_actions.add_child(weapon_warning_label)
+	mission_actions.move_child(weapon_warning_label, deliver_button.get_index())
 	test_flight_warning_label = Label.new()
 	test_flight_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
 	test_flight_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
 	test_flight_warning_label.add_theme_font_size_override("font_size", 12)
 	test_flight_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	services.add_child(test_flight_warning_label)
-	services.move_child(test_flight_warning_label, services.get_children().find(test_flight_button))
+	center_actions.add_child(test_flight_warning_label)
+	center_actions.move_child(test_flight_warning_label, test_flight_button.get_index())
 
 
 func _refresh_weapon_gates() -> void:
@@ -347,10 +355,6 @@ func _on_deliver_pressed() -> void:
 		status_label.text = "ROUTE GENERATION FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error
 
 
-func _on_shipyard_pressed() -> void:
-	ship_builder.show_builder()
-
-
 func _on_test_flight_pressed() -> void:
 	_refresh_weapon_gates()
 	if test_flight_button.disabled:
@@ -358,9 +362,16 @@ func _on_test_flight_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/tests/hud_test.tscn")
 
 
-func _on_upgrades_pressed() -> void:
-	upgrades_overlay.visible = true
 
 
-func _on_upgrades_close_pressed() -> void:
-	upgrades_overlay.visible = false
+func _build_skill_tree() -> void:
+	for child in skill_tree.get_children():
+		child.queue_free()
+	var intro := Label.new()
+	intro.text = "PERMANENT ACCOUNT UPGRADES"
+	intro.add_theme_color_override("font_color", Color(0.65, 0.9, 0.67))
+	skill_tree.add_child(intro)
+	var note := Label.new()
+	note.text = "Upgrade purchasing is the next progression pass. This console is ready for real upgrade nodes."
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	skill_tree.add_child(note)

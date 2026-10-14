@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/ui/hq.gd" id="1_hq"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="2_builder"]
+[ext_resource type="Script" path="res://scripts/ui/focus_panel.gd" id="3_focus"]
 
 [node name="HQ" type="Control"]
 layout_mode = 3
@@ -22,231 +23,222 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.018, 0.03, 0.052, 1)
 
-[node name="Backdrop" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_left = 0.04
-anchor_top = 0.06
-anchor_right = 0.96
-anchor_bottom = 0.94
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.035, 0.065, 0.095, 1)
-
-[node name="Margin" type="MarginContainer" parent="."]
+[node name="Layout" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 56
-theme_override_constants/margin_top = 36
-theme_override_constants/margin_right = 56
-theme_override_constants/margin_bottom = 36
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
 
-[node name="Layout" type="VBoxContainer" parent="Margin"]
+[node name="Column" type="VBoxContainer" parent="Layout"]
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="Margin/Layout"]
+[node name="Header" type="HBoxContainer" parent="Layout/Column"]
 layout_mode = 2
-theme_override_constants/separation = 16
 
-[node name="BrandBlock" type="VBoxContainer" parent="Margin/Layout/Header"]
+[node name="Brand" type="VBoxContainer" parent="Layout/Column/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
 
-[node name="Eyebrow" type="Label" parent="Margin/Layout/Header/BrandBlock"]
+[node name="Title" type="Label" parent="Layout/Column/Header/Brand"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.32, 0.76, 0.91, 1)
-theme_override_font_sizes/font_size = 12
-text = "SPACE DELIVERY NETWORK  /  OPERATIONS"
+theme_override_colors/font_color = Color(0.45, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "SPACEDELIVERY / HOME BASE"
 
-[node name="Title" type="Label" parent="Margin/Layout/Header/BrandBlock"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 34
-text = "HOME BASE"
-
-[node name="Subtitle" type="Label" parent="Margin/Layout/Header/BrandBlock"]
+[node name="Subtitle" type="Label" parent="Layout/Column/Header/Brand"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
-theme_override_font_sizes/font_size = 15
-text = "Your ship, your contracts, your next departure."
+text = "Your package. Our problem."
 
-[node name="AccountBalance" type="Label" parent="Margin/Layout/Header"]
+[node name="AccountBalance" type="Label" parent="Layout/Column/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
-theme_override_font_sizes/font_size = 20
-text = "CREDITS  /  0 CR"
+theme_override_font_sizes/font_size = 18
+text = "CREDITS / 0 CR"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="Divider" type="ColorRect" parent="Margin/Layout"]
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 2
-color = Color(0.16, 0.39, 0.51, 1)
-
-[node name="MainContent" type="HBoxContainer" parent="Margin/Layout"]
+[node name="Main" type="HBoxContainer" parent="Layout/Column"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 24
-
-[node name="WelcomePanel" type="PanelContainer" parent="Margin/Layout/MainContent"]
-custom_minimum_size = Vector2(380, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="WelcomeContent" type="VBoxContainer" parent="Margin/Layout/MainContent/WelcomePanel"]
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="WelcomeTitle" type="Label" parent="Margin/Layout/MainContent/WelcomePanel/WelcomeContent"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "MISSION BOARD"
-
-[node name="WelcomeText" type="Label" parent="Margin/Layout/MainContent/WelcomePanel/WelcomeContent"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.69, 0.78, 0.87, 1)
-theme_override_font_sizes/font_size = 15
-text = "Browse delivery contracts, check mission objectives, and choose your next route. Mission listings will appear here as the contract system comes online."
-autowrap_mode = 3
-vertical_alignment = 1
-
-[node name="StatusPanel" type="PanelContainer" parent="Margin/Layout/MainContent/WelcomePanel/WelcomeContent"]
-layout_mode = 2
-
-[node name="StatusLabel" type="Label" parent="Margin/Layout/MainContent/WelcomePanel/WelcomeContent/StatusPanel"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.83, 0.7, 1)
-text = "●  MISSION TERMINAL ONLINE   /   CONTRACTS AWAITING"
-
-[node name="ServicesPanel" type="PanelContainer" parent="Margin/Layout/MainContent"]
-custom_minimum_size = Vector2(360, 0)
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="Services" type="VBoxContainer" parent="Margin/Layout/MainContent/ServicesPanel"]
-layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="ServicesTitle" type="Label" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
+[node name="MissionSlot" type="Control" parent="Layout/Column/Main"]
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
-text = "STATION SERVICES"
+size_flags_horizontal = 3
+mouse_filter = 2
 
-[node name="ShipyardButton" type="Button" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
-custom_minimum_size = Vector2(0, 72)
+[node name="Center" type="VBoxContainer" parent="Layout/Column/Main"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "SHIPYARD  /  Configure Ship"
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.7
+theme_override_constants/separation = 8
 
-[node name="ShipyardDescription" type="Label" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
-text = "Manage equipment slots, compare ship stats, and save a loadout."
-autowrap_mode = 3
-
-[node name="UpgradesButton" type="Button" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
-custom_minimum_size = Vector2(0, 64)
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "UPGRADES  /  Unlock Equipment"
-
-[node name="UpgradesDescription" type="Label" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
-text = "Spend credits to unlock new hulls and modules."
-autowrap_mode = 3
-
-[node name="Spacer" type="Control" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
+[node name="BuilderPanel" type="PanelContainer" parent="Layout/Column/Main/Center"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="TestFlightButton" type="Button" parent="Margin/Layout/MainContent/ServicesPanel/Services"]
-custom_minimum_size = Vector2(0, 52)
+[node name="ShipBuilder" parent="Layout/Column/Main/Center/BuilderPanel" instance=ExtResource("2_builder")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CenterActions" type="VBoxContainer" parent="Layout/Column/Main/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TestFlightButton" type="Button" parent="Layout/Column/Main/Center/CenterActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 text = "TEST FLIGHT"
 
-[node name="UpgradesOverlay" type="Control" parent="."]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="OverlayShade" type="ColorRect" parent="UpgradesOverlay"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-mouse_filter = 0
-color = Color(0.008, 0.015, 0.028, 0.82)
-
-[node name="UpgradePanel" type="PanelContainer" parent="UpgradesOverlay"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -190.0
-offset_right = 300.0
-offset_bottom = 190.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="UpgradeContent" type="VBoxContainer" parent="UpgradesOverlay/UpgradePanel"]
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="UpgradeTitle" type="Label" parent="UpgradesOverlay/UpgradePanel/UpgradeContent"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 26
-text = "EQUIPMENT UPGRADES"
-
-[node name="UpgradeDescription" type="Label" parent="UpgradesOverlay/UpgradePanel/UpgradeContent"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.69, 0.78, 0.87, 1)
-theme_override_font_sizes/font_size = 16
-text = "Unlock new ship hulls and equipment modules here using credits. Unlocked modules can be installed in any compatible slot. The upgrade catalogue and purchasing flow are not implemented yet."
-autowrap_mode = 3
-vertical_alignment = 1
-
-[node name="UpgradeCloseButton" type="Button" parent="UpgradesOverlay/UpgradePanel/UpgradeContent"]
-custom_minimum_size = Vector2(0, 48)
-layout_mode = 2
-text = "RETURN TO HQ"
-
-[node name="Footer" type="HBoxContainer" parent="Margin/Layout"]
-layout_mode = 2
-
-[node name="FooterLabel" type="Label" parent="Margin/Layout/Footer"]
+[node name="SkillSlot" type="Control" parent="Layout/Column/Main"]
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43, 0.57, 0.68, 1)
-theme_override_font_sizes/font_size = 11
-text = "HQ  /  CENTRAL DOCK  /  SHIPYARD ACCESS"
+mouse_filter = 2
 
-[node name="BuilderLayer" type="CanvasLayer" parent="."]
+[node name="Footer" type="HBoxContainer" parent="Layout/Column"]
+layout_mode = 2
 
-[node name="ShipBuilder" parent="BuilderLayer" instance=ExtResource("2_builder")]
+[node name="FooterLabel" type="Label" parent="Layout/Column/Footer"]
 unique_name_in_owner = true
-visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43, 0.7, 0.8, 1)
+text = "HQ / CENTRAL DOCK"
+horizontal_alignment = 1
 
-[connection signal="pressed" from="Margin/Layout/MainContent/ServicesPanel/Services/ShipyardButton" to="." method="_on_shipyard_pressed"]
-[connection signal="pressed" from="Margin/Layout/MainContent/ServicesPanel/Services/TestFlightButton" to="." method="_on_test_flight_pressed"]
-[connection signal="pressed" from="Margin/Layout/MainContent/ServicesPanel/Services/UpgradesButton" to="." method="_on_upgrades_pressed"]
-[connection signal="pressed" from="UpgradesOverlay/UpgradePanel/UpgradeContent/UpgradeCloseButton" to="." method="_on_upgrades_close_pressed"]
+[node name="PanelLayer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Dim" type="ColorRect" parent="PanelLayer"]
+visible = false
+z_index = 5
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.008, 0.015, 0.028, 0.8)
+
+[node name="MissionPanel" type="PanelContainer" parent="PanelLayer" groups=["hq_focus_panels"]]
+layout_mode = 0
+script = ExtResource("3_focus")
+slot = NodePath("../../Layout/Column/Main/MissionSlot")
+dim = NodePath("../Dim")
+focus_size = Vector2(680, 620)
+
+[node name="MissionVBox" type="VBoxContainer" parent="PanelLayer/MissionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MissionHeader" type="HBoxContainer" parent="PanelLayer/MissionPanel/MissionVBox"]
+layout_mode = 2
+
+[node name="MissionTitle" type="Label" parent="PanelLayer/MissionPanel/MissionVBox/MissionHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.45, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 25
+text = "MISSION BOARD"
+
+[node name="MissionClose" type="Button" parent="PanelLayer/MissionPanel/MissionVBox/MissionHeader"]
+layout_mode = 2
+text = "✕"
+
+[node name="WelcomeContent" type="VBoxContainer" parent="PanelLayer/MissionPanel/MissionVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="WelcomeText" type="Label" parent="PanelLayer/MissionPanel/MissionVBox/WelcomeContent"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Browse available contracts."
+autowrap_mode = 3
+
+[node name="StatusPanel" type="PanelContainer" parent="PanelLayer/MissionPanel/MissionVBox/WelcomeContent"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="PanelLayer/MissionPanel/MissionVBox/WelcomeContent/StatusPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.83, 0.7, 1)
+text = "SELECT A CONTRACT"
+autowrap_mode = 3
+
+[node name="MissionActions" type="VBoxContainer" parent="PanelLayer/MissionPanel/MissionVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SkillPanel" type="PanelContainer" parent="PanelLayer" groups=["hq_focus_panels"]]
+layout_mode = 0
+script = ExtResource("3_focus")
+slot = NodePath("../../Layout/Column/Main/SkillSlot")
+dim = NodePath("../Dim")
+focus_size = Vector2(680, 620)
+
+[node name="SkillVBox" type="VBoxContainer" parent="PanelLayer/SkillPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SkillHeader" type="HBoxContainer" parent="PanelLayer/SkillPanel/SkillVBox"]
+layout_mode = 2
+
+[node name="SkillTitle" type="Label" parent="PanelLayer/SkillPanel/SkillVBox/SkillHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.85, 0.5, 1)
+theme_override_font_sizes/font_size = 25
+text = "UPGRADE PANEL & SKILL TREE"
+
+[node name="SkillClose" type="Button" parent="PanelLayer/SkillPanel/SkillVBox/SkillHeader"]
+layout_mode = 2
+text = "✕"
+
+[node name="SkillSubtitle" type="Label" parent="PanelLayer/SkillPanel/SkillVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.69, 0.78, 0.87, 1)
+text = "PERMANENT ACCOUNT UPGRADES"
+
+[node name="SkillTree" type="VBoxContainer" parent="PanelLayer/SkillPanel/SkillVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SkillCredits" type="Label" parent="PanelLayer/SkillPanel/SkillVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
+theme_override_font_sizes/font_size = 20
+text = "CREDITS: 0"
+horizontal_alignment = 1
+
+[connection signal="pressed" from="Layout/Column/Main/Center/CenterActions/TestFlightButton" to="." method="_on_test_flight_pressed"]
+[connection signal="pressed" from="PanelLayer/MissionPanel/MissionVBox/MissionHeader/MissionClose" to="PanelLayer/MissionPanel" method="unfocus"]
+[connection signal="pressed" from="PanelLayer/SkillPanel/SkillVBox/SkillHeader/SkillClose" to="PanelLayer/SkillPanel" method="unfocus"]

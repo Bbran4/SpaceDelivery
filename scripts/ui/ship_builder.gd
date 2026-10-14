@@ -27,6 +27,7 @@ const CATEGORY_ORDER: Array[int] = [
 const NARROW_WIDTH: float = 820.0
 
 signal builder_closed
+signal build_changed
 
 @onready var body: BoxContainer = %Body
 @onready var hull_picker: OptionButton = %HullPicker
@@ -59,6 +60,7 @@ func _ready() -> void:
 	module_hint.visible = false
 	module_scroll.visible = false
 	close_button.pressed.connect(_on_back_pressed)
+	close_button.visible = false
 	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
@@ -375,6 +377,7 @@ func _on_save_pressed() -> void:
 		return
 	status_label.text = "Saved '%s' · now active." % build_name
 	_refresh_saved_builds()
+	build_changed.emit()
 
 
 func _on_load_pressed() -> void:
@@ -397,6 +400,7 @@ func _on_load_pressed() -> void:
 		status_label.text = "This saved build has no active weapon and cannot be loaded."
 		return
 	ShipBuildStore.save_build(build_name, hull_path, selected_module_paths, true)
+	build_changed.emit()
 
 
 func _refresh_saved_builds() -> void:
