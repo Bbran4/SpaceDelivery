@@ -141,6 +141,8 @@ static func _apply_generated_encounter(
 	if candidates.is_empty():
 		candidates = ENCOUNTERS.duplicate()
 	var target_risk: int = clampi(1 + int(floor(float(layer_index - 1) / 2.0)) + mission.risk_bias, 0, 5)
+	if layer_index == 1:
+		target_risk = mini(target_risk, 2)
 	if previous_layer_average_risk >= 3.0:
 		target_risk = maxi(0, target_risk - 1)
 	elif previous_layer_average_risk <= 1.0 and layer_index >= 3:
@@ -168,7 +170,8 @@ static func _apply_generated_encounter(
 		node.description = str(encounter["description"])
 		node.node_kind = MissionRouteNode.NodeKind.ENCOUNTER
 		node.encounter_profile = int(encounter["profile"])
-		node.risk = clampi(int(encounter["risk"]) + mission.risk_bias + int(floor(float(layer_index - 1) / 2.0)), 0, 5)
+		node.risk = clampi(int(encounter["risk"]) + int(floor(float(layer_index - 1) / 2.0)), 0, 5)
+		node.risk = clampi(node.risk + mission.risk_bias, 0, 5)
 		if previous_layer_average_risk >= 3.0:
 			node.risk = maxi(0, node.risk - 1)
 		if layer_index == 1:
