@@ -25,17 +25,21 @@ var mission_list: VBoxContainer
 var selected_details: VBoxContainer
 var route_preview: VBoxContainer
 var deliver_button: Button
+var repair_button: Button
+var repair_status_label: Label
 
 
 func _ready() -> void:
 	_load_missions()
 	_build_mission_board()
 	_build_deliver_button()
+	_build_repair_service()
 	_refresh_campaign_status()
 
 
 func _refresh_campaign_status() -> void:
 	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %d CR" % MissionRunState.total_credits
+	_refresh_repair_service()
 	if MissionRunState.last_mission_result.is_empty():
 		return
 
@@ -129,6 +133,59 @@ func _build_deliver_button() -> void:
 	services.move_child(deliver_button, services.get_child_count() - 2)
 
 
+func _build_repair_service() -> void:
+	repair_button = Button.new()
+	repair_button.name = "RepairShipButton"
+	repair_button.custom_minimum_size = Vector2(0, 42)
+	repair_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	repair_button.pressed.connect(_on_repair_ship_pressed)
+	services.add_child(repair_button)
+	repair_status_label = Label.new()
+	repair_status_label.name = "RepairStatusLabel"
+	repair_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	services.add_child(repair_status_label)
+	_refresh_repair_service()
+
+
+func _refresh_repair_service() -> void:
+	if not is_instance_valid(repair_button) or not is_instance_valid(repair_status_label):
+		return
+	if MissionRunState.ship_condition.is_empty():
+		repair_button.disabled = true
+		repair_button.text = "SHIP SERVICE  /  NO REPAIRS NEEDED"
+		repair_status_label.text = "Ship condition is recorded after your first mission."
+		return
+	var max_hull: float = float(MissionRunState.ship_condition.get("max_hull", 0.0))
+	var current_hull: float = float(MissionRunState.ship_condition.get("current_hull", max_hull))
+	var max_shield: float = float(MissionRunState.ship_condition.get("max_shield", 0.0))
+	var current_shield: float = float(MissionRunState.ship_condition.get("current_shield", max_shield))
+	var hull_missing: float = maxf(0.0, max_hull - current_hull)
+	var shield_missing: float = maxf(0.0, max_shield - current_shield)
+	var repair_cost: int = ceili(hull_missing + shield_missing * 0.5)
+	repair_button.disabled = repair_cost <= 0 or MissionRunState.total_credits < repair_cost
+	repair_button.text = "REPAIR SHIP  /  %d CR" % repair_cost if repair_cost > 0 else "SHIP SERVICE  /  FULLY REPAIRED"
+	repair_status_label.text = "HULL  /  %d%%     SHIELD  /  %d%%\nRepairs cost 1 CR per hull point and 1 CR per 2 shield points." % [
+		roundi(100.0 * current_hull / maxf(max_hull, 1.0)),
+		roundi(100.0 * current_shield / maxf(max_shield, 1.0)),
+	]
+
+
+func _on_repair_ship_pressed() -> void:
+	if MissionRunState.ship_condition.is_empty():
+		return
+	var max_hull: float = float(MissionRunState.ship_condition.get("max_hull", 0.0))
+	var current_hull: float = float(MissionRunState.ship_condition.get("current_hull", max_hull))
+	var max_shield: float = float(MissionRunState.ship_condition.get("max_shield", 0.0))
+	var current_shield: float = float(MissionRunState.ship_condition.get("current_shield", max_shield))
+	var repair_cost: int = ceili(maxf(0.0, max_hull - current_hull) + maxf(0.0, max_shield - current_shield) * 0.5)
+	if repair_cost <= 0 or MissionRunState.total_credits < repair_cost:
+		return
+	MissionRunState.total_credits -= repair_cost
+	MissionRunState.repair_ship_condition()
+	status_label.text = "SHIP REPAIRED  /  %d CR CHARGED  /  READY FOR DEPARTURE" % repair_cost
+	_refresh_campaign_status()
+
+
 func _refresh_mission_list() -> void:
 	_clear_children(mission_list)
 	for mission: MissionDefinition in available_missions:
@@ -191,12 +248,16 @@ func _refresh_selected_details() -> void:
 	selected_details.add_child(client_label)
 
 	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nDAMAGE TOLERANCE  /  %d%% INTEGRITY  ·  PENALTY IF DAMAGED  /  %d%%" % [
+	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
+		selected_mission.cargo_name,
+		selected_mission.cargo_type,
 		selected_mission.cargo_description,
+		selected_mission.cargo_value_credits,
 		selected_mission.destination_name,
 		selected_mission.base_reward_credits,
 		selected_mission.risk_label,
-		25,
+		selected_mission.minimum_delivery_integrity_percent,
+		selected_mission.full_reward_integrity_percent,
 		selected_mission.damaged_cargo_payout_penalty_percent,
 	]
 	cargo_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
