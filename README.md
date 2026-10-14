@@ -1,285 +1,231 @@
 # SpaceDelivery
 
-**SpaceDelivery** is a space-delivery incremental game with procedurally generated routes, automatic weapon systems, and a large skill tree. Take contracts from different clients, fly through a branching network of space encounters, deliver the cargo, and invest your earnings in a growing ship. There is no prestige and no full reset, just steady growth.
+**SpaceDelivery** is a 2D space-delivery incremental action game about piloting a cargo ship through procedurally generated routes, letting weapons fire automatically, and trying to finish a shift without losing the shipment or getting fired. Take contracts, choose branches through dangerous encounters, collect side earnings, deliver the cargo, and reinvest in a growing ship. There is no prestige or full reset: progression is permanent, so the economy and difficulty must scale for a long campaign.
 
-The core fantasy is simple: take a contract, pilot your ship through a dangerous route, deliver the cargo, collect your fee and any loot you find, then reinvest your rewards to take on bigger jobs.
-
-This README documents the current design vision. It describes planned concepts as well as the intended core loop; it does not imply that every feature is already implemented.
+This README is both a design document and a practical guide to the intended core loop. It describes a mix of current implementation and planned features; a design goal is not proof that a feature is already implemented.
 
 ## Design pillars
 
-1. **The cargo is the reason for everything.** Every mission exists because there is a package to deliver, and the cargo is the large payout the player stands to win or lose.
-2. **Incremental progression, not resets.** Growth comes from a large skill tree and ship upgrades. The player never has to restart everything for a small power boost.
-3. **Every mission is a fresh route.** Procedural, node-based routes make each delivery a different journey, like a small dungeon.
-4. **Short, repeatable missions.** Each encounter is a quick stage, so "one more delivery" is always easy.
-5. **Risk and reward are the player's choice.** Players choose the contract, the client, and the route, and the harder choices pay more.
+1. **The cargo is the reason for everything.** The contract payout is the major prize. Delivering earns it; losing the shipment forfeits it. Side earnings gathered along the way are retained, so a failed run can still move the player forward.
+2. **Piloting is active; combat is automated.** The player primarily creates value by moving, positioning, dodging, kiting, and choosing targets or routes. Weapons handle firing. Upgrades can gradually reduce routine workload, but the first mode is an action game with incremental progression, not an unattended idle simulator.
+3. **Every mission is a fresh but coherent route.** Seeded, branching node maps create variation within rules that protect connectivity, pacing, fairness, and meaningful choices.
+4. **Short, repeatable missions.** Encounters should usually last around 60-90 seconds. The full delivery is a string of compact stages, not one exhausting battle.
+5. **Risk and reward are visible.** Players choose contracts and routes with understandable trade-offs in danger, recovery, salvage, and potential pay.
+6. **Permanent progress needs sustainable scaling.** Credits, upgrades, reputation, and unlocks persist. The economy must remain readable and challenging without relying on prestige resets.
 
 ## Tone, humour, and creative direction
 
-SpaceDelivery takes inspiration from the workplace sci-fi comedy of *Futurama*: an ordinary delivery company trying to do an ordinary job in a galaxy that is anything but ordinary. The influence is tonal rather than a shared setting. SpaceDelivery should use its own characters, dialogue, locations, visual identity, and jokes.
+SpaceDelivery takes inspiration from workplace sci-fi comedy: an ordinary delivery company trying to do an ordinary job in a galaxy that is anything but ordinary. The influence is tonal, not a shared setting. Characters, dialogue, locations, visual identity, and jokes must be original.
 
 **The central fantasy:** the player is not saving the galaxy. They are trying to deliver a package across it without getting fired.
 
-### The company's personality
+The company presents itself as professional, dependable, and safety-conscious. In practice, it accepts questionable contracts, cuts corners, hides problems behind paperwork, and expects the crew to treat catastrophes as routine work.
 
-The company presents itself as professional, dependable, and safety-conscious. In practice, it accepts questionable contracts, cuts corners, hides problems behind paperwork, and expects the crew to treat catastrophic events as routine work.
+Possible company flavour:
+- **Company motto:** “Your Package. Our Problem.”
+- **Delivery guarantee:** “Your package will arrive eventually, provided the destination continues to exist.”
+- **Safety policy:** “The company accepts no responsibility for injuries sustained during optional mandatory overtime.”
+- **Ship diagnostics:** “Propulsion status: technically present.”
+- **Incident reporting:** “The event has been classified as a minor scheduling irregularity.”
 
-Possible company slogans and flavour text:
-- **Company motto:** "Your Package. Our Problem."
-- **Delivery guarantee:** "Your package will arrive eventually, provided the destination continues to exist."
-- **Safety policy:** "The company accepts no responsibility for injuries sustained during optional mandatory overtime."
-- **Ship diagnostics:** "Propulsion status: technically present."
-- **Incident reporting:** "The event has been classified as a minor scheduling irregularity."
+These are examples, not locked-in lines. Humour should emerge from systems, consequences, and the company's dry interpretation of events.
 
-These are tone examples, not final locked-in lines. Humour should be sharp, situational, and rooted in the company's systems and the player's decisions rather than relying only on one-liners.
+### Comedy rules
 
-### Comedy principles
+- Treat absurd events as routine workplace problems.
+- Make choices funny as well as meaningful.
+- Deliver jokes through reports, fines, diagnostics, complaints, bonuses, and corporate forms.
+- Let success be messy: the package may arrive while the ship is damaged and the crew is furious.
+- Keep outcomes clear. A punchline must never obscure whether the player was paid, fined, or failed.
+- Build an original universe rather than borrowing characters, dialogue, designs, or settings from existing works.
 
-- **Treat the absurd as routine.** Aliens, unstable planets, bizarre laws, and dangerous anomalies are just another shift at work.
-- **Make decisions funny and meaningful.** A player might choose between an expensive toll, a dangerous shortcut, or a detour that risks a late delivery.
-- **Let systems deliver the punchline.** Corporate forms, customer complaints, mission summaries, fines, bonuses, and ship diagnostics can all carry the humour.
-- **Let success be messy.** A package can arrive while the ship is damaged, cargo integrity is low, the crew is furious, and the company still refuses to pay a bonus.
-- **Keep the stakes real.** Comedy does not replace risk, progression, or consequences. Losing cargo and choosing a bad route should still matter.
-- **Build an original universe.** Use the broad sensibility of workplace sci-fi comedy without copying existing characters, dialogue, designs, or settings.
+### How mission comedy is authored
 
-### Missions as comedy episodes
-
-Each delivery should feel like a compact sci-fi comedy episode. The contract gives the journey a purpose; branching routes create choices; encounters complicate the job; and the final delivery resolves the immediate problem, often with an absurd twist.
-
-A simple example:
-1. Accept a package delivery to a mining colony.
-2. Choose between a toll-heavy galactic highway and a free but unreliable nebula shortcut.
-3. Encounter an overzealous space inspector, a suspicious distress call, or a customer with a bizarre local custom.
-4. Decide whether to spend credits, take a risk, help someone, or protect the cargo.
-5. Reach the colony and discover that the customer may have ordered the wrong package.
-6. Resolve the delivery and receive a results report that evaluates the chaos in cold corporate language.
-
-This is an example mission concept, not a required scripted sequence. Missions should combine authored story beats with controlled variation so each route feels coherent rather than randomly assembled.
+Use **authored event templates with conditional slots**, backed by a small pool of reusable lines. Each event defines its purpose, tone, eligible route or encounter context, and optional text variants. Route flags such as `cargo_damaged`, `rescued_crew`, `spent_credits`, and `route_alerted` can select follow-up lines and outcomes. This keeps jokes coherent and testable without requiring every generated route to have a fully bespoke script. Purely random line selection should not contradict what happened in the run.
 
 ## Core gameplay loop
 
-1. **Accept a delivery contract.** Review the cargo, client, destination, fee, hazard level, and optional rewards.
-2. **Select a mission path.** Choose a route through a branching node map. The available branches should communicate trade-offs in risk, reward, recovery, and possible encounters.
-3. **Prepare the ship and run Test Flight.** Check the ship and loadout before committing to departure. The planned **Deliver** button starts disabled and becomes enabled once a valid mission is selected.
-4. **Fly the route and resolve encounters.** Each node is a short stage, generally around 60-90 seconds, such as combat, salvage, a station stop, or a story event. The player pilots the ship while weapons fire automatically.
-5. **Complete the delivery or fail the contract.** Reach the destination to claim the main contract payout. Cargo damage, delays, and route decisions may affect the result.
-6. **Review the company report and reinvest.** Show earnings, losses, salvage, cargo condition, and reputation, framed through the company's dry and often absurd bureaucracy. Keep eligible side earnings, buy upgrades, and take the next job.
+1. **Accept a contract.** Review cargo, client, destination, base fee, hazard, and any optional rewards.
+2. **Choose a mission and inspect its route.** A generated route belongs to the selected contract, not the general contract board. The route begins with only the opening node revealed.
+3. **Prepare and test the ship.** Check the loadout and use Test Flight. Deliver remains disabled until a valid mission is selected.
+4. **Select the next visible node and fly it.** Completing a node returns the player to the route map, marks the node complete, and reveals its connected successors. Hull, shields, cargo integrity, and collected credits carry between nodes.
+5. **Reach the destination or fail the contract.** The main contract payout is awarded only when delivery is resolved successfully. Failure forfeits that payout but keeps eligible side earnings.
+6. **Read the company report and reinvest.** Results show payout, penalties, salvage, cargo condition, and the completed path. Spend credits on progression and take the next job.
 
-## Cargo and the contract payout
+## Cargo, capacity, and rewards
 
-Cargo is the amount of money the player can earn from a mission. The large contract payout is the main prize, and it is only collected by delivering the cargo successfully.
+Cargo is both the objective of a contract and the reason its payout is at risk. Each contract specifies a shipment, its value, and delivery conditions. A successful delivery awards the contract fee, potentially adjusted for cargo condition and route bonuses.
 
-Players also earn money along the way from side activities such as defeating bandits, salvaging wrecks, and finding rare drops. This money belongs to the player immediately, whether or not the delivery succeeds.
+Cargo capacity is an **eligibility and loadout constraint**, not a direct multiplier applied to every contract. Larger holds unlock bulky or high-volume contracts and can support a broader set of jobs; they do not automatically make every small parcel more valuable. Hull and module choices therefore trade cargo flexibility against defence, speed, and utility.
 
-Cargo types add different challenges:
+Keep three reward concepts distinct:
 
-- **Standard parcels and supplies:** Low-risk introductory jobs.
-- **Bulk and oversized freight:** Larger shipments that require more cargo capacity.
-- **Fragile cargo:** Has its own **integrity bar**. Damage to the cargo reduces the payout and can destroy the shipment if the bar empties.
-- **Hazardous cargo:** Volatile or dangerous freight that pays more but causes extra damage or other problems if the ship is hit.
-- **Time-sensitive shipments:** Earn a bonus for arriving quickly.
-- **High-value or classified cargo:** More lucrative jobs that can attract stronger enemies.
-- **Medical and emergency supplies:** Special contracts with time or survival-related objectives.
-- **Wanted or contraband cargo:** Risky jobs with high rewards and possible bounty-related encounters.
-- **Rare and mysterious cargo:** Unusual shipments that can introduce unique events or threats.
+- **Contract payout:** the large, at-risk reward for delivering the shipment successfully.
+- **Encounter earnings:** credits and eligible drops collected during the run. These are retained if the contract fails.
+- **Salvage and valuables:** separate loot/resources that can be collected and later converted or spent. Salvage storage may cap how much can be retained per run; this capacity is a soft limit on side earnings, not a second contract payout. Exact capacity rules and conversion values still need balancing.
 
-These are design possibilities; the final cargo list, requirements, and unlock thresholds remain to be defined.
+Possible cargo categories:
+- **Standard parcels and supplies:** introductory, lower-risk jobs.
+- **Bulk and oversized freight:** requires a suitable cargo hold.
+- **Fragile cargo:** integrity loss can reduce the delivery fee or destroy the shipment.
+- **Hazardous cargo:** higher pay in exchange for additional risk.
+- **Time-sensitive shipments:** optional arrival-time bonus.
+- **High-value or classified cargo:** lucrative jobs that may attract stronger opposition.
+- **Medical, contraband, and unusual cargo:** mission-specific objectives, risks, or story events.
 
-### Jettisoning cargo (experimental)
+### Jettisoning cargo
 
-The player may be able to dump the cargo to escape a lost fight. This gives up the contract payout but lets the ship survive with its side earnings. It is uncertain how often players will use it, so it should be implemented simply and evaluated through playtesting.
+Jettisoning is an escape option to consider when a fight is going badly. It forfeits the contract payout but may let the ship survive and keep encounter earnings. It should be kept only if playtesting proves it creates a real, understandable decision rather than an automatic best choice.
+
+### Initial economy targets
+
+These are **balancing hypotheses**, not current tuned values:
+
+- A routine delivery should pay roughly **4-6 times** the side earnings of a typical run.
+- A risky optional branch should offer a meaningful increase in salvage or route bonus, not just more enemies.
+- A failed delivery should still yield enough side earnings to make the run feel worthwhile, but substantially less than a successful delivery.
+- Jettisoning should be attractive when the cargo is likely to be lost anyway, not whenever it provides a small tactical advantage.
+
+Instrument playtests to record contract fee, side earnings, cargo damage, failure rate, and jettison frequency. Adjust these ratios from actual results rather than treating the initial targets as final balance.
 
 ## Clients and reputation
 
-Players choose which contracts to accept and who to work for, depending on the package. Different clients can offer different cargo types, rewards, and risks.
-
-Successful deliveries earn reputation. Higher reputation unlocks new contract tiers, cargo types, and more dangerous opportunities. The game does not aim to simulate a dynamic galactic economy; contract fees and item values are predefined.
+Players choose which contracts to accept. Clients can differ in cargo, fees, hazards, and optional objectives. Successful deliveries can earn reputation, which unlocks contract tiers, cargo types, and more dangerous work. The initial economy uses authored prices and reward rules rather than simulating a dynamic galactic market.
 
 ## Procedural routes and encounters
 
-Missions use a procedurally generated, branching node network, like a compact dungeon. The contract defines the purpose and destination; a seeded generator creates the route graph and encounter details. The map uses progressive discovery: only the first node is shown initially, then completing a node reveals its connected next options. The player commits to one branch at a time, while previously completed nodes remain visible and marked complete. All generated paths must remain connected to the destination. Seeds should be recorded so unusual routes can be reproduced during debugging. Branches should communicate real differences in risk, enemy profile, bonus pay, and salvage opportunities rather than merely changing the map's appearance.
+Routes are seeded, branching graphs generated for the selected contract. Progressive discovery shows only the starting node initially. Completing a node reveals its connected successors while completed nodes remain marked. Branches should eventually lead to a reachable destination, and the stored seed should make a problematic route reproducible during debugging.
 
-### Encounter stages
+**Committed generation rules:**
 
-Each node plays as a short stage lasting roughly 60-90 seconds. No encounter should take longer than 5 minutes. Possible stage types include:
+1. Every generated route has a valid start and a reachable destination.
+2. Every offered node is reachable from the current frontier, and every non-final node has a valid onward path.
+3. Randomness varies the route inside constraints; it must not produce dead ends, impossible delivery paths, or contradictory events.
+4. Node type, risk, cargo, and recent encounters influence what can appear next.
+5. Pressure and relief alternate where practical. Avoid repeatedly stacking the hardest encounters without recovery or variation.
+6. Branches communicate real trade-offs in risk, recovery, bonus pay, and salvage.
+7. Use route history and flags to make later events respond to earlier choices.
+8. Test batches of seeds for connectivity, pacing, repetition, difficulty spikes, and reward distribution. A valid graph is necessary, but human playtesting is still required to judge whether a route feels good.
 
-- **Defend:** Protect the ship or cargo against waves of bandits, drones, or mercenaries.
-- **Escort:** Protect another ship while it travels through a hazard.
-- **Base / landing site:** A safe location where the player can land to refill ship HP and shield.
-- **Salvage:** Wrecks, derelict freighters, probes, and abandoned stations that offer loot.
-- **Special events:** Distress calls, anomalies, rescue opportunities, suspicious discoveries, bureaucratic inspections, unreasonable customers, strange alien customs, and other story-driven complications.
-- **Elite encounters:** More dangerous fights with better loot chances.
-- **Destination:** The planet, station, freight ship, or other location where the delivery is completed.
+Possible encounter types include combat, elite fights, salvage, recovery/service beacons, escort or rescue events, inspections, anomalies, and the destination. The current route-map implementation includes progressive node discovery and service nodes; other encounter types remain subject to implementation.
 
-### Route risk
+## Combat feel and piloting
 
-Route choice is a risk-versus-reward decision. Safer routes are easier but pay less, and dangerous routes offer higher rewards but tougher encounters. The fast and slow routes are different risk levels rather than a separate time system.
+Weapons and ship systems fire automatically. The player's primary moment-to-moment agency is movement and positioning: dodge incoming pressure, kite pursuers, keep distance from dangerous targets, line up safer paths through a fight, and choose which visible route branch to tackle next. Build choices change how those decisions feel, rather than replacing them with a pile of passive stat increases.
+
+The intended identity is **active piloting with automated weapons and incremental meta-progression**. Later upgrades may automate routine tasks or provide navigation assistance, but they should not remove the movement decisions that make encounters engaging. Controls should remain consistent and understandable; input modes must not silently change who or what the player is targeting.
 
 ## Skill tree and progression
 
-The skill tree is the main long-term progression system, in the style of incremental and idle games: a large, visible tree where players always have something to work toward. Completed missions grant credits, and credits are spent on upgrades that make the next missions easier or more profitable.
+The skill tree is for **account-wide growth, multipliers, efficiency, and automation**. It can improve broad damage or defence scaling, reward efficiency, unlock route information, and eventually automate repetitive administrative choices. Milestones may unlock a new system, but the tree should not duplicate the basic capability of every ship module.
 
-Design goals for the tree:
+There is no prestige system. Permanent progression means late-game scaling must be planned deliberately:
+- Use a documented set of base values and growth curves instead of adding arbitrary flat bonuses forever.
+- Prefer diminishing returns, additive/multiplicative categories with clear rules, and enemy/contract tiers to uncontrolled exponential stacking.
+- Define soft caps or tier transitions for major stats where necessary.
+- Test early, middle, and late-game time-to-kill, survival, and earnings as one connected economy.
+- Keep numbers readable. Large-number notation should be a deliberate UI choice, not a substitute for a balanced curve.
 
-- Always show a few affordable upgrades, with a more expensive one just out of reach.
-- Mix small incremental upgrades with milestone upgrades that change how the ship plays.
-- Offer branches for different playstyles, such as cargo and economy, firepower, defence, and speed or utility.
-- Reveal later branches gradually as the player progresses.
-- Possibly unlock automation as a reward, such as route preferences or automatic contract selection.
-
-There is no planned prestige system. Progress is permanent.
+The initial combat values, including current hull and weapon damage, are implementation starting points rather than final balance targets. Tune them against encounter duration and survival targets.
 
 ## Ship, modules, and loot
 
-Players should be able to modify their ship to suit their preferred build rather than being locked into a fixed ship class. A ship designer is a planned feature, and a simple slot-based loadout is the likely first version.
+The ship builder defines **capabilities and playstyle**; the skill tree defines broad long-term scaling and automation. This division avoids making two progression systems compete to provide the same small stat bonus.
 
-Potential customisation systems include:
+Planned ship choices include:
+- **Hull frames and size:** set base durability, cargo capacity, fitting space, and handling trade-offs.
+- **Weapons:** automatic cannons, lasers, missiles, and other firing behaviours.
+- **Defence:** shields, armour, repair systems, and defensive drones.
+- **Engines and navigation:** handling, movement behaviour, and route utility.
+- **Utility modules:** cargo protection, loot scanning, salvage collection, or specialist effects.
+- **Slots and fitting limits:** force meaningful choices between cargo, combat, durability, and utility.
 
-- **Hull size:** Increase cargo capacity to accept larger, more valuable deliveries.
-- **Weapons:** Automatic weapons such as autocannons, lasers, missiles, or other systems.
-- **Defence:** Shields, armor, repair systems, and defensive drones.
-- **Engines and navigation:** Speed, route options, or mission efficiency.
-- **Utility modules:** Cargo protection, loot scanners, salvage collectors, or other specialist effects.
-- **Module slots and fitting limits:** Players choose between cargo space, firepower, durability, and utility.
-
-Defeated enemies and discovered locations can reward more than credits:
-
-- **Credits:** The main currency for purchases and upgrades.
-- **Salvage:** A resource collected from wrecks and encounters.
-- **Valuables:** Items such as gold, rare minerals, space rock, and artifacts with predefined base prices.
-- **Ship modules:** Equipment that can be installed, swapped, or sold.
-
-Loot should reflect its source where practical. Elite enemies can have better chances of dropping rare modules, and bosses may eventually offer unique rewards.
-
-## Automatic combat and piloting
-
-Combat is largely automatic: weapons and ship systems attack or defend based on their stats, modules, and skill tree upgrades. The player still controls the ship, so movement, positioning, and build choices matter. The exact control scheme and balance between movement and automation are still to be designed.
+Loot can include credits, salvage, valuables, and modules. Where practical, rewards should reflect their source. Elite enemies may have improved rare-module chances, while bosses may eventually grant unique equipment. Exact rarity tiers, fitting rules, and salvage storage values remain to be balanced.
 
 ## Mission failure
 
-A mission fails if the ship is destroyed or the cargo is lost, and the player loses the contract payout. Failure does not wipe long-term progress:
-
-- Credits, salvage, and rare drops collected during the mission are kept.
-- Skill tree upgrades, reputation, and unlocked content remain.
-- The player returns to the upgrade screen and can start another contract.
-
-A results screen shows the money earned, loot collected, and the lost contract. Its wording can provide a final comedic beat, but it must clearly communicate the actual gameplay outcome. Optional systems such as insurance or delivery streaks could soften or reward the outcome, but they are not core requirements.
+A mission fails if the ship is destroyed or the shipment can no longer be delivered. The contract payout is lost, but eligible encounter earnings and collected drops remain. Permanent upgrades and previously earned progression are not reset. The results screen must distinguish contract loss from retained earnings and explain cargo penalties plainly, then let the player return to HQ and try another contract.
 
 ## Game modes
 
 ### Delivery Pilot
 
-The primary game mode and first development target. The player pilots their own cargo ship, accepts contracts, chooses routes, fights hostile ships, gathers loot, and delivers packages for a fee. The campaign ends with a final major contract that completes the story.
+The first and primary mode. Pilot a cargo ship, accept contracts, choose a route, fight with automatic weapons, gather loot, and deliver packages. A final major contract can eventually conclude the campaign.
 
 ### Escort Pilot
 
-A planned second game mode unlocked after completing the Delivery Pilot campaign. The player protects a delivery ship or convoy instead of carrying the cargo.
+A possible second mode unlocked after the Delivery Pilot campaign. Protect a delivery ship or convoy rather than carrying the shipment.
 
 ### Delivery Tycoon
 
-A possible future mode focused on managing a delivery company. This is a separate future direction, not part of the initial scope.
+A possible future management mode. It is out of scope until the core delivery loop is proven.
 
 ## Crew (planned)
 
-Crew members can provide passive bonuses or specialist effects, such as a navigator, engineer, gunner, salvage specialist, or quartermaster. Crew is a later addition after the core loop works.
+Crew members may provide specialist or passive effects, such as navigation, engineering, gunnery, salvage, or cargo management. Crew is a later feature, after the core loop and progression balance work.
 
 ## Development scope and priorities
 
-The first playable version should focus on the Delivery Pilot mode and prove that the core loop is fun. HQ mission selection enables **View Route**, while the route map reveals only the initial node. Players select a visible node and press **Deliver** to enter it; completing that encounter returns them to the map and reveals the next connected choices. The destination appears at the end, where the player completes the delivery and receives the route summary.
+The first vertical slice is a single playable contract with a defined destination, a short branching route, two or three encounter types, persistent ship/cargo state between nodes, automatic combat, side earnings, a delivery payout, and a readable result report.
 
-Suggested development order:
+### Vertical-slice test contract: “The Wrong Parcel”
 
-1. **Mission-selection and route-discovery foundation:** Select a contract in HQ, generate a seeded connected route, reveal nodes progressively, and validate that every reachable branch can reach the destination.
-2. **Vertical slice:** One delivery contract, a short procedural route, a couple of encounter types, Test Flight / Deliver flow, automatic combat, persistent hull and cargo condition between nodes, a payout, and a handful of skill tree upgrades.
-3. Add a mission-results report that communicates success, failure, rewards, cargo condition, and reputation with the game's dry corporate humour.
-4. Expand the route map and encounter library while keeping route structure valid, choices meaningful, and pacing intentional.
-4. Add cargo integrity, hazardous cargo, and cargo jettisoning.
-5. Implement credits, salvage, valuables, and module drops.
-6. Grow the skill tree and add a first version of the ship designer.
-7. Add clients, reputation, cargo unlocks, and hull-size progression.
-8. Add automation unlocks, crew, elite encounters, and richer events.
-9. Add the campaign finale, then develop Escort Pilot.
-10. Consider Delivery Tycoon only after the core experience is working well.
+1. **HQ: Contract acceptance.** Accept a standard parcel delivery to a mining colony. Confirm that Deliver is disabled before mission selection and enabled afterward.
+2. **Node 1: Customs Checkpoint.** A short introductory encounter. Completing it marks the node complete and reveals two connected options.
+3. **Branch A: Salvage Drift.** A higher-risk detour with a chance of side earnings and salvage.
+4. **Branch B: Service Beacon.** A recovery opportunity that trades a less lucrative route for improved ship condition.
+5. **Merge: Mining Lane.** A short encounter that tests whether hull, shields, cargo integrity, and credits persist correctly from earlier nodes.
+6. **Destination: Colony Freight Office.** Resolve delivery once, apply cargo-condition adjustments and route bonuses, and show the final payout and completed path.
+7. **Failure check.** Repeat the contract and fail before the destination. Verify that the contract payout is zero while eligible encounter earnings remain.
+
+This is a test specification for the intended experience; the named beats may need to be mapped onto the available generated node profiles as the implementation evolves.
+
+### Development order
+
+1. **Mission selection and route discovery:** Select a contract, generate a seeded route, reveal connected nodes progressively, and validate reachability.
+2. **Vertical slice:** Complete one contract from HQ through encounters to destination, including persistent ship/cargo state and rewards.
+3. **Results report:** Clearly show success/failure, payout, retained side earnings, cargo condition, and route summary.
+4. **Encounter pacing:** Add and balance combat, salvage, service, and event nodes with controlled variation.
+5. **Cargo risk:** Tune cargo integrity, hazardous cargo, and jettisoning through playtests.
+6. **Economy and loot:** Establish credits, salvage capacity, valuables, and module drops.
+7. **Progression split:** Implement skill-tree multipliers/automation separately from hull and module capabilities.
+8. **Scaling and balance:** Test damage, hull, time-to-kill, contract tiers, and reward curves from early to late game.
+9. **Clients and campaign:** Add reputation, cargo unlocks, a finale, then consider Escort Pilot.
+10. **Future scope:** Consider crew and Delivery Tycoon only after the core experience is solid.
 
 ## Open design questions
 
-- How long should a full mission be, in total? (Individual encounters are about 60-90 seconds.)
-- What is the exact control scheme for piloting?
-- Is the game 2D or 3D?
-- How large do numbers grow in the late game?
-- Which automation features should the skill tree unlock?
-- How should the campaign finale work?
+The following are deliberately unresolved; the core direction is not:
+- What exact control layout best supports consistent movement and targeting?
+- What is the final full-mission duration once several encounters are linked?
+- Which specific automation unlocks save busywork without removing piloting agency?
+- What final late-game growth curves and soft caps feel rewarding without runaway numbers?
+- How should the campaign finale and post-campaign contract loop work?
+- What are the final salvage-capacity, cargo-jettison, and reward-ratio values after playtesting?
+
+The game is already a 2D project, and the active-versus-idle direction is active piloting with automated weapons. Those are decisions, not open questions.
 
 ## Technical details
 
-Confirmed from the project files:
+Confirmed from the project configuration and current source:
 
-- **Engine:** Godot 4.7 (Forward Plus renderer)
-- **Physics:** Jolt Physics
-- **Windows graphics driver:** Direct3D 12
+- **Engine:** Godot 4.7, Forward Plus renderer.
+- **Game dimension:** 2D; gameplay uses 2D scene and physics nodes.
+- **Primary language:** GDScript.
+- **Startup scene:** `res://scenes/hq.tscn`.
+- **Shared mission state:** `res://scripts/mission_run_state.gd`, registered as the `MissionRunState` autoload.
+- **Procedural route generation:** `res://scripts/route_generator.gd`.
+- **Route-map presentation and interaction:** `res://scripts/route_map.gd` and `res://scenes/route_map.tscn`.
+- **Flight stage:** `res://scripts/mission_flight.gd`.
+- **Route node data:** `res://scripts/mission_route_node.gd`.
+- **Save format:** The save location and persistence implementation should be documented after confirming the current save/load path; do not assume that runtime mission state is the save system.
+- **Physics note:** `project.godot` enables Jolt for 3D physics. The game is 2D, so this setting is not evidence of a 3D gameplay requirement and can be reviewed separately.
+- **Windows rendering driver:** Direct3D 12.
 
-The scripting language, 2D or 3D choice, startup scene, save format, and important gameplay scripts should be documented once confirmed.
+## Procedural generation reference
 
+Reference: [Video on procedural generation and game design](https://youtu.be/442FHQ-rymM?si=KcyazgQl7kRDs7zw).
 
-## Procedural Generation Design Notes
+The design takeaway is simple: **protect what matters; randomize what doesn't**. A route generator should not merely scatter random encounters. It should create a coherent delivery journey whose connectivity, risk, rewards, and pacing remain within tested bounds. Seeded generation makes results reproducible, while multi-seed testing helps expose edge cases. Traditional procedural generation uses rules, algorithms, weights, constraints, and validation; it does not require generative AI.
 
-Reference: [Video on procedural generation and game design](https://youtu.be/442FHQ-rymM?si=KcyazgQl7kRDs7zw). These notes summarize the transcript supplied for this project and apply its principles to SpaceDelivery's mission routes.
-
-### Core principle: design possibilities, not just random content
-
-Procedural generation is not simply choosing random rooms, enemies, or rewards. Randomness creates variety, but does not understand fun, fairness, pacing, or encounter quality. The designer's job is to define the rules and relationships that make the generated result feel intentional.
-
-**Protect what matters; randomize what doesn't.** Guarantee essential mission structure and fair conditions, while allowing variation in encounters, route choices, rewards, and details. A generated mission should surprise the player without feeling arbitrary or breaking the game's logic.
-
-### Rules, constraints, and validation
-
-A useful procedural system combines:
-- **Randomness and seeds:** provide variation; a fixed seed can reproduce a route for debugging and testing.
-- **Design rules and constraints:** prevent invalid or undesirable outcomes.
-- **Weights and probabilities:** make some events common, some rare, and some impossible in specific contexts.
-- **Validation and testing:** check that generated routes are reachable, completable, and within intended limits.
-
-For SpaceDelivery, critical constraints could include:
-- Every route starts at the delivery contract and reaches the destination.
-- Branches eventually merge into a shared final approach or destination.
-- Every chosen path is connected and completable.
-- Encounter difficulty and rewards fit the mission's intended risk.
-- Essential resources or opportunities appear before challenges that require them.
-- Avoid repeatedly stacking the most demanding encounters without recovery or variation.
-
-### Generate an experience with pacing
-
-A route should have rhythm rather than feel like a list of unrelated random encounters. Plan for pressure, relief, discovery, escalation, and payoff. Use encounter history to influence what can appear next. For example, after a demanding fight, a refuelling or rescue opportunity may be more appropriate than another extreme battle; repeated encounter types or high-value rewards can be temporarily less likely.
-
-The system should consider **what kind of encounter belongs here**, not only which encounter to pick. Enemy combinations should account for space, range, movement pressure, synergy, and difficulty. Rewards should consider recent rewards and the player's condition, rather than relying only on fixed independent chances.
-
-### Meaningful route choices and consequences
-
-Branches should represent real trade-offs, such as:
-- A safer route with lower rewards versus a dangerous route with better salvage.
-- A station stop that restores the ship but costs time or credits.
-- Helping a stranded ship for a possible ally or future benefit versus bypassing it.
-- Investigating a derelict for loot while risking an ambush.
-
-Where possible, a choice should influence later nodes or outcomes. Record simple route flags such as `rescued_crew`, `route_alerted`, `spent_credits`, `cargo_damaged`, or `earned_ally`. Later encounters, dialogue, available assistance, or rewards can react to these flags. This makes the route feel connected and gives choices a memory.
-
-### Build from purpose to variation
-
-For authored mission templates, decide the destination, mission theme, major turning point, and final challenge first. Then build the branches that lead there. Give each node a purpose in the overall journey. Randomize within that structure rather than generating an unconstrained tree of unrelated encounters.
-
-A practical approach for SpaceDelivery is a **hybrid system**:
-1. Define a coherent mission structure and required beats.
-2. Generate or select branches from encounter options that fit each beat.
-3. Apply constraints and weights based on mission theme, cargo, route risk, and recent events.
-4. Validate reachability, pacing, and reward/difficulty bounds.
-5. Use seeds and automated batches of generated routes to reproduce bugs and identify patterns, then playtest representative results.
-
-### Traditional procedural generation versus AI
-
-Traditional procedural generation uses developer-defined algorithms, rules, probabilities, and constraints; it does not inherently require machine learning or generative AI. The algorithm is machinery, not a substitute for design. AI may be combined with procedural systems, but SpaceDelivery can build a strong route generator using explicit, testable rules.
-
-### Testing philosophy
-
-One good generated route does not prove the generator works. Test many seeds and look for patterns: unreachable nodes, repeated encounters, difficulty spikes, rewards arriving too early or too late, long stretches without relief, and dominant or unrewarding choices. Automated checks can measure structural properties, but human playtesting is still needed to judge whether a route feels engaging.
-
-**Guiding question:** Before asking “How do we randomize this?”, ask “What must remain true for this mission to feel like SpaceDelivery?” The route generator should encode those design promises, then use randomness to explore the space between them.
+For SpaceDelivery, authored mission beats establish purpose, and procedural variation fills the branches between them. Each node should have a reason to exist, route flags should let decisions matter later, and a generated route should surprise the player without becoming arbitrary or unfair.
