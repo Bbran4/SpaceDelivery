@@ -35,12 +35,21 @@ static func generate_route(mission: MissionDefinition, seed_value: int = -1) -> 
 				node.risk = 0
 			else:
 				var encounter: Dictionary = ENCOUNTERS[rng.randi_range(0, ENCOUNTERS.size() - 1)]
-				node.title = str(encounter["title"])
-				node.description = str(encounter["description"])
-				node.node_kind = MissionRouteNode.NodeKind.START if layer_index == 0 else MissionRouteNode.NodeKind.ENCOUNTER
-				node.encounter_profile = int(encounter["profile"])
-				node.risk = clampi(int(encounter["risk"]) + (1 if mission.risk_label.to_lower().contains("elevated") and rng.randf() < 0.35 else 0), 0, 5)
-				node.bonus_credits = int(encounter["bonus"]) + rng.randi_range(0, 15)
+				var is_service_stop: bool = layer_index > 0 and rng.randf() < 0.28
+				if is_service_stop:
+					node.title = "Unmanned Service Beacon"
+					node.description = "A neglected automated service beacon offers a brief systems check and a chance to catch your breath. The maintenance contract expired, naturally."
+					node.node_kind = MissionRouteNode.NodeKind.CHOICE
+					node.encounter_profile = MissionRouteNode.EncounterProfile.QUIET
+					node.risk = 0
+					node.bonus_credits = 10 + rng.randi_range(0, 10)
+				else:
+					node.title = str(encounter["title"])
+					node.description = str(encounter["description"])
+					node.node_kind = MissionRouteNode.NodeKind.START if layer_index == 0 else MissionRouteNode.NodeKind.ENCOUNTER
+					node.encounter_profile = int(encounter["profile"])
+					node.risk = clampi(int(encounter["risk"]) + (1 if mission.risk_label.to_lower().contains("elevated") and rng.randf() < 0.35 else 0), 0, 5)
+					node.bonus_credits = int(encounter["bonus"]) + rng.randi_range(0, 15)
 			layer.append(node)
 		layers.append(layer)
 
