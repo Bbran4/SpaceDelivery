@@ -7,6 +7,7 @@ const MISSION_PATHS: Array[String] = [
 	"res://resources/missions/fragile_relay_components.tres",
 	"res://resources/missions/bulk_freight_manifest.tres",
 	"res://resources/missions/valuable_courier_package.tres",
+	"res://resources/missions/lost_survey_cores.tres",
 ]
 
 

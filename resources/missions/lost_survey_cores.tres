@@ -1,0 +1,38 @@
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission_definition.gd" id="1_mission"]
+[ext_resource type="Script" path="res://scripts/missions/mission_objective_definition.gd" id="2_objective"]
+
+[sub_resource type="Resource" id="survey_cores_objective"]
+script = ExtResource("2_objective")
+objective_id = &"recover_survey_cores"
+title = "Recover Survey Cores"
+description = "Locate and collect all three survey cores, then return them to the destination."
+objective_type = 6
+required = true
+required_quantity = 3
+bonus_credits = 90
+
+[resource]
+script = ExtResource("1_mission")
+mission_id = &"lost_survey_cores"
+title = "Lost Survey Cores"
+client_name = "Aster Survey Authority"
+cargo_name = "Survey Core Cache"
+cargo_type = "Recovered Scientific Equipment"
+cargo_variant = 0
+cargo_description = "Three survey cores were lost when a research drone went dark. Recover the cores and bring them back intact."
+cargo_value_credits = 360
+cargo_capacity_required = 1
+cargo_damage_sensitivity = 0.8
+minimum_delivery_integrity_percent = 25
+full_reward_integrity_percent = 75
+damaged_cargo_payout_penalty_percent = 20
+destination_name = "Aster Survey Outpost"
+briefing = "A research drone vanished in a debris corridor, leaving three valuable survey cores unaccounted for. Recover the cores scattered through the route and deliver them to the Aster Survey Outpost. The recovery bonus is paid only when the cores are returned."
+base_reward_credits = 280
+risk_label = "Moderate"
+objectives = Array[ExtResource("2_objective")]([SubResource("survey_cores_objective")])
+layer_node_counts = Array[int]([1, 2, 3, 2, 1])
+branch_chance = 0.55
+risk_bias = 0
