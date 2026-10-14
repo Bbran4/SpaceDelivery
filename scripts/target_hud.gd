@@ -33,9 +33,17 @@ func _on_target_changed(new_target: Ship) -> void:
 
 
 func _process(_delta: float) -> void:
-	if target == null:
+	# Godot object references can remain non-null after their node is freed.
+	# Always validate before reading any properties from a target or controller.
+	if not is_instance_valid(target):
+		target = null
+		_show_no_target()
 		return
-	if not is_instance_valid(target) or target.is_destroyed or not target.is_inside_tree():
+	if target.is_destroyed or not target.is_inside_tree():
+		target = null
+		_show_no_target()
+		return
+	if not is_instance_valid(controller) or not is_instance_valid(controller.ship):
 		target = null
 		_show_no_target()
 		return
@@ -53,13 +61,21 @@ func _show_no_target() -> void:
 
 
 func _update_target_readout() -> void:
+	if not is_instance_valid(target) or not is_instance_valid(controller):
+		_show_no_target()
+		return
+	var player_ship: Ship = controller.ship
+	if not is_instance_valid(player_ship):
+		_show_no_target()
+		return
+
 	target_name_label.text = target.ship_name if not target.ship_name.is_empty() else "Enemy"
 	var range_limit: float = 300.0
-	for weapon_node: Node in controller.ship.weapon_instances:
+	for weapon_node: Node in player_ship.weapon_instances:
 		var weapon: ShipWeapon = weapon_node as ShipWeapon
-		if weapon != null and weapon.weapon_data != null:
+		if is_instance_valid(weapon) and weapon.weapon_data != null:
 			range_limit = maxf(range_limit, weapon.weapon_data.range)
-	var in_range: bool = controller.ship.global_position.distance_to(target.global_position) <= range_limit
+	var in_range: bool = player_ship.global_position.distance_to(target.global_position) <= range_limit
 	var range_text: String = "" if in_range else "  |  OUT OF RANGE"
 	status_label.text = "HULL %d / %d     SHIELD %d / %d%s" % [
 		roundi(target.current_hull), roundi(target.max_hull),
