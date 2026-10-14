@@ -191,11 +191,13 @@ func _refresh_selected_details() -> void:
 	selected_details.add_child(client_label)
 
 	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s" % [
+	cargo_label.text = "CARGO  /  %s\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nDAMAGE TOLERANCE  /  %d%% INTEGRITY  ·  PENALTY IF DAMAGED  /  %d%%" % [
 		selected_mission.cargo_description,
 		selected_mission.destination_name,
 		selected_mission.base_reward_credits,
 		selected_mission.risk_label,
+		25,
+		selected_mission.damaged_cargo_payout_penalty_percent,
 	]
 	cargo_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	selected_details.add_child(cargo_label)
