@@ -214,7 +214,7 @@ Confirmed from the project configuration and current source:
 - **Primary language:** GDScript.
 - **Startup scene:** `res://scenes/hq.tscn`.
 - **Shared mission state:** `res://scripts/mission_run_state.gd`, registered as the `MissionRunState` autoload.
-- **Procedural route generation:** `res://scripts/route_generator.gd`.
+- **Procedural route generation:** `res://scripts/route_generator.gd`. Mission resources configure `layer_node_counts`, `branch_chance`, `risk_bias`, and optional `fixed_beats` in `res://scripts/mission_definition.gd`.
 - **Route-map presentation and interaction:** `res://scripts/route_map.gd` and `res://scenes/route_map.tscn`.
 - **Flight stage:** `res://scripts/mission_flight.gd`.
 - **Route node data:** `res://scripts/mission_route_node.gd`.
@@ -228,4 +228,4 @@ Reference: [Video on procedural generation and game design](https://youtu.be/442
 
 The design takeaway is simple: **protect what matters; randomize what doesn't**. A route generator should not merely scatter random encounters. It should create a coherent delivery journey whose connectivity, risk, rewards, and pacing remain within tested bounds. Seeded generation makes results reproducible, while multi-seed testing helps expose edge cases. Traditional procedural generation uses rules, algorithms, weights, constraints, and validation; it does not require generative AI.
 
-For SpaceDelivery, authored mission beats establish purpose, and procedural variation fills the branches between them. Each node should have a reason to exist, route flags should let decisions matter later, and a generated route should surprise the player without becoming arbitrary or unfair.
+For SpaceDelivery, mission resources define the route's layer shape, branching likelihood, and risk bias. Optional `fixed_beats` are encounter templates assigned to a layer depth and lane; the generator preserves their authored title, description, encounter profile, risk, and bonus while generating node IDs and connections. `layer_node_counts` defines the number of nodes in each layer, with a single start and destination. The HQ validates these generator settings and logs actionable errors without hiding a contract because of obsolete route-graph data. Each node should have a reason to exist, route flags should let decisions matter later, and a generated route should surprise the player without becoming arbitrary or unfair.
