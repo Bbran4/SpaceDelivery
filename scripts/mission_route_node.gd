@@ -6,7 +6,7 @@ class_name MissionRouteNode
 enum NodeKind {
 	START,
 	ENCOUNTER,
-	CHOICE,
+	SERVICE,
 	DESTINATION,
 }
 
