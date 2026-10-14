@@ -231,3 +231,427 @@ Reference: [Video on procedural generation and game design](https://youtu.be/442
 The design takeaway is simple: **protect what matters; randomize what doesn't**. A route generator should not merely scatter random encounters. It should create a coherent delivery journey whose connectivity, risk, rewards, and pacing remain within tested bounds. Seeded generation makes results reproducible, while multi-seed testing helps expose edge cases. Traditional procedural generation uses rules, algorithms, weights, constraints, and validation; it does not require generative AI.
 
 For SpaceDelivery, mission resources define the route's layer shape, branching likelihood, and risk bias. Optional `fixed_beats` are encounter templates assigned to a layer depth and lane; the generator preserves their authored title, description, encounter profile, risk, and bonus while generating node IDs and connections. `layer_node_counts` defines the number of nodes in each layer, with a single start and destination. The HQ validates these generator settings and logs actionable errors without hiding a contract because of obsolete route-graph data. Each node should have a reason to exist, route flags should let decisions matter later, and a generated route should surprise the player without becoming arbitrary or unfair.
+
+
+## Mission design catalogue: types, mechanics, and semantics
+
+This section is the long-term design reference for contract variety. It records the intended mission vocabulary so future implementation can be planned without losing the wider design. These entries are **design options, not claims that the mechanics are already implemented**. The first release should implement a small, reusable set of objective mechanics and combine them into many contract variants.
+
+### Design principle: the assignment is ordinary; the complication is not
+
+SpaceDelivery takes tonal inspiration from workplace science-fiction comedy: a routine courier job becomes complicated by hostile customers, broken infrastructure, strange cargo, bureaucracy, and questionable company decisions. The universe, characters, dialogue, locations, and stories must remain original.
+
+Mission variety should come primarily from combining reusable objectives, cargo rules, route nodes, encounter templates, complications, and consequences. A mission type describes the contract's overall purpose; objective semantics define exactly what the player must do; route nodes define the stages along the journey. These are related but separate systems.
+
+### A. Delivery and transport
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| DEL-01 | Standard delivery | Deliver a shipment | Cargo integrity, destination validation, payout |
+| DEL-02 | Fragile delivery | Deliver above a minimum integrity | Damage-sensitive reward and failure threshold |
+| DEL-03 | Bulk freight | Transport oversized cargo | Cargo-capacity eligibility gate |
+| DEL-04 | High-value delivery | Deliver valuable cargo | Higher reward and potentially stronger enemy interest |
+| DEL-05 | Perishable delivery | Deliver before expiry | Deadline or cargo-condition decay |
+| DEL-06 | Live-cargo transport | Keep a living specimen alive | Survival threshold and fragile return cargo |
+| DEL-07 | Passenger transport | Transport passengers safely | Passenger survival and capacity rules |
+| DEL-08 | Secure transport | Deliver restricted or dangerous cargo | Inspection, interception, or containment rules |
+| DEL-09 | Multi-stop delivery | Deliver to several destinations | Ordered stops and partial-reward rules |
+| DEL-10 | Split shipment | Deliver separate parcels to recipients | Cargo allocation and per-recipient checks |
+| DEL-11 | Emergency supply run | Deliver essential goods urgently | Deadline and failure consequences |
+| DEL-12 | Smuggling contract | Deliver concealed or prohibited cargo | Detection risk and penalties |
+| DEL-13 | Contract relay | Transfer cargo to another ship or station | Handover objective and possible ambush |
+| DEL-14 | Return shipment | Carry goods back to the original client | Return leg and delivery validation |
+| DEL-15 | Blind delivery | Find and reach an initially unknown destination | Destination reveal and route discovery |
+
+Shared mechanics: cargo capacity, cargo integrity, destination arrival, delivery validation, contract settlement, optional bonuses, and penalties.
+
+### B. Retrieval, rescue, and recovery
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| REC-01 | Cargo retrieval | Collect designated cargo | Pickup and objective tracking |
+| REC-02 | Stolen cargo recovery | Recover cargo carried by raiders | Cargo-carrying enemy and recovery drop |
+| REC-03 | Search and rescue | Locate and recover a missing target | Search points and target discovery |
+| REC-04 | Escape-pod recovery | Collect survivors or pods | Multiple pickups and optional deadline |
+| REC-05 | Personnel extraction | Reach and extract a stranded person | Extraction point and survival condition |
+| REC-06 | Live specimen capture | Acquire a living target | Target condition and safe return |
+| REC-07 | Artifact recovery | Retrieve a unique object | Protected site, guardian, or hazard |
+| REC-08 | Wreck salvage | Recover materials from a wreck | Multiple pickups and salvage value |
+| REC-09 | Black-box recovery | Retrieve flight records | Specific objective item and investigation reward |
+| REC-10 | Missing-ship recovery | Locate a lost ship or remains | Search route and target identification |
+| REC-11 | Prisoner extraction | Free and recover a captive | Hostile location and pressured escape |
+| REC-12 | Emergency evacuation | Collect people from a threatened area | Capacity and escalating danger |
+| REC-13 | Component recovery | Recover a repair-critical component | Required item identity |
+| REC-14 | Stolen-technology recovery | Recover a valuable device or prototype | Pursuit, guards, or secure location |
+
+**Important rule:** collecting an object does not automatically complete a recovery contract. If the assignment requires bringing it home, the player must survive the return journey and pass the delivery check.
+
+### C. Combat and target elimination
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| COM-01 | Elimination | Defeat a designated enemy group | Required kill count or all-required-hostiles condition |
+| COM-02 | Bounty hunt | Defeat or capture a named target | Target identity and bounty reward |
+| COM-03 | Elite hunt | Defeat one powerful enemy | Elite modifiers, target marker, special reward |
+| COM-04 | Pirate interception | Stop raiders carrying stolen goods | Cargo recovery and possible target escape |
+| COM-05 | Convoy attack | Disable a hostile transport convoy | Multiple targets and priority selection |
+| COM-06 | Convoy defence | Protect friendly transports | Ally survival and attacker waves |
+| COM-07 | Boss encounter | Defeat a major hostile threat | Boss phases and special attack patterns |
+| COM-08 | Enemy blockade | Break through a defensive line | Waves and a protected exit |
+| COM-09 | Stronghold assault | Neutralize a defended installation | Staged encounters and defensive structures |
+| COM-10 | Reinforcement interception | Stop reinforcements arriving | Deadline and escalating opposition |
+| COM-11 | Swarm suppression | Defeat or survive large numbers of enemies | Waves and spawning pressure |
+| COM-12 | Capital-ship engagement | Disable a large hostile vessel | Large health pool or subsystem objectives |
+| COM-13 | Wanted-target capture | Disable and secure a target | Capture condition rather than ordinary destruction |
+| COM-14 | Retaliation | Attack a faction linked to a prior incident | Campaign flags and faction hostility |
+
+With the current auto-fire combat model, most combat variants should change objective conditions, enemy composition, target priority, and encounter pacing rather than require a new shooting system.
+
+### D. Hazards, survival, and disaster response
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| HAZ-01 | Hazard-zone crossing | Reach an exit through a dangerous area | Continuous environmental damage |
+| HAZ-02 | Radiation exposure | Cross a radiation field | Exposure accumulation or periodic damage |
+| HAZ-03 | Heat-zone traversal | Cross a high-temperature region | Hull pressure and limited safe time |
+| HAZ-04 | Asteroid navigation | Survive a debris field | Collision or periodic hazard damage |
+| HAZ-05 | Timed escape | Reach safety before time expires | Countdown and failure trigger |
+| HAZ-06 | Stranded survival | Survive until rescue or reach safety | Resource pressure or escalating encounters |
+| HAZ-07 | Ship malfunction | Complete work with impaired systems | Restricted weapons, movement, or shields |
+| HAZ-08 | Hull-breach emergency | Survive a critical ship condition | Damage pressure and repair/escape objective |
+| HAZ-09 | Disaster prevention | Stop a catastrophic event | Countdown and specific objective |
+| HAZ-10 | Hazard containment | Prevent a threat from spreading | Timed containment objective |
+| HAZ-11 | Debris clearance | Clear dangerous objects from a route | Destructible obstacles or targetable hazards |
+| HAZ-12 | Rescue under fire | Recover an objective as danger escalates | Pickup plus survival pressure |
+| HAZ-13 | Environmental extraction | Retrieve an objective from a hostile environment | Exposure management and cargo acquisition |
+| HAZ-14 | Emergency-landing recovery | Escape a compromised area after an incident | Restricted capabilities and recovery objective |
+
+A hazard mission must change how long the player can safely remain in an area or how they choose their path. It should not merely be an ordinary combat room with different scenery.
+
+### E. Interception, pursuit, and races
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| PUR-01 | Timed interception | Destroy or disable a target before a deadline | Countdown and target condition |
+| PUR-02 | Target pursuit | Catch a moving target | Escape timer or pursuit progress |
+| PUR-03 | Racing contract | Reach a destination before a rival | Completion-time comparison |
+| PUR-04 | Courier interception | Stop a competing courier | Rival progress and contract competition |
+| PUR-05 | Incoming-threat interception | Stop an object before impact | Impact timer and threat health |
+| PUR-06 | Convoy interception | Catch a moving group | Multiple targets and escape conditions |
+| PUR-07 | Escort interception | Protect an ally from pursuers | Ally condition and attacker suppression |
+| PUR-08 | Emergency rendezvous | Reach a location before a critical event | Deadline and rendezvous radius |
+| PUR-09 | Chase and recover | Catch a thief and recover stolen cargo | Pursuit followed by collection |
+| PUR-10 | Escape pursuit | Reach safety while enemies chase | Escape condition and survival |
+| PUR-11 | Timed delivery | Deliver before contract expiry | Deadline and late penalty |
+| PUR-12 | Signal interception | Reach or disable a transmitting target | Signal tracking and confirmation |
+
+Deadlines must be achievable with reasonable equipment and ordinary play, not require a perfect build or lucky encounter rolls.
+
+### F. Exploration, investigation, and anomalies
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| EXP-01 | Uncharted exploration | Reach and explore an unknown location | Discovery nodes and unknown encounters |
+| EXP-02 | Reconnaissance | Survey a designated area | Scan or visit required locations |
+| EXP-03 | Anomaly investigation | Investigate an unusual phenomenon | Anomaly effects and special objective |
+| EXP-04 | Signal investigation | Track a distress or unknown signal | Signal source discovery |
+| EXP-05 | Scientific expedition | Gather samples or research data | Collection requirements |
+| EXP-06 | Site survey | Inspect several locations | Ordered location objectives |
+| EXP-07 | Missing-vessel investigation | Discover what happened to a lost ship | Search, wreck, and signal objectives |
+| EXP-08 | Evidence recovery | Retrieve evidence from a hostile location | Specific pickup and escape condition |
+| EXP-09 | Artifact survey | Locate and examine a rare object | Discovery before recovery |
+| EXP-10 | Restricted-area investigation | Investigate a controlled location | Detection risk or hostile response |
+| EXP-11 | Cosmic-anomaly expedition | Enter and survive an abnormal region | Altered encounter or hazard rules |
+| EXP-12 | First-contact assignment | Reach an unknown civilization or faction | Delivery, diplomacy, or hostile response |
+| EXP-13 | Multi-stage investigation | Complete related objectives in sequence | Objective chain and conditional branches |
+| EXP-14 | Unknown-destination delivery | Discover the destination during the run | Delayed route reveal |
+
+Investigation can be staged without a large detective system. For example, finding a distress signal unlocks a wreck node, and reaching the wreck reveals a recovery objective.
+
+### G. Stealth, infiltration, and sabotage
+
+| ID | Mission type | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| INF-01 | Covert delivery | Deliver without attracting attention | Detection meter or alert threshold |
+| INF-02 | Facility infiltration | Enter a restricted location | Security encounters and access conditions |
+| INF-03 | Data theft | Retrieve information from a target | Data pickup or timed interaction |
+| INF-04 | Sabotage | Disable a designated system | Targeted destruction or interaction |
+| INF-05 | Communications disruption | Disable an enemy signal source | Objective structure or target health |
+| INF-06 | Prison break | Free a captive and escape | Rescue interaction and extraction |
+| INF-07 | Security shutdown | Disable a defensive system | Sequential objectives |
+| INF-08 | Contraband extraction | Recover restricted cargo and escape | Detection risk and cargo retention |
+| INF-09 | Decoy operation | Draw enemies away from another objective | Survival timer or distraction target |
+| INF-10 | Black-site recovery | Retrieve an asset from a secret facility | Elite defenders and restricted objective |
+| INF-11 | Hostile-system disruption | Disable an installation's capabilities | Multiple system objectives |
+| INF-12 | Evidence and escape | Recover evidence without being trapped | Pickup and escape deadline |
+
+For an early version, stealth can be represented by an alert value, route flags, escalating encounters, and a timer after objective acquisition. Full stealth AI is not a prerequisite.
+
+### H. Company, faction, and campaign assignments
+
+These are not all flight modes. Some belong on the HQ mission board or in between-flight event nodes.
+
+| ID | Mission/event | Primary objective | Distinct rules |
+| --- | --- | --- | --- |
+| CAM-01 | Rival courier contract | Beat a competing delivery company | Rival progress and reputation effects |
+| CAM-02 | Corporate recovery | Recover company property or funds | Asset retrieval and financial consequences |
+| CAM-03 | Faction assistance | Complete a job for a faction | Reputation and standing |
+| CAM-04 | Faction retaliation | Respond to a previous hostile action | Persistent hostility or special encounters |
+| CAM-05 | Diplomatic transport | Deliver a diplomat or sensitive cargo | Passenger survival and faction consequences |
+| CAM-06 | Negotiated settlement | Complete a task to resolve a dispute | Contract choices and outcome flags |
+| CAM-07 | Corporate inspection | Satisfy an inspection or recover records | HQ event or optional retrieval flight |
+| CAM-08 | Contract dispute | Choose how to respond to a client dispute | Reward, reputation, or future access |
+| CAM-09 | Emergency company assignment | Respond to a threat to company operations | Priority contract and deadline |
+| CAM-10 | Crew-related assignment | Resolve a crew problem | Crew or ship modifier |
+| CAM-11 | Resource procurement | Acquire operational supplies | Credit expenditure or resource pickups |
+| CAM-12 | Company expansion | Complete a milestone | Unlock an upgrade, route, or contract tier |
+| CAM-13 | Multi-contract campaign | Complete connected assignments | Persistent campaign flags |
+| CAM-14 | Major crisis event | Resolve a sector-wide or company-wide threat | Multi-stage objectives and branching outcomes |
+
+Company events should not automatically become new flight mechanics. Use them to change choices, rewards, reputation, available contracts, and later mission conditions.
+
+### Objective semantics: the verbs the game understands
+
+Mission types are contract labels. Objective verbs are reusable, testable rules that define completion.
+
+| Objective verb | Meaning | Completion condition |
+| --- | --- | --- |
+| DELIVER | Deliver a required shipment or item | Correct destination reached with required cargo |
+| DESTROY | Destroy a designated target | Target health reaches zero |
+| ELIMINATE_GROUP | Defeat a designated group | All required enemies defeated |
+| SURVIVE | Stay alive for a duration | Timer expires while player remains alive |
+| REACH | Enter a designated location | Objective-area condition is met |
+| COLLECT | Acquire an object or quantity | Required pickups collected |
+| RESCUE | Recover a person or living target | Target collected or extracted |
+| ESCORT | Protect an ally or convoy | Ally survives or reaches its destination |
+| INTERCEPT | Stop a target before a deadline | Target neutralized before the deadline |
+| INVESTIGATE | Inspect or discover an objective | Required scan, discovery, or evidence condition met |
+| INTERACT | Activate a device or complete an interaction | Interaction registered |
+| ESCAPE | Leave a dangerous location | Exit reached before failure conditions |
+| DEFEND | Protect a target or location | Protected target survives the required encounter |
+| DISABLE | Render a system inoperative without necessarily destroying it | System enters its disabled state |
+| DELIVER_ALL | Deliver multiple required shipments | Every required delivery is validated |
+| COMPLETE_SEQUENCE | Finish ordered objectives | Every mandatory stage is completed |
+
+Objectives may be combined. A rescue can require REACH, COLLECT, and ESCAPE; an interception can require DESTROY before a timer expires. Optional objectives must remain distinct from mandatory ones. Defeating every enemy must not be required if the contract only asks the player to recover cargo and return safely.
+
+### Objective and mission-run states
+
+Each objective has a predictable lifecycle:
+
+- **LOCKED:** prerequisites have not been met.
+- **AVAILABLE:** the objective can be pursued.
+- **ACTIVE:** the objective is currently being pursued.
+- **COMPLETED:** its success conditions are satisfied.
+- **FAILED:** a required condition can no longer be met.
+
+The overall contract has a separate lifecycle:
+
+- **AVAILABLE:** offered on the board.
+- **SELECTED:** chosen at HQ.
+- **IN_PROGRESS:** flight has started.
+- **OBJECTIVE_COMPLETE:** mandatory in-flight objectives are done, but delivery or extraction may remain.
+- **DELIVERED:** required delivery or extraction is confirmed.
+- **SUCCEEDED:** contract requirements have been met.
+- **FAILED:** a failure condition has triggered.
+- **ABANDONED:** the player deliberately leaves the contract, if this is supported.
+- **SETTLED:** rewards and consequences have been calculated.
+
+Not every mission needs every state. A bounty may finish when its target is destroyed; a recovery job may remain active until the recovered item reaches its destination. **Objective completion, successful delivery, and financial settlement are separate events.** The resolver must settle a run exactly once.
+
+### Cargo semantics
+
+| Cargo tag | Meaning and effect |
+| --- | --- |
+| STANDARD | Ordinary shipment with normal capacity and integrity rules |
+| FRAGILE | Damage has a greater impact on condition, reward, or success |
+| LIVE | Living specimen must remain above a survival threshold |
+| PASSENGERS | People require survival and capacity checks |
+| HAZARDOUS | Dangerous material may trigger hazards or containment rules |
+| VALUABLE | High-value shipment with larger reward and potentially higher risk |
+| PERISHABLE | Cargo deteriorates or expires over time |
+| CONTRABAND | Restricted cargo creates detection and penalty rules |
+| BULK | Large shipment requires sufficient hold capacity |
+| QUEST_ITEM | Unique objective item with identity and return conditions |
+| STOLEN | Recovered cargo needs ownership and recovery validation |
+| SALVAGE | Recovered material may be mandatory or optional and can be sold |
+
+Cargo condition is independent from ship hull and shields. Do not damage cargo on every ship hit by default. Cargo damage should come from explicit mission rules, relevant attacks, or defined hazard effects.
+
+Possible delivery outcomes include full reward for intact cargo, reduced reward for damaged cargo, contract failure below a required integrity threshold, and no delivery bonus when the destination is never reached. Eligible side earnings remain governed by the existing failure and settlement rules.
+
+### Route-node semantics
+
+A route node represents a stage of the journey, not necessarily a whole mission type.
+
+| Node type | Purpose | Possible contents |
+| --- | --- | --- |
+| START | Begin the contract | Initial conditions and briefing |
+| COMBAT | Resolve an encounter | Enemy groups, elites, or waves |
+| HAZARD | Navigate environmental danger | Heat, radiation, debris |
+| PICKUP | Collect an objective | Cargo, passengers, artifacts |
+| OBJECTIVE | Complete a mission task | Destroy, scan, activate, rescue |
+| SERVICE | Repair or resupply | Hull repair and shield restoration |
+| CHOICE | Choose a route or accept a risk | Shortcut, detour, optional reward |
+| EVENT | Trigger a contract event | Inspection, distress call, ambush |
+| ELITE | Face a designated strong enemy | Bounty, guardian, captain |
+| EXIT | Leave the route or finish the journey | Extraction, return, or next stage |
+
+For example, a delivery can contain a start, a hostile patrol, a choice between a risky shortcut and a safer route, a debris hazard, an optional service stop, and a destination. The route graph describes the journey; the objective system describes what must be accomplished.
+
+**Route invariants:**
+
+1. Every generated route has a reachable destination.
+2. Every reachable non-terminal node has at least one valid forward exit.
+3. Where meaningful alternatives exist, branches should be distinct in risk, recovery, rewards, or information.
+4. Do not require backtracking unless a mission explicitly depends on it.
+5. Optional nodes may offer loot, services, or side objectives without becoming mandatory.
+6. Use a seed so a route can be reproduced for testing.
+7. Mission rules and prior events may influence eligible nodes.
+8. Reaching the exit does not itself prove mission success; objectives and cargo conditions must be validated.
+9. Preserve the current committed route rules: progressive reveal, forward-only progression, guaranteed exits, distinct siblings where alternatives exist, service stops that repair 35% of maximum hull and restore shields without granting a direct credit bonus, and early risk/pacing constraints documented above.
+
+### Complication semantics
+
+Complications alter a mission's conditions without requiring a new mission implementation.
+
+| Complication | Rule | Example |
+| --- | --- | --- |
+| Hostile territory | Select encounters from a hostile faction roster | Delivery through pirate-controlled space |
+| Ambush | Add enemies or start under pressure | Routine shipment is intercepted |
+| Cargo damage risk | Specific attacks or hazards can harm cargo | Fragile parcel through debris |
+| Deadline | An objective must be completed before time expires | Stop a ship before it escapes |
+| Pursuit | Enemies pressure the player until an exit condition | Recover cargo and flee |
+| Reinforcements | A trigger adds another enemy group | Destroying a relay calls backup |
+| Route alert | A choice increases later danger | Shortcut alerts a patrol |
+| Stowaway | A recovered object or passenger adds a surprise | A pod contains an unwanted visitor |
+| Equipment failure | A ship capability is restricted | Shields or weapons malfunction |
+| Environmental exposure | Staying in a zone causes damage or buildup | Radiation field |
+| Target escape | A target can escape if not stopped | Courier carrying stolen technology |
+| Protected objective | An ally or object must survive | Defend a transport |
+| Restricted weapons | Some attacks or systems are unavailable | Sensitive cargo job |
+| Unstable cargo | Cargo condition worsens under defined circumstances | Volatile material |
+| False destination | Discovery changes the destination | Signal redirects the contract |
+| Rival interference | A competitor changes the objective or reward | Rival attempts the same delivery |
+| Optional detour | Side route trades risk for extra earnings | Salvage field |
+| Destination trap | Arrival triggers danger | Bulk shipment is a setup |
+| Faction retaliation | Previous action changes hostility | Earlier attack triggers later pressure |
+| Bonus opportunity | A secondary condition earns extra reward | Finish without cargo damage |
+
+Complications should be data-driven wherever possible. HOSTILE_TERRITORY should influence encounter selection, for example, rather than duplicate the combat implementation.
+
+### Route flags and mission memory
+
+A mission run records facts that later nodes, events, and debriefs can inspect. Example flags:
+
+- `cargo_damaged`
+- `cargo_stolen`
+- `route_alerted`
+- `optional_detour_taken`
+- `distress_signal_answered`
+- `elite_defeated`
+- `service_stop_used`
+- `objective_recovered`
+- `deadline_missed`
+- `rival_encountered`
+
+Example: the player takes a shortcut, setting `route_alerted = true`; a later node checks the flag and adds reinforcements; the debrief explains the resulting pressure. A flag records what happened; it is not itself the consequence system.
+
+### Outcomes, payout, and settlement
+
+| Outcome | Definition | Financial result |
+| --- | --- | --- |
+| Full success | All mandatory objectives and contract conditions met | Base payout plus earned bonuses |
+| Qualified success | Contract completed but quality conditions missed | Reduced payout or lost bonuses |
+| Partial success | Some recoverable value secured without completing the main contract | Only explicitly permitted rewards |
+| Failure | Mandatory condition becomes impossible or the ship is destroyed | No successful-delivery payout; eligible side earnings may remain |
+| Abandonment | Player deliberately leaves, if supported | Apply explicitly defined abandonment rules |
+
+Use a single resolver to produce one final outcome and settle the run once. The reward model is:
+
+`Reward = Base payout + Side earnings + Optional bonuses + Quality bonus - Penalties`
+
+- **Base payout:** at-risk contract reward, paid only on successful delivery or the contract's explicitly defined success condition.
+- **Side earnings:** eligible encounter earnings retained under the existing rules, including on failure.
+- **Optional bonuses:** payment for optional objectives.
+- **Quality bonus:** performance reward where applicable.
+- **Penalties:** cargo damage, lateness, or contract-specific costs.
+
+For SpaceDelivery, preserve the existing rule: successful delivery determines the base payout, while eligible side earnings may survive a failed run. Salvage items are retained in the salvage hold and converted to credits exactly once on return to HQ, according to the current salvage rules.
+
+Useful debrief metrics include cargo integrity, relevant completion time, mandatory and optional objectives, protected targets, recovered cargo, ship survival, route risks, penalties, contract payout, side earnings, salvage value, and campaign consequences. Only metrics relevant to the contract should affect the reward.
+
+### Contract-definition data
+
+A contract definition should be data rather than hardcoded into the flight controller. It should describe:
+
+| Field | Purpose |
+| --- | --- |
+| `mission_id` | Unique contract identifier |
+| `title` / `description` | Mission-board text |
+| `mission_type` | Primary archetype |
+| `objectives` | Mandatory and optional objectives |
+| `cargo_rules` | Cargo type, capacity, condition, and thresholds |
+| `destination` | Final destination or extraction point |
+| `route_template` | Route graph/template and generation rules |
+| `encounter_pool` | Eligible encounter templates |
+| `complications` | Compatible mission modifiers |
+| `deadline` | Optional mission or objective timer |
+| `base_reward` | Successful-completion payout |
+| `bonus_rules` | Optional and performance rewards |
+| `failure_rules` | Conditions that fail the contract |
+| `prerequisites` | Requirements for offering the contract |
+| `outcome_flags` | Facts recorded for future events |
+| `forced_seed` | Optional deterministic seed for replay/testing |
+
+The definition describes the reusable contract. The mission-run state stores changing data for one attempt: current node and objective, objective outcomes, cargo and integrity, elapsed time and active timers, route flags, side earnings, final outcome, and settlement status.
+
+### Mission board and player experience
+
+Before committing, the player should be able to see:
+
+- Contract name and type, client, and destination.
+- Main objective and any return/extraction requirement.
+- Cargo type, capacity requirement, and condition threshold.
+- Expected threat level, known hazards, and complications.
+- Base reward, potential bonuses, and penalties.
+- Required ship, reputation, or progression unlocks.
+
+Selecting a contract reveals its details but does not launch the flight. **Deliver remains disabled until a valid mission is selected.** Test Flight remains a separate activity.
+
+After a run, the company report should show the outcome, objective status, cargo condition and losses, base reward, side earnings, bonuses, penalties, and campaign/faction consequences. Explain why the reward changed; the player should never need to guess.
+
+### Mission generation and validation
+
+Generate contracts by composing compatible, authored parts:
+
+1. Select a mission archetype.
+2. Generate mandatory and optional objectives.
+3. Assign cargo and capacity requirements where relevant.
+4. Select a compatible route template.
+5. Choose eligible encounter and hazard templates.
+6. Add compatible complications.
+7. Add optional objectives and reward rules.
+8. Validate graph connectivity, objective feasibility, exits, and settlement rules.
+9. Store the seed and mission definition used for the run.
+
+Reject incoherent combinations. A live-specimen job needs a collection method and a viable return path. An interception must place its target in the route and provide a valid deadline. A delivery cannot require more cargo capacity than the contract permits. Every mandatory objective must be reachable and completable; optional rewards must not accidentally become mandatory.
+
+Use controlled route patterns rather than unconstrained random graphs. Validate batches of seeds for reachability, dead ends, branch availability, encounter repetition, risk pacing, and reward distribution. Automated validation catches structural defects; playtesting is still required to judge whether the mission feels fair and fun. Randomness should create variety within tested rules, not decide whether the mission makes sense.
+
+### Recommended implementation order
+
+Build reusable mechanics before trying to implement every catalogue entry as a bespoke system:
+
+1. **Objective framework and completion validation:** standardize objective identity, required/optional status, state transitions, and success conditions.
+2. **Hazard zones and survival timers:** add a genuinely different source of pressure beyond combat.
+3. **Pickup and return objectives:** unlock cargo retrieval, live-cargo transport, rescue, escape-pod recovery, and evacuation.
+4. **Timed interception and target tracking:** add deadline-driven objectives and escaping targets.
+5. **Encounter pools and elite targets:** enable faction variants, bounty hunts, and stronger enemies mostly through data.
+6. **Cargo variants and capacity gates:** implement perishable, live, fragile, hazardous, bulk, and restricted cargo rules as needed.
+7. **Complication and route-flag evaluation:** let earlier decisions change later encounters and debriefs.
+8. **Investigation and interaction objectives:** add scans, devices, evidence, and sequential objectives.
+9. **Stealth abstractions and rival progress:** use alert, timers, and competition state before considering more complex AI.
+10. **Campaign and HQ events:** add reputation, faction consequences, company crises, and multi-contract chains.
+
+The first playable slice should not attempt all catalogue entries. Start with delivery, hazard crossing, pickup-and-return, timed interception, and elite hunt. Those mechanics create a foundation that can express many of the other mission types through data and combinations.
