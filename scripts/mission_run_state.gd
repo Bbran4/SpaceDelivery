@@ -4,7 +4,10 @@ extends Node
 
 var active_mission: MissionDefinition
 var selected_branch_node_id: StringName = &""
-var total_credits: int = 0
+var total_credits: int = 0:
+	set(value):
+		total_credits = maxi(0, value)
+		_save_account_credits()
 var mission_resolved: bool = false
 var last_mission_result: Dictionary = {}
 var ship_condition: Dictionary = {}
@@ -22,6 +25,31 @@ var credits_collected_this_mission: int = 0
 var route_seed: int = 0
 var route_flags: Dictionary = {}
 var route_history: Array[Dictionary] = []
+
+const ACCOUNT_SAVE_PATH: String = "user://account_progress.cfg"
+
+
+func _ready() -> void:
+	_load_account_credits()
+
+
+func _load_account_credits() -> void:
+	var config := ConfigFile.new()
+	if config.load(ACCOUNT_SAVE_PATH) != OK:
+		return
+	total_credits = maxi(0, int(config.get_value("account", "total_credits", 0)))
+
+
+func _save_account_credits() -> void:
+	var config := ConfigFile.new()
+	var load_error: Error = config.load(ACCOUNT_SAVE_PATH)
+	if load_error != OK and load_error != ERR_FILE_NOT_FOUND:
+		push_warning("Could not load account save before updating credits.")
+		return
+	config.set_value("account", "total_credits", total_credits)
+	var save_error: Error = config.save(ACCOUNT_SAVE_PATH)
+	if save_error != OK:
+		push_warning("Could not save account credits: %s" % error_string(save_error))
 
 
 func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
