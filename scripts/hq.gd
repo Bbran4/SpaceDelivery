@@ -3,11 +3,6 @@ class_name HQScreen
 
 const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
 
-const MISSION_PATHS: Array[String] = [
-	"res://resources/missions/priority_medical_shipment.tres",
-	"res://resources/missions/fragile_relay_components.tres",
-]
-
 @onready var ship_builder: ShipBuilder = %ShipBuilder
 @onready var upgrades_overlay: Control = %UpgradesOverlay
 @onready var welcome_content: VBoxContainer = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent
@@ -62,22 +57,7 @@ func _format_credits(amount: int) -> String:
 
 
 func _load_missions() -> void:
-	available_missions.clear()
-	for mission_path: String in MISSION_PATHS:
-		var mission: MissionDefinition = load(mission_path) as MissionDefinition
-		if mission == null:
-			push_error("Could not load mission definition: " + mission_path)
-			continue
-
-		var validation_errors: PackedStringArray = mission.validate_generator_settings()
-		if not validation_errors.is_empty():
-			push_error("Mission '%s' has invalid route-generation settings: %s" % [
-				mission.mission_id,
-				"; ".join(validation_errors),
-			])
-		# Keep the contract visible even when its settings need correction. The
-		# generator has safe fallbacks, and the error above identifies the resource.
-		available_missions.append(mission)
+	available_missions = MissionCatalog.load_available_missions()
 
 
 func _build_mission_board() -> void:
