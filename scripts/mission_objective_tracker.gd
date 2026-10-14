@@ -102,7 +102,7 @@ func report_enemy_destroyed(mission: MissionDefinition, remaining_enemies: int) 
 		if objective.objective_type == MissionObjectiveDefinition.ObjectiveType.DESTROY:
 			add_progress(mission, objective.objective_id, 1)
 		elif objective.objective_type == MissionObjectiveDefinition.ObjectiveType.ELIMINATE_GROUP and remaining_enemies <= 0:
-			add_progress(mission, objective.objective_id, objective.required_quantity)
+			add_progress(mission, objective.objective_id, 1)
 
 
 func fail_objective(mission: MissionDefinition, objective_id: StringName) -> bool:
