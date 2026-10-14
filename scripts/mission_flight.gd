@@ -15,6 +15,9 @@ var abort_button: Button
 var cargo_status_label: Label
 var cargo_integrity: float = 100.0
 var cargo_condition: String = "INTACT"
+var resolution_pending: bool = false
+var credits_at_encounter_start: int = 0
+var countdown_label: Label
 
 
 func _ready() -> void:
@@ -33,6 +36,7 @@ func _ready() -> void:
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
 	player_ship.credits = MissionRunState.total_credits
+	credits_at_encounter_start = player_ship.credits
 	player_ship.credits_changed.emit(player_ship.credits)
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
@@ -141,13 +145,8 @@ func _on_enemy_destroyed() -> void:
 		return
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
 	if remaining_enemies == 0:
-		# Clearing the encounter opens the final approach to the destination.
-		if cargo_integrity <= 0.0:
-			_resolve_mission(false, "Delivery failed: the cargo was destroyed during the encounter.")
-		elif cargo_integrity < 75.0:
-			_resolve_mission(true, "Delivery accepted with cargo damage. The client has deducted a handling penalty.")
-		else:
-			_resolve_mission(true, "All hostiles cleared. Cargo delivered intact to the destination.")
+		# Keep flight and loot pickup active while the pilot has time to collect drops.
+		_begin_completion_countdown()
 
 
 func _on_player_destroyed() -> void:
@@ -172,6 +171,9 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
 	var route_bonus: int = selected_branch.bonus_credits if selected_branch != null else 0
+	var credits_collected: int = 0
+	if is_instance_valid(player_ship):
+		credits_collected = maxi(0, player_ship.credits - credits_at_encounter_start)
 	var cargo_penalty_percent: int = 0
 	if success and cargo_condition == "DAMAGED" and mission != null:
 		cargo_penalty_percent = mission.damaged_cargo_payout_penalty_percent
@@ -182,7 +184,8 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		route_bonus,
 		result_message,
 		cargo_condition,
-		cargo_penalty_percent
+		cargo_penalty_percent,
+		credits_collected
 	)
 
 	if is_instance_valid(player_ship):
@@ -191,6 +194,55 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 			player_ship.credits_changed.emit(player_ship.credits)
 
 	_show_result_screen(result)
+
+
+func _begin_completion_countdown() -> void:
+	if resolution_pending or mission_resolved:
+		return
+	resolution_pending = true
+	if is_instance_valid(abort_button):
+		abort_button.disabled = true
+	countdown_label = Label.new()
+	countdown_label.name = "LootCountdownLabel"
+	countdown_label.anchor_left = 0.5
+	countdown_label.anchor_top = 0.5
+	countdown_label.anchor_right = 0.5
+	countdown_label.anchor_bottom = 0.5
+	countdown_label.offset_left = -300.0
+	countdown_label.offset_top = -62.0
+	countdown_label.offset_right = 300.0
+	countdown_label.offset_bottom = 20.0
+	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	countdown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	countdown_label.add_theme_font_size_override("font_size", 25)
+	countdown_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	countdown_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.04, 0.08, 0.9))
+	countdown_label.add_theme_constant_override("shadow_offset_x", 2)
+	countdown_label.add_theme_constant_override("shadow_offset_y", 2)
+	countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
+	if overlay != null:
+		overlay.add_child(countdown_label)
+	else:
+		add_child(countdown_label)
+	_finish_countdown()
+
+
+func _finish_countdown() -> void:
+	for seconds_left: int in range(5, 0, -1):
+		if mission_resolved:
+			return
+		if is_instance_valid(countdown_label):
+			countdown_label.text = "HOSTILES CLEARED  /  COLLECT REMAINING LOOT  /  %d" % seconds_left
+		await get_tree().create_timer(1.0).timeout
+	if mission_resolved:
+		return
+	if cargo_integrity <= 0.0:
+		_resolve_mission(false, "Delivery failed: the cargo was destroyed during the encounter.")
+	elif cargo_integrity < 75.0:
+		_resolve_mission(true, "Delivery accepted with cargo damage. The client has deducted a handling penalty.")
+	else:
+		_resolve_mission(true, "All hostiles cleared. Cargo delivered intact to the destination.")
 
 
 func _show_result_screen(result: Dictionary) -> void:
