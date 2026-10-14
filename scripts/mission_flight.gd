@@ -54,6 +54,8 @@ func _ready() -> void:
 	if is_instance_valid(route_label):
 		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
 	call_deferred("_spawn_available_objectives")
+	if cargo_integrity <= 75.0:
+		call_deferred("_spawn_stolen_cargo_drop")
 	call_deferred("_start_selected_objective")
 
 
@@ -111,6 +113,10 @@ func _spawn_stolen_cargo_drop() -> void:
 			continue
 		if objective.target_id != &"stolen_cargo":
 			continue
+		var objective_progress: int = int(ObjectiveTracker.objective_progress.get(objective.objective_id, 0))
+		var carried_quantity: int = MissionRunState.carried_mission_objective_ids.count(objective.objective_id)
+		if objective_progress + carried_quantity >= objective.required_quantity:
+			return
 		var pickup: MissionObjectivePickup = OBJECTIVE_PICKUP_SCENE.instantiate() as MissionObjectivePickup
 		if pickup == null:
 			return
