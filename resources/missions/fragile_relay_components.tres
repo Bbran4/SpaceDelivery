@@ -1,25 +1,7 @@
-[gd_resource type="Resource" script_class="MissionDefinition" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/mission_definition.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/mission_route_node.gd" id="2_node"]
-
-[sub_resource type="Resource" id="dispatch"]
-script = ExtResource("2_node")
-node_id = &"dispatch"
-title = "Contract Dispatch"
-description = "Fragile cargo accepted under standard handling terms."
-node_kind = 0
-next_node_ids = PackedStringArray("junction")
-risk = 0
-
-[sub_resource type="Resource" id="junction"]
-script = ExtResource("2_node")
-node_id = &"junction"
-title = "Route Junction"
-description = "Choose between a predictable lane and a debris-rich shortcut."
-node_kind = 2
-next_node_ids = PackedStringArray("licensed_lane", "debris_cut")
-risk = 0
 
 [sub_resource type="Resource" id="licensed_lane"]
 script = ExtResource("2_node")
@@ -27,10 +9,11 @@ node_id = &"licensed_lane"
 title = "Licensed Trade Lane"
 description = "Routine traffic and toll fees. Fewer surprises, if the paperwork is current."
 node_kind = 1
-next_node_ids = PackedStringArray("merge")
 risk = 1
 bonus_credits = 10
 encounter_profile = 1
+depth = 1
+lane = 0
 
 [sub_resource type="Resource" id="debris_cut"]
 script = ExtResource("2_node")
@@ -38,28 +21,11 @@ node_id = &"debris_cut"
 title = "Debris Cut"
 description = "A short passage through a derelict freight field. Salvage crews are advised to sign the waiver."
 node_kind = 1
-next_node_ids = PackedStringArray("merge")
 risk = 3
 bonus_credits = 80
 encounter_profile = 2
-
-[sub_resource type="Resource" id="merge"]
-script = ExtResource("2_node")
-node_id = &"merge"
-title = "Final Approach"
-description = "The route rejoins before the customer station."
-node_kind = 1
-next_node_ids = PackedStringArray("destination")
-risk = 1
-
-[sub_resource type="Resource" id="destination"]
-script = ExtResource("2_node")
-node_id = &"destination"
-title = "Customer Dock"
-description = "Hand over the crate and obtain a signed receipt."
-node_kind = 3
-next_node_ids = PackedStringArray()
-risk = 0
+depth = 1
+lane = 1
 
 [resource]
 script = ExtResource("1_mission")
@@ -78,6 +44,7 @@ destination_name = "Kestrel Relay Station"
 briefing = "The customer requires a pristine delivery and a signed receipt. Their contract defines 'pristine' in a separate document that was not included."
 base_reward_credits = 190
 risk_label = "Elevated"
-start_node_id = &"dispatch"
-destination_node_id = &"destination"
-route_nodes = Array[ExtResource("2_node")]([SubResource("dispatch"), SubResource("junction"), SubResource("licensed_lane"), SubResource("debris_cut"), SubResource("merge"), SubResource("destination")])
+layer_node_counts = Array[int]([1, 2, 3, 2, 1])
+branch_chance = 0.55
+risk_bias = 1
+fixed_beats = Array[ExtResource("2_node")]([SubResource("licensed_lane"), SubResource("debris_cut")])
