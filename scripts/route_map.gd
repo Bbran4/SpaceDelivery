@@ -264,6 +264,9 @@ func _complete_delivery() -> void:
 	else:
 		message = "Delivery accepted at %s. Cargo condition meets the full-reward requirement." % mission.destination_name
 	var penalty: int = mission.damaged_cargo_payout_penalty_percent if success and integrity < float(mission.full_reward_integrity_percent) else 0
+	var destination_node: MissionRouteNode = MissionRunState.get_route_node(MissionRunState.selected_route_node_id)
+	if destination_node != null and destination_node.node_kind == MissionRouteNode.NodeKind.DESTINATION:
+		MissionRunState.complete_route_node(destination_node.node_id)
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
 		MissionRunState.total_credits,
