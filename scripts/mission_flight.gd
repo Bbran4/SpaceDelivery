@@ -80,7 +80,12 @@ func _build_flight_overlay() -> void:
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
 	abort_button.text = "ABORT MISSION"
-	abort_button.position = Vector2(24, 18)
+	abort_button.anchor_top = 1.0
+	abort_button.anchor_bottom = 1.0
+	abort_button.offset_left = 24.0
+	abort_button.offset_top = -52.0
+	abort_button.offset_right = 174.0
+	abort_button.offset_bottom = -18.0
 	abort_button.custom_minimum_size = Vector2(150, 34)
 	abort_button.pressed.connect(_on_abort_pressed)
 	layer.add_child(abort_button)
