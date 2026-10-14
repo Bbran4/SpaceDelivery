@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://by5oohrjivlbf"]
 
 [ext_resource type="PackedScene" uid="uid://dg3ycwbm8bu27" path="res://scenes/player/player_ship.tscn" id="1_player"]
-[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="2_hud"]
-[ext_resource type="PackedScene" path="res://scenes/enemy_ship.tscn" id="3_enemy"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/enemy_ship.tscn" id="3_enemy"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="4_ship_builder"]
 
 [node name="HUDTest" type="Node2D" unique_id=1857477402]
