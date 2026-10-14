@@ -48,7 +48,7 @@ Use **authored event templates with conditional slots**, backed by a small pool 
 1. **Accept a contract.** Review cargo, client, destination, base fee, hazard, and any optional rewards.
 2. **Choose a mission and inspect its route.** A generated route belongs to the selected contract, not the general contract board. The route begins with only the opening node revealed.
 3. **Prepare and test the ship.** Check the loadout and use Test Flight. Deliver remains disabled until a valid mission is selected.
-4. **Select the next visible node and fly it.** Completing a node returns the player to the route map, marks the node complete, and reveals its connected successors. Hull, shields, cargo integrity, and collected credits carry between nodes.
+4. **Select the next visible node and fly it.** Completing a node returns the player to the route map, marks the node complete, and reveals its connected successors. Hull, shields, cargo integrity, collected credits, and salvage inventory carry between nodes.
 5. **Reach the destination or fail the contract.** The main contract payout is awarded only when delivery is resolved successfully. Failure forfeits that payout but keeps eligible side earnings.
 6. **Read the company report and reinvest.** Results show payout, penalties, salvage, cargo condition, and the completed path. Spend credits on progression and take the next job.
 
@@ -62,7 +62,7 @@ Keep three reward concepts distinct:
 
 - **Contract payout:** the large, at-risk reward for delivering the shipment successfully.
 - **Encounter earnings:** credits and eligible drops collected during the run. These are retained if the contract fails.
-- **Salvage and valuables:** separate loot/resources that can be collected and later converted or spent. Salvage storage may cap how much can be retained per run; this capacity is a soft limit on side earnings, not a second contract payout. Exact capacity rules and conversion values still need balancing.
+- **Salvage and valuables:** item drops are stored in the ship's salvage hold and carried between route nodes. On return to HQ after either success or failure, a recovery panel lists each collected item, quantity, unit value, and total value. The items are then removed from pending salvage and converted into credits exactly once using each item's credit_value. Salvage capacity limits how many units can be collected.
 
 Possible cargo categories:
 - **Standard parcels and supplies:** introductory, lower-risk jobs.
@@ -111,6 +111,8 @@ Possible encounter types include combat, elite fights, salvage, recovery/service
 
 ## Combat feel and piloting
 
+The ship builder opens the active saved build when one is valid. A default Starter Courier build with a basic laser is shown when no valid active build exists. Builds without a compatible weapon cannot be saved or loaded, and HQ disables View Route and Test Flight while showing a red NO ACTIVE WEAPON ON SHIP warning if no usable weapon is available.
+
 Weapons and ship systems fire automatically. The player's primary moment-to-moment agency is movement and positioning: dodge incoming pressure, kite pursuers, keep distance from dangerous targets, line up safer paths through a fight, and choose which visible route branch to tackle next. Build choices change how those decisions feel, rather than replacing them with a pile of passive stat increases.
 
 The intended identity is **active piloting with automated weapons and incremental meta-progression**. Later upgrades may automate routine tasks or provide navigation assistance, but they should not remove the movement decisions that make encounters engaging. Controls should remain consistent and understandable; input modes must not silently change who or what the player is targeting.
@@ -144,7 +146,7 @@ Loot can include credits, salvage, valuables, and modules. Where practical, rewa
 
 ## Mission failure
 
-A mission fails if the ship is destroyed or the shipment can no longer be delivered. The contract payout is lost, but eligible encounter earnings and collected drops remain. Permanent upgrades and previously earned progression are not reset. The results screen must distinguish contract loss from retained earnings and explain cargo penalties plainly, then let the player return to HQ and try another contract.
+A mission fails immediately if the ship is destroyed or cargo integrity reaches zero, because the shipment can no longer be delivered. The contract payout is lost on failure, but eligible encounter earnings and collected item drops remain. On return to HQ, a salvage recovery panel itemizes collected drops and converts their credit_value into credits once, regardless of mission success or failure. Permanent upgrades and previously earned progression are not reset. The results screen distinguishes contract loss from retained earnings and explains cargo condition plainly.
 
 ## Game modes
 
