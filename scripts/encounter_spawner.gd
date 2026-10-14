@@ -15,16 +15,18 @@ func _ready() -> void:
 		spawn_encounter.call_deferred()
 
 
-func spawn_encounter() -> void:
+## Returns the enemies actually spawned so mission flow can track their defeat.
+func spawn_encounter() -> Array[Ship]:
+	var spawned_enemies: Array[Ship] = []
 	if enemy_scenes.is_empty():
 		push_warning("EncounterSpawner has no enemy scenes assigned.")
-		return
+		return spawned_enemies
 
 	var scene_root: Node = get_tree().current_scene
 	if scene_root == null:
 		scene_root = get_parent()
 	if scene_root == null:
-		return
+		return spawned_enemies
 
 	for index: int in range(spawn_count):
 		var enemy_scene: PackedScene = enemy_scenes[index % enemy_scenes.size()]
@@ -37,3 +39,5 @@ func spawn_encounter() -> void:
 		scene_root.add_child(enemy)
 		var angle: float = TAU * float(index) / float(spawn_count)
 		enemy.global_position = global_position + Vector2.RIGHT.rotated(angle) * spawn_radius
+		spawned_enemies.append(enemy)
+	return spawned_enemies
