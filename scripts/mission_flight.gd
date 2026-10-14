@@ -70,7 +70,6 @@ func _start_selected_objective() -> void:
 		MissionRouteNode.ObjectiveType.SERVICE:
 			_start_service_node()
 		MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY, MissionRouteNode.ObjectiveType.RESCUE:
-			_spawn_available_objectives()
 			if selected_branch.objective_type == MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY:
 				_show_destination_button("RETURN RECOVERED CARGO  /  CONTINUE")
 			else:
