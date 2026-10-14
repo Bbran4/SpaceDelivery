@@ -255,9 +255,9 @@ func finish_mission(
 	var penalty_percent: int = clampi(cargo_penalty_percent, 0, 100) if success else 0
 	var cargo_penalty: int = roundi(float(gross_payout) * float(penalty_percent) / 100.0)
 	var payout: int = maxi(0, gross_payout - cargo_penalty)
+	# Route caches are side earnings, so they survive contract failure.
 	var final_credits_before_payout: int = maxi(0, credits_before_payout)
-	if success:
-		final_credits_before_payout += maxi(0, salvage_recovered)
+	final_credits_before_payout += maxi(0, salvage_recovered)
 	total_credits = final_credits_before_payout + payout
 	repair_ship_condition()
 	var route_titles: PackedStringArray = []
@@ -283,7 +283,7 @@ func finish_mission(
 		"cargo_penalty_percent": penalty_percent,
 		"cargo_penalty": cargo_penalty,
 		"credits_collected": maxi(0, credits_collected),
-		"salvage_recovered": maxi(0, salvage_recovered) if success else 0,
+		"salvage_recovered": maxi(0, salvage_recovered),
 		"gross_payout": gross_payout,
 		"total_credits": total_credits,
 		"route_seed": route_seed,
