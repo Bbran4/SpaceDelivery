@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/mission_flight.gd" id="1_flight"]
 [ext_resource type="PackedScene" path="res://scenes/player/player_ship.tscn" id="2_player"]
-[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="3_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="3_hud"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/fighter.tscn" id="4_fighter"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/scout.tscn" id="5_scout"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/heavy.tscn" id="6_heavy"]
