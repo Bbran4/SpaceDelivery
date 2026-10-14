@@ -1,7 +1,7 @@
 extends Resource
 class_name MissionDefinition
 
-## Authored delivery contract plus a directed route graph.
+## Authored delivery contract and parameters for procedural route generation.
 
 @export var mission_id: StringName = &""
 @export var title: String = ""
@@ -18,68 +18,36 @@ class_name MissionDefinition
 @export_multiline var briefing: String = ""
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
 @export var risk_label: String = "Routine"
-@export var start_node_id: StringName = &"dispatch"
-@export var destination_node_id: StringName = &"destination"
-@export var route_nodes: Array[MissionRouteNode] = []
+
+## Number of nodes in each route layer, including the start and destination.
+## Keep the first and last values at 1 for a single start and destination.
+@export var layer_node_counts: Array[int] = [1, 2, 3, 2, 1]
+@export_range(0.0, 1.0, 0.05) var branch_chance: float = 0.55
+## Added to generated encounter risk, clamped to the supported 0-5 range.
+@export_range(-2, 2, 1) var risk_bias: int = 0
+## Optional encounter templates placed at their authored depth/lane. Connections are generated.
+@export var fixed_beats: Array[MissionRouteNode] = []
 
 
-func get_route_node(node_id: StringName) -> MissionRouteNode:
-	for route_node: MissionRouteNode in route_nodes:
-		if route_node != null and route_node.node_id == node_id:
-			return route_node
-	return null
-
-
-## Returns validation errors. An empty array means the graph is structurally valid.
-func validate_route_graph() -> PackedStringArray:
+## Returns validation errors for generator settings. Empty means settings are usable.
+func validate_generator_settings() -> PackedStringArray:
 	var errors: PackedStringArray = []
-	var node_ids: Dictionary = {}
-
-	for route_node: MissionRouteNode in route_nodes:
-		if route_node == null:
-			errors.append("Route contains an empty node.")
-			continue
-		if route_node.node_id == &"":
-			errors.append("Every route node needs an ID.")
-			continue
-		if node_ids.has(route_node.node_id):
-			errors.append("Duplicate route node ID: %s" % route_node.node_id)
-		node_ids[route_node.node_id] = true
-
-	if not node_ids.has(start_node_id):
-		errors.append("Start node '%s' does not exist." % start_node_id)
-	if not node_ids.has(destination_node_id):
-		errors.append("Destination node '%s' does not exist." % destination_node_id)
-	if not errors.is_empty():
+	if layer_node_counts.size() < 2:
+		errors.append("Route needs at least a start layer and a destination layer.")
 		return errors
-
-	for route_node: MissionRouteNode in route_nodes:
-		if route_node == null:
+	if layer_node_counts[0] != 1:
+		errors.append("The first route layer must contain exactly one start node.")
+	if layer_node_counts[layer_node_counts.size() - 1] != 1:
+		errors.append("The final route layer must contain exactly one destination node.")
+	for layer_index: int in range(layer_node_counts.size()):
+		if layer_node_counts[layer_index] < 1:
+			errors.append("Route layer %d must contain at least one node." % layer_index)
+	for beat: MissionRouteNode in fixed_beats:
+		if beat == null:
+			errors.append("Fixed beats cannot contain empty entries.")
 			continue
-		if route_node.node_id == destination_node_id and not route_node.next_node_ids.is_empty():
-			errors.append("Destination node must not have outgoing connections.")
-		for next_id: StringName in route_node.next_node_ids:
-			if not node_ids.has(next_id):
-				errors.append("Node '%s' points to missing node '%s'." % [route_node.node_id, next_id])
-
-	var visited: Dictionary = {}
-	var pending: Array[StringName] = [start_node_id]
-	while not pending.is_empty():
-		var current_id: StringName = pending.pop_front()
-		if visited.has(current_id):
-			continue
-		visited[current_id] = true
-		var current_node: MissionRouteNode = get_route_node(current_id)
-		if current_node == null:
-			continue
-		for next_id: StringName in current_node.next_node_ids:
-			if node_ids.has(next_id) and not visited.has(next_id):
-				pending.append(next_id)
-
-	if not visited.has(destination_node_id):
-		errors.append("Destination is unreachable from the start node.")
-	for route_node: MissionRouteNode in route_nodes:
-		if route_node != null and not visited.has(route_node.node_id):
-			errors.append("Node '%s' is unreachable from the start." % route_node.node_id)
-
+		if beat.depth <= 0 or beat.depth >= layer_node_counts.size() - 1:
+			errors.append("Fixed beat '%s' must be placed between the start and destination layers." % beat.node_id)
+		elif beat.lane < 0 or beat.lane >= layer_node_counts[beat.depth]:
+			errors.append("Fixed beat '%s' lane %d is outside layer %d." % [beat.node_id, beat.lane, beat.depth])
 	return errors
