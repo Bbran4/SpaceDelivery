@@ -69,8 +69,8 @@ func finish_mission(
 	var cargo_penalty: int = roundi(float(gross_payout) * float(penalty_percent) / 100.0)
 	var payout: int = maxi(0, gross_payout - cargo_penalty)
 	total_credits = maxi(0, credits_before_payout) + payout
-	if success:
-		repair_ship_condition()
+	# HQ always receives the ship fully repaired, regardless of mission outcome.
+	repair_ship_condition()
 	last_mission_result = {
 		"success": success,
 		"mission_title": active_mission.title if active_mission != null else "Unknown Contract",
