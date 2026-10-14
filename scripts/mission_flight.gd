@@ -67,8 +67,14 @@ func _get_contact_count(node: MissionRouteNode) -> int:
 func _start_service_node() -> void:
 	if mission_resolved:
 		return
+	if is_instance_valid(player_ship):
+		player_ship.current_hull = minf(player_ship.max_hull, player_ship.current_hull + player_ship.max_hull * 0.35)
+		player_ship.current_shield = player_ship.max_shield
+		player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
+		player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
+		MissionRunState.save_ship_condition(player_ship)
 	if is_instance_valid(route_label):
-		route_label.text = "SERVICE STOP  /  NO HOSTILES DETECTED"
+		route_label.text = "SERVICE STOP  /  HULL REPAIRED 35%  /  SHIELDS RESTORED"
 	if is_instance_valid(abort_button):
 		abort_button.disabled = true
 	_show_destination_button("COMPLETE SERVICE STOP  /  RETURN TO ROUTE MAP")
