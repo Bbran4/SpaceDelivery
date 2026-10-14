@@ -17,6 +17,7 @@ const MISSION_PATHS: Array[String] = [
 @onready var services: VBoxContainer = $Margin/Layout/MainContent/ServicesPanel/Services
 @onready var test_flight_button: Button = $Margin/Layout/MainContent/ServicesPanel/Services/TestFlightButton
 @onready var footer_label: Label = $Margin/Layout/Footer/FooterLabel
+@onready var account_balance_label: Label = $Margin/Layout/Header/AccountBalance
 
 var available_missions: Array[MissionDefinition] = []
 var selected_mission: MissionDefinition
@@ -39,7 +40,8 @@ func _ready() -> void:
 
 
 func _refresh_campaign_status() -> void:
-	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %d CR" % MissionRunState.total_credits
+	account_balance_label.text = "CREDITS  /  %s CR" % _format_credits(MissionRunState.total_credits)
+	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %s CR" % _format_credits(MissionRunState.total_credits)
 	if MissionRunState.last_mission_result.is_empty():
 		return
 
@@ -52,6 +54,10 @@ func _refresh_campaign_status() -> void:
 		mission_title.to_upper(),
 		payout,
 	]
+
+
+func _format_credits(amount: int) -> String:
+	return "%s" % amount
 
 
 func _load_missions() -> void:
@@ -219,7 +225,8 @@ func _show_salvage_recovery() -> void:
 	close.custom_minimum_size = Vector2(0, 42)
 	close.pressed.connect(layer.queue_free)
 	content.add_child(close)
-	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %d CR" % MissionRunState.total_credits
+	account_balance_label.text = "CREDITS  /  %s CR" % _format_credits(MissionRunState.total_credits)
+	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %s CR" % _format_credits(MissionRunState.total_credits)
 
 
 func _refresh_mission_list() -> void:
