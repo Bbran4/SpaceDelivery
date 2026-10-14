@@ -8,6 +8,8 @@ var total_credits: int = 0
 var mission_resolved: bool = false
 var last_mission_result: Dictionary = {}
 var ship_condition: Dictionary = {}
+var pending_salvage: Array[Dictionary] = []
+var salvage_recovery_pending: bool = false
 var cargo_integrity_percent: float = 100.0
 var generated_route_nodes: Array[MissionRouteNode] = []
 var completed_node_ids: Array[StringName] = []
@@ -132,6 +134,59 @@ func save_ship_condition(ship: Ship) -> void:
 		"current_shield": ship.current_shield,
 		"max_shield": ship.max_shield,
 	}
+
+
+func save_ship_salvage(ship: Ship) -> void:
+	if not is_instance_valid(ship):
+		return
+	pending_salvage.clear()
+	for entry: Dictionary in ship.salvage_inventory:
+		var item: SalvageItemData = entry.get("item") as SalvageItemData
+		var quantity: int = maxi(0, int(entry.get("units", 0)))
+		if item == null or quantity <= 0:
+			continue
+		var found_index: int = -1
+		for index: int in range(pending_salvage.size()):
+			if str(pending_salvage[index].get("item_id", "")) == str(item.item_id):
+				found_index = index
+				break
+		if found_index >= 0:
+			pending_salvage[found_index]["quantity"] = int(pending_salvage[found_index]["quantity"]) + quantity
+			pending_salvage[found_index]["total_value"] = int(pending_salvage[found_index]["quantity"]) * maxi(0, item.credit_value)
+		else:
+			pending_salvage.append({
+				"item_id": str(item.item_id),
+				"display_name": item.display_name,
+				"quantity": quantity,
+				"unit_value": maxi(0, item.credit_value),
+				"total_value": maxi(0, item.credit_value) * quantity,
+				"item": item,
+			})
+	salvage_recovery_pending = not pending_salvage.is_empty()
+
+
+func restore_ship_salvage(ship: Ship) -> void:
+	if not is_instance_valid(ship):
+		return
+	ship.salvage_inventory.clear()
+	for entry: Dictionary in pending_salvage:
+		var item: SalvageItemData = entry.get("item") as SalvageItemData
+		var quantity: int = maxi(0, int(entry.get("quantity", 0)))
+		if item != null and quantity > 0:
+			ship.add_cargo_item(item, quantity, true)
+
+
+func recover_pending_salvage() -> Dictionary:
+	if not salvage_recovery_pending or pending_salvage.is_empty():
+		return {"items": [], "total_value": 0}
+	var items: Array[Dictionary] = pending_salvage.duplicate(true)
+	var total_value: int = 0
+	for entry: Dictionary in items:
+		total_value += maxi(0, int(entry.get("total_value", 0)))
+	total_credits += total_value
+	pending_salvage.clear()
+	salvage_recovery_pending = false
+	return {"items": items, "total_value": total_value}
 
 
 func restore_ship_condition(ship: Ship) -> void:
