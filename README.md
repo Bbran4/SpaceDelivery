@@ -107,7 +107,7 @@ Routes are seeded, branching graphs generated for the selected contract. Progres
 7. Use route history and flags to make later events respond to earlier choices.
 8. Run the seeded route validator across batches of seeds, then expand it to measure pacing, difficulty spikes, and reward distribution. A valid graph is necessary, but human playtesting is still required to judge whether a route feels good.
 
-Possible encounter types include combat, elite fights, salvage, recovery/service beacons, escort or rescue events, inspections, anomalies, and the destination. The current route-map implementation includes progressive node discovery and repair service nodes; other encounter types remain subject to implementation. The initial batch validator is available at `tools/route_seed_batch_test.gd` and checks graph reachability, dead ends, branch availability, and repeated encounter titles.
+Possible encounter types include combat, elite fights, salvage recovery, rescue, escort, inspections, anomalies, and the destination. `MissionRouteNode` now exposes an explicit objective type so route resources can describe what a node is meant to do. At present, flight gameplay handles combat and service objectives; salvage recovery, rescue, escort, and inspection handlers remain future work. The shared `MissionCatalog` in `scripts/mission_catalog.gd` is the source of offered mission resources for the HQ board, route-test panel, and seeded batch tool. The batch validator is available at `tools/route_seed_batch_test.gd` and checks graph reachability, dead ends, branch availability, risk pacing, and repeated encounter profiles.
 
 ## Combat feel and piloting
 
