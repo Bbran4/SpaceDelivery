@@ -62,8 +62,7 @@ func _ready() -> void:
 	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
-	if hull_picker.item_count > 0:
-		_on_hull_selected(0)
+	_load_active_build_into_editor()
 
 
 func _update_layout() -> void:
@@ -102,6 +101,62 @@ func _on_hull_selected(index: int) -> void:
 	_rebuild_slot_groups()
 	_rebuild_module_groups()
 	_refresh_stats()
+
+
+func _load_active_build_into_editor() -> void:
+	var build: Dictionary = ShipBuildStore.get_active_build()
+	if build.is_empty():
+		var starter_index: int = _find_hull_index("res://resources/hulls/starter_courier.tres")
+		_on_hull_selected(starter_index if starter_index >= 0 else 0)
+		var weapon_path: String = "res://resources/modules/basic_laser_module.tres"
+		for slot_index: int in range(selected_hull.slot_categories.size()):
+			if _category_fits(selected_hull.slot_categories[slot_index], ShipModule.Category.WEAPON):
+				equip_module(slot_index, weapon_path)
+				break
+		build_name_input.text = "Starter Courier"
+		status_label.text = "Default starter build loaded. An active weapon is required."
+		return
+	var build_name: String = str(build.get("name", "Active Build"))
+	var hull_path: String = str(build.get("hull_path", ""))
+	var hull_index: int = _find_hull_index(hull_path)
+	if hull_index < 0:
+		_on_hull_selected(0)
+		return
+	_apply_build_to_editor(build, build_name, hull_index)
+
+
+func _apply_build_to_editor(build: Dictionary, build_name: String, hull_index: int) -> void:
+	selected_hull = load(str(build.get("hull_path", ""))) as ShipHull
+	if selected_hull == null:
+		return
+	hull_picker.select(hull_index)
+	selected_modules.clear()
+	selected_module_paths.clear()
+	selected_modules.resize(selected_hull.slot_categories.size())
+	selected_module_paths.resize(selected_hull.slot_categories.size())
+	var module_paths: Variant = build.get("module_paths", PackedStringArray())
+	for slot_index: int in range(selected_modules.size()):
+		var module_path: String = str(module_paths[slot_index]) if slot_index < module_paths.size() else ""
+		var module: ShipModule = load(module_path) as ShipModule if not module_path.is_empty() else null
+		if module != null and _category_fits(selected_hull.slot_categories[slot_index], module.category):
+			selected_modules[slot_index] = module
+			selected_module_paths[slot_index] = module_path
+		else:
+			selected_modules[slot_index] = null
+			selected_module_paths[slot_index] = ""
+	_update_hull_preview()
+	_rebuild_slot_groups()
+	_rebuild_module_groups()
+	_refresh_stats()
+	build_name_input.text = build_name
+	status_label.text = "Active build loaded: %s." % build_name
+
+
+func has_active_weapon() -> bool:
+	for module: ShipModule in selected_modules:
+		if module != null and module.category == ShipModule.Category.WEAPON and module.weapon_scene != null:
+			return true
+	return false
 
 
 func show_builder() -> void:
