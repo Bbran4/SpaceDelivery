@@ -335,9 +335,26 @@ func _show_result(result: Dictionary) -> void:
 	cargo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(cargo)
 
+	var objective_lines: PackedStringArray = []
+	for objective_entry: Dictionary in result.get("objective_snapshot", []):
+		var objective_status: String = str(objective_entry.get("state", "UNKNOWN"))
+		var progress_text: String = "%d/%d" % [
+			int(objective_entry.get("progress", 0)),
+			int(objective_entry.get("required_quantity", 1)),
+		]
+		objective_lines.append("%s  /  %s%s" % [
+			str(objective_entry.get("title", objective_entry.get("id", "Objective"))),
+			objective_status,
+			"  (%s)" % progress_text if objective_status not in ["COMPLETED", "FAILED"] else "",
+		])
+	var objective_report: String = "\n".join(objective_lines)
+	if objective_report.is_empty():
+		objective_report = "No explicit objectives on this legacy delivery contract."
 	var report := Label.new()
-	report.text = "%s\n\nROUTE SUMMARY  /  %s\n\nSALVAGED CREDITS  +%d CR\nROUTE CACHE  +%d CR\nCONTRACT PAY  %d CR\nROUTE BONUS  %d CR\nCARGO PENALTY  -%d CR\nTOTAL PAYOUT  %d CR" % [
+	report.text = "%s\n\nOBJECTIVES  /  %s\n%s\n\nROUTE SUMMARY  /  %s\n\nSALVAGED CREDITS  +%d CR\nROUTE CACHE  +%d CR\nCONTRACT PAY  %d CR\nROUTE BONUS  %d CR\nCARGO PENALTY  -%d CR\nTOTAL PAYOUT  %d CR" % [
 		str(result.get("message", "")),
+		str(result.get("objective_outcome", "NOT_TRACKED")),
+		objective_report,
 		str(result.get("route_summary", "")),
 		int(result.get("credits_collected", 0)),
 		int(result.get("salvage_recovered", 0)),
@@ -369,6 +386,7 @@ func _on_abandon_pressed() -> void:
 	if mission == null:
 		_return_to_hq()
 		return
+	ObjectiveTracker.mark_abandoned()
 	var result := MissionRunState.finish_mission(
 		false,
 		MissionRunState.total_credits,
