@@ -179,3 +179,55 @@ static func _apply_generated_encounter(
 static func _add_connection(node: MissionRouteNode, next_id: StringName) -> void:
 	if not node.next_node_ids.has(String(next_id)):
 		node.next_node_ids.append(String(next_id))
+
+
+static func validate_route(nodes: Array[MissionRouteNode]) -> PackedStringArray:
+	var errors: PackedStringArray = []
+	if nodes.is_empty():
+		errors.append("Route is empty.")
+		return errors
+
+	var by_id: Dictionary = {}
+	for node: MissionRouteNode in nodes:
+		if node == null:
+			errors.append("Route contains a null node.")
+			continue
+		if by_id.has(node.node_id):
+			errors.append("Duplicate id: %s" % node.node_id)
+		by_id[node.node_id] = node
+
+	var destinations: int = 0
+	for node: MissionRouteNode in nodes:
+		if node == null:
+			continue
+		if node.node_kind == MissionRouteNode.NodeKind.DESTINATION:
+			destinations += 1
+			if not node.next_node_ids.is_empty():
+				errors.append("Destination has exits: %s." % node.node_id)
+		elif node.next_node_ids.is_empty():
+			errors.append("Dead end: %s" % node.node_id)
+		for next_id: StringName in node.next_node_ids:
+			var next_node: MissionRouteNode = by_id.get(StringName(next_id)) as MissionRouteNode
+			if next_node == null:
+				errors.append("%s points to missing %s" % [node.node_id, next_id])
+			elif next_node.depth <= node.depth:
+				errors.append("Non-forward edge: %s -> %s" % [node.node_id, next_id])
+	if destinations != 1:
+		errors.append("Expected 1 destination, found %d." % destinations)
+
+	var seen: Dictionary = {}
+	var pending: Array[StringName] = [nodes[0].node_id]
+	while not pending.is_empty():
+		var current_id: StringName = pending.pop_back()
+		if seen.has(current_id):
+			continue
+		seen[current_id] = true
+		var current: MissionRouteNode = by_id.get(current_id) as MissionRouteNode
+		if current == null:
+			continue
+		for next_id: StringName in current.next_node_ids:
+			pending.append(StringName(next_id))
+	for node: MissionRouteNode in nodes:
+		if node != null and not seen.has(node.node_id):
+			errors.append("Unreachable: %s" % node.node_id)
+	return errors
