@@ -91,6 +91,20 @@ func add_progress(mission: MissionDefinition, objective_id: StringName, amount: 
 	return true
 
 
+## Called by the flight scene only after an enemy is confirmed destroyed.
+## DESTROY tracks individual hostiles; ELIMINATE_GROUP completes once the encounter is cleared.
+func report_enemy_destroyed(mission: MissionDefinition, remaining_enemies: int) -> void:
+	if not _matches_active_mission(mission) or contract_state in [ContractState.FAILED, ContractState.ABANDONED, ContractState.SETTLED]:
+		return
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null:
+			continue
+		if objective.objective_type == MissionObjectiveDefinition.ObjectiveType.DESTROY:
+			add_progress(mission, objective.objective_id, 1)
+		elif objective.objective_type == MissionObjectiveDefinition.ObjectiveType.ELIMINATE_GROUP and remaining_enemies <= 0:
+			add_progress(mission, objective.objective_id, objective.required_quantity)
+
+
 func fail_objective(mission: MissionDefinition, objective_id: StringName) -> bool:
 	if not _matches_active_mission(mission):
 		return false
