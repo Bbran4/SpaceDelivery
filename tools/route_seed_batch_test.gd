@@ -1,9 +1,5 @@
 extends SceneTree
 
-const MISSION_PATHS: Array[String] = [
-	"res://resources/missions/fragile_relay_components.tres",
-	"res://resources/missions/priority_medical_shipment.tres",
-]
 const DEFAULT_SEED_COUNT: int = 2000
 
 
@@ -17,7 +13,7 @@ func _run_batch() -> void:
 		if argument.begins_with("--seeds="):
 			seed_count = maxi(1, int(argument.trim_prefix("--seeds=")))
 
-	for mission_path: String in MISSION_PATHS:
+	for mission_path: String in MissionCatalog.get_mission_paths():
 		var mission: MissionDefinition = load(mission_path) as MissionDefinition
 		if mission == null:
 			push_error("Could not load mission resource: %s" % mission_path)
