@@ -273,6 +273,12 @@ func finish_mission(
 	var objective_snapshot: Array[Dictionary] = []
 	var objective_outcome: String = "NOT_TRACKED"
 	if is_instance_valid(ObjectiveTracker) and active_mission != null:
+		if not success and ObjectiveTracker.contract_state not in [
+			ObjectiveTracker.ContractState.ABANDONED,
+			ObjectiveTracker.ContractState.FAILED,
+			ObjectiveTracker.ContractState.SETTLED,
+		]:
+			ObjectiveTracker.mark_failed()
 		objective_snapshot = ObjectiveTracker.get_objective_snapshot(active_mission)
 		objective_outcome = ObjectiveTracker.ContractState.keys()[ObjectiveTracker.contract_state]
 	last_mission_result = {
