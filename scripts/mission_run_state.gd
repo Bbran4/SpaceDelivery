@@ -52,7 +52,7 @@ func _save_account_credits() -> void:
 		push_warning("Could not save account credits: %s" % error_string(save_error))
 
 
-func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
+func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	ship_condition.clear()
 	active_mission = mission
 	mission_resolved = false
@@ -79,6 +79,10 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 		push_error("Generated route failed validation for mission '%s' seed %d: %s" % [
 			mission.mission_id, route_seed, "; ".join(validation_errors)
 		])
+		active_mission = null
+		generated_route_nodes.clear()
+		mission_resolved = false
+		return false
 	completed_node_ids.clear()
 	visible_node_ids.clear()
 	route_flags.clear()
@@ -91,6 +95,7 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 	selected_branch_node_id = &""
 	if current_node_id != &"":
 		visible_node_ids.append(current_node_id)
+	return true
 
 
 func get_route_node(node_id: StringName) -> MissionRouteNode:
@@ -265,8 +270,21 @@ func finish_mission(
 		var completed_node: MissionRouteNode = get_route_node(completed_id)
 		if completed_node != null:
 			route_titles.append(completed_node.title)
+	var objective_snapshot: Array[Dictionary] = []
+	var objective_outcome: String = "NOT_TRACKED"
+	if is_instance_valid(ObjectiveTracker) and active_mission != null:
+		if not success and ObjectiveTracker.contract_state not in [
+			ObjectiveTracker.ContractState.ABANDONED,
+			ObjectiveTracker.ContractState.FAILED,
+			ObjectiveTracker.ContractState.SETTLED,
+		]:
+			ObjectiveTracker.mark_failed()
+		objective_snapshot = ObjectiveTracker.get_objective_snapshot(active_mission)
+		objective_outcome = ObjectiveTracker.ContractState.keys()[ObjectiveTracker.contract_state]
 	last_mission_result = {
 		"success": success,
+		"objective_snapshot": objective_snapshot,
+		"objective_outcome": objective_outcome,
 		"mission_title": active_mission.title if active_mission != null else "Unknown Contract",
 		"destination_name": active_mission.destination_name if active_mission != null else "Unknown Destination",
 		"cargo_name": active_mission.cargo_name if active_mission != null else "Unknown Cargo",
@@ -292,10 +310,14 @@ func finish_mission(
 		"completed_nodes": completed_node_ids.size(),
 		"route_summary": "  →  ".join(route_titles),
 	}
+	if is_instance_valid(ObjectiveTracker) and ObjectiveTracker.active_mission_id != &"":
+		ObjectiveTracker.mark_settled()
 	return last_mission_result
 
 
 func clear_mission() -> void:
+	if is_instance_valid(ObjectiveTracker):
+		ObjectiveTracker.reset_run()
 	ship_condition.clear()
 	active_mission = null
 	selected_branch_node_id = &""

@@ -211,6 +211,7 @@ func _on_enemy_destroyed() -> void:
 	if mission_resolved:
 		return
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
+	ObjectiveTracker.report_enemy_destroyed(mission, remaining_enemies)
 	if remaining_enemies == 0:
 		# Leave flight and loot pickups active until the pilot chooses to proceed.
 		_show_destination_button()
@@ -405,6 +406,25 @@ func _show_result_screen(result: Dictionary) -> void:
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(message_label)
+
+	var objective_lines: PackedStringArray = []
+	for objective_entry: Dictionary in result.get("objective_snapshot", []):
+		var objective_status: String = str(objective_entry.get("state", "UNKNOWN"))
+		objective_lines.append("%s  /  %s  /  %d of %d" % [
+			str(objective_entry.get("title", objective_entry.get("id", "Objective"))),
+			objective_status,
+			int(objective_entry.get("progress", 0)),
+			int(objective_entry.get("required_quantity", 1)),
+		])
+	var objective_label: Label = Label.new()
+	objective_label.text = "OBJECTIVES  /  %s\n%s" % [
+		str(result.get("objective_outcome", "NOT_TRACKED")),
+		"\n".join(objective_lines) if not objective_lines.is_empty() else "No explicit objectives on this legacy delivery contract.",
+	]
+	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objective_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
+	content.add_child(objective_label)
 
 	var payout_label: Label = Label.new()
 	payout_label.text = "SALVAGED CREDITS  /  +%d CR\nROUTE CACHE  /  +%d CR\nCONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
