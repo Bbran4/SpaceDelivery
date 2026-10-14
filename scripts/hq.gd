@@ -23,6 +23,8 @@ var selected_mission: MissionDefinition
 var mission_list: VBoxContainer
 var selected_details: VBoxContainer
 var deliver_button: Button
+var weapon_warning_label: Label
+var test_flight_warning_label: Label
 
 
 func _ready() -> void:
@@ -30,6 +32,9 @@ func _ready() -> void:
 	_build_mission_board()
 	_build_deliver_button()
 	_refresh_campaign_status()
+	_show_salvage_recovery()
+	_build_weapon_warnings()
+	_refresh_weapon_gates()
 
 
 func _refresh_campaign_status() -> void:
@@ -118,6 +123,102 @@ func _build_deliver_button() -> void:
 	services.move_child(deliver_button, services.get_child_count() - 2)
 
 
+func _build_weapon_warnings() -> void:
+	weapon_warning_label = Label.new()
+	weapon_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
+	weapon_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
+	weapon_warning_label.add_theme_font_size_override("font_size", 12)
+	weapon_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	services.add_child(weapon_warning_label)
+	services.move_child(weapon_warning_label, maxi(0, services.get_child_count() - 3))
+	test_flight_warning_label = Label.new()
+	test_flight_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
+	test_flight_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
+	test_flight_warning_label.add_theme_font_size_override("font_size", 12)
+	test_flight_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	services.add_child(test_flight_warning_label)
+	services.move_child(test_flight_warning_label, services.get_children().find(test_flight_button))
+
+
+func _refresh_weapon_gates() -> void:
+	var active_build: Dictionary = ShipBuildStore.get_active_build()
+	var has_weapon: bool = not active_build.is_empty() or not ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
+	if is_instance_valid(deliver_button):
+		deliver_button.disabled = selected_mission == null or not has_weapon
+	if is_instance_valid(test_flight_button):
+		test_flight_button.disabled = not has_weapon
+	if is_instance_valid(weapon_warning_label):
+		weapon_warning_label.visible = not has_weapon
+	if is_instance_valid(test_flight_warning_label):
+		test_flight_warning_label.visible = not has_weapon
+
+
+func _show_salvage_recovery() -> void:
+	if not MissionRunState.salvage_recovery_pending:
+		return
+	var recovery: Dictionary = MissionRunState.recover_pending_salvage()
+	var items: Array = recovery.get("items", [])
+	var total_value: int = int(recovery.get("total_value", 0))
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.name = "SalvageRecoveryLayer"
+	layer.layer = 30
+	add_child(layer)
+	var shade: ColorRect = ColorRect.new()
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.008, 0.015, 0.028, 0.82)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(shade)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -300
+	panel.offset_top = -230
+	panel.offset_right = 300
+	panel.offset_bottom = 230
+	layer.add_child(panel)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 10)
+	panel.add_child(content)
+	var heading: Label = Label.new()
+	heading.text = "SALVAGE RECOVERED"
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_size_override("font_size", 24)
+	heading.add_theme_color_override("font_color", Color(0.45, 0.86, 1.0))
+	content.add_child(heading)
+	var subtitle: Label = Label.new()
+	subtitle.text = "Recovered items have been converted into credits."
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(subtitle)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(list)
+	for entry: Dictionary in items:
+		var item_label: Label = Label.new()
+		item_label.text = "%s  ×%d   ·   %d CR each   ·   %d CR total" % [
+			str(entry.get("display_name", "Unknown Salvage")),
+			int(entry.get("quantity", 0)),
+			int(entry.get("unit_value", 0)),
+			int(entry.get("total_value", 0)),
+		]
+		item_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		list.add_child(item_label)
+	var total_label: Label = Label.new()
+	total_label.text = "SALVAGE CREDITED  /  +%d CR" % total_value
+	total_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	total_label.add_theme_font_size_override("font_size", 18)
+	total_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	content.add_child(total_label)
+	var close: Button = Button.new()
+	close.text = "CONTINUE TO HQ"
+	close.custom_minimum_size = Vector2(0, 42)
+	close.pressed.connect(layer.queue_free)
+	content.add_child(close)
+	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %d CR" % MissionRunState.total_credits
+
+
 func _refresh_mission_list() -> void:
 	_clear_children(mission_list)
 	for mission: MissionDefinition in available_missions:
@@ -140,6 +241,7 @@ func _on_mission_button_pressed(mission: MissionDefinition) -> void:
 	selected_mission = mission
 	deliver_button.disabled = false
 	deliver_button.text = "VIEW ROUTE  /  %s" % mission.title.to_upper()
+	_refresh_weapon_gates()
 	status_label.text = "CONTRACT SELECTED  /  VIEW ROUTE TO BEGIN"
 	_refresh_mission_list()
 	_refresh_selected_details()
@@ -200,7 +302,8 @@ func _clear_children(container: Node) -> void:
 
 
 func _on_deliver_pressed() -> void:
-	if selected_mission == null:
+	_refresh_weapon_gates()
+	if selected_mission == null or deliver_button.disabled:
 		deliver_button.disabled = true
 		return
 
@@ -219,6 +322,9 @@ func _on_shipyard_pressed() -> void:
 
 
 func _on_test_flight_pressed() -> void:
+	_refresh_weapon_gates()
+	if test_flight_button.disabled:
+		return
 	get_tree().change_scene_to_file("res://scenes/tests/hud_test.tscn")
 
 
