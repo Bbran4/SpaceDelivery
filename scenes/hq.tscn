@@ -1,6 +1,6 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/hq.gd" id="1_hq"]
+[ext_resource type="Script" path="res://scripts/ui/hq.gd" id="1_hq"]
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="2_builder"]
 
 [node name="HQ" type="Control"]
