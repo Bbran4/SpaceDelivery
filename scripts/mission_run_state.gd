@@ -25,7 +25,10 @@ func begin_mission(mission: MissionDefinition) -> void:
 	mission_resolved = false
 	cargo_integrity_percent = 100.0
 	last_mission_result.clear()
-	generated_route_nodes = RouteGenerator.generate_route(mission)
+	var seed_rng := RandomNumberGenerator.new()
+	seed_rng.randomize()
+	route_seed = seed_rng.randi()
+	generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
 	completed_node_ids.clear()
 	visible_node_ids.clear()
 	accumulated_route_bonus = 0
@@ -36,7 +39,6 @@ func begin_mission(mission: MissionDefinition) -> void:
 	selected_branch_node_id = &""
 	if current_node_id != &"":
 		visible_node_ids.append(current_node_id)
-	route_seed = randi()
 
 
 func get_route_node(node_id: StringName) -> MissionRouteNode:
