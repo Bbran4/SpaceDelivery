@@ -284,7 +284,7 @@ func _get_encounter_profile_label(profile: int) -> String:
 		MissionRouteNode.EncounterProfile.QUIET:
 			return "LIGHT PATROLS"
 		MissionRouteNode.EncounterProfile.SALVAGE:
-			return "HEAVY PATROLS"
+			return "HEAVY PATROLS · CACHE +50 CR"
 		_:
 			return "STANDARD PATROLS"
 
