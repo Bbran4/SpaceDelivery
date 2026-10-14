@@ -64,10 +64,15 @@ Keep three reward concepts distinct:
 - **Encounter earnings:** credits and eligible drops collected during the run. These are retained if the contract fails.
 - **Salvage and valuables:** item drops are stored in the ship's salvage hold and carried between route nodes. On return to HQ after either success or failure, a recovery panel lists each collected item, quantity, unit value, and total value. The items are then removed from pending salvage and converted into credits exactly once using each item's credit_value. Salvage capacity limits how many units can be collected.
 
-Possible cargo categories:
-- **Standard parcels and supplies:** introductory, lower-risk jobs.
-- **Bulk and oversized freight:** requires a suitable cargo hold.
-- **Fragile cargo:** integrity loss can reduce the delivery fee or destroy the shipment.
+Implemented cargo variants share reusable rules in `scripts/cargo_rules.gd`:
+- **Standard:** one-unit minimum capacity and baseline damage sensitivity.
+- **Fragile:** one-unit minimum capacity and increased damage sensitivity.
+- **Bulk:** four-unit minimum capacity and reduced damage sensitivity, balanced by the larger hold requirement.
+- **Valuable:** two-unit minimum capacity and increased damage sensitivity.
+
+Every variant uses the mission-authored minimum delivery integrity, full-reward integrity, declared value, and damaged-cargo penalty. Cargo capacity is checked before launch; integrity and payout rules are shared rather than duplicated in UI or flight code. These are initial tuning values and should be adjusted after playtesting.
+
+Other planned cargo categories include:
 - **Hazardous cargo:** higher pay in exchange for additional risk.
 - **Time-sensitive shipments:** optional arrival-time bonus.
 - **High-value or classified cargo:** lucrative jobs that may attract stronger opposition.
@@ -209,7 +214,7 @@ This is a test specification for the intended experience; the named beats may ne
 - Seeded route generation remains owned by `MissionRunState.begin_mission(mission, forced_seed)`; forced seeds are not silently changed after validation failure.
 - Existing `MissionRunState.finish_mission` remains the single idempotent payout resolver: base contract pay is success-only, while eligible side earnings remain outside the contract payout.
 
-**Not yet complete:** objective-specific gameplay handlers, automated Godot headless validation, and full test coverage for settlement edge cases. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
+**Not yet complete:** objective-specific gameplay handlers, automated Godot headless validation, and full test coverage for settlement edge cases. Shared cargo variant rules now cover standard, fragile, bulk, and valuable contracts in the HQ catalog; balance tuning and engine-level verification remain. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
 
 ## Open design questions
 
