@@ -141,7 +141,8 @@ func _refresh_map() -> void:
 		var x: float = 82.0 + (width - 164.0) * float(node.depth) / maxf(1.0, float(max_depth))
 		var y: float = height * 0.5
 		if nodes_in_layer.size() > 1:
-			y = height * float(node.lane + 1) / float(nodes_in_layer.size() + 1)
+			var visible_lane_index: int = nodes_in_layer.find(node)
+			y = height * float(visible_lane_index + 1) / float(nodes_in_layer.size() + 1)
 		node_positions[node.node_id] = Vector2(x, y)
 
 	# Draw only connections whose endpoints have both been revealed.
