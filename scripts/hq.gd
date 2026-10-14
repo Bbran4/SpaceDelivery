@@ -143,7 +143,9 @@ func _build_weapon_warnings() -> void:
 
 func _refresh_weapon_gates() -> void:
 	var active_build: Dictionary = ShipBuildStore.get_active_build()
-	var has_weapon: bool = not active_build.is_empty() or not ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
+	var has_weapon: bool = not active_build.is_empty()
+	if active_build.is_empty():
+		has_weapon = ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
 	if is_instance_valid(deliver_button):
 		deliver_button.disabled = selected_mission == null or not has_weapon
 	if is_instance_valid(test_flight_button):
