@@ -1,7 +1,7 @@
 extends Resource
 class_name MissionRouteNode
 
-## A single node in a mission's authored route graph.
+## A single node in a mission's route graph.
 
 enum NodeKind {
 	START,
@@ -24,3 +24,5 @@ enum EncounterProfile {
 @export_range(0, 5, 1) var risk: int = 0
 @export_range(0, 100000, 1) var bonus_credits: int = 0
 @export var encounter_profile: EncounterProfile = EncounterProfile.STANDARD
+@export_range(0, 20, 1) var depth: int = 0
+@export_range(0, 20, 1) var lane: int = 0
