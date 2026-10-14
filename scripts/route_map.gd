@@ -329,8 +329,9 @@ func _show_result(result: Dictionary) -> void:
 	content.add_child(cargo)
 
 	var report := Label.new()
-	report.text = "%s\n\nSALVAGED CREDITS  +%d CR\nROUTE CACHE  +%d CR\nCONTRACT PAY  %d CR\nROUTE BONUS  %d CR\nCARGO PENALTY  -%d CR\nTOTAL PAYOUT  %d CR" % [
+	report.text = "%s\n\nROUTE SUMMARY  /  %s\n\nSALVAGED CREDITS  +%d CR\nROUTE CACHE  +%d CR\nCONTRACT PAY  %d CR\nROUTE BONUS  %d CR\nCARGO PENALTY  -%d CR\nTOTAL PAYOUT  %d CR" % [
 		str(result.get("message", "")),
+		str(result.get("route_summary", "")),
 		int(result.get("credits_collected", 0)),
 		int(result.get("salvage_recovered", 0)),
 		int(result.get("base_reward", 0)),
