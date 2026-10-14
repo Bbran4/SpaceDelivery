@@ -260,16 +260,16 @@ func _complete_delivery() -> void:
 		status_label.text = "DELIVERY BLOCKED  /  COMPLETE ALL REQUIRED OBJECTIVES FIRST"
 		return
 	var integrity: float = MissionRunState.cargo_integrity_percent
-	var success: bool = integrity >= float(mission.minimum_delivery_integrity_percent)
-	var condition: String = "INTACT" if integrity >= float(mission.full_reward_integrity_percent) else ("DAMAGED" if integrity > 0.0 else "LOST")
+	var success: bool = CargoRules.can_deliver(mission, integrity)
+	var condition: String = CargoRules.get_condition(mission, integrity)
 	var message: String
 	if not success:
-		message = "Delivery rejected: cargo integrity is below the contract minimum of %d%%." % mission.minimum_delivery_integrity_percent
+		message = CargoRules.get_delivery_failure_reason(mission, integrity)
 	elif integrity < float(mission.full_reward_integrity_percent):
 		message = "Delivery accepted with damage. Contract payment reduced under the cargo condition clause."
 	else:
 		message = "Delivery accepted at %s. Cargo condition meets the full-reward requirement." % mission.destination_name
-	var penalty: int = mission.damaged_cargo_payout_penalty_percent if success and integrity < float(mission.full_reward_integrity_percent) else 0
+	var penalty: int = CargoRules.get_payout_penalty_percent(mission, integrity)
 	var destination_node: MissionRouteNode = MissionRunState.get_route_node(MissionRunState.selected_route_node_id)
 	if destination_node != null and destination_node.node_kind == MissionRouteNode.NodeKind.DESTINATION:
 		MissionRunState.complete_route_node(destination_node.node_id)
@@ -330,7 +330,7 @@ func _show_result(result: Dictionary) -> void:
 	content.add_child(contract)
 
 	var cargo := Label.new()
-	cargo.text = "CARGO  /  %s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "")), str(result.get("cargo_condition", "")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
+	cargo.text = "CARGO  /  %s  /  %s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "")), str(result.get("cargo_variant", "Standard")), str(result.get("cargo_condition", "")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
 	cargo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cargo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(cargo)
