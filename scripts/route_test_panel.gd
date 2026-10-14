@@ -1,10 +1,5 @@
 extends Control
 
-const MISSION_PATHS: Array[String] = [
-	"res://resources/missions/fragile_relay_components.tres",
-	"res://resources/missions/priority_medical_shipment.tres",
-]
-
 var results: RichTextLabel
 var run_1000_button: Button
 var run_5000_button: Button
@@ -70,7 +65,7 @@ func _run_batch(seed_count: int) -> void:
 	run_5000_button.disabled = true
 	results.text = "Running %d seeds per mission...\n" % seed_count
 	var output := ""
-	for mission_path: String in MISSION_PATHS:
+	for mission_path: String in MissionCatalog.get_mission_paths():
 		var mission: MissionDefinition = load(mission_path) as MissionDefinition
 		if mission == null:
 			output += "[color=red]Could not load mission: %s[/color]\n" % mission_path
