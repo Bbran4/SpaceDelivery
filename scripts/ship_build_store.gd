@@ -72,6 +72,24 @@ static func build_has_weapon(hull_path: String, module_paths: Variant) -> bool:
 	return false
 
 
+static func get_cargo_capacity(hull_path: String, module_paths: Variant) -> int:
+	var hull: ShipHull = load(hull_path) as ShipHull if not hull_path.is_empty() else null
+	if hull == null:
+		return 0
+	var capacity: int = hull.cargo_hold_capacity
+	for slot_index: int in range(mini(hull.slot_categories.size(), module_paths.size())):
+		var module_path: String = str(module_paths[slot_index])
+		if module_path.is_empty():
+			continue
+		var module: ShipModule = load(module_path) as ShipModule
+		if module == null:
+			continue
+		var slot_category: int = hull.slot_categories[slot_index]
+		if slot_category == -1 or slot_category == module.category:
+			capacity += module.cargo_capacity_bonus
+	return maxi(0, capacity)
+
+
 static func get_active_build() -> Dictionary:
 	var config: ConfigFile = ConfigFile.new()
 	if config.load(SAVE_PATH) != OK:
