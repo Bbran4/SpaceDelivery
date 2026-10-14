@@ -256,6 +256,9 @@ func _complete_delivery() -> void:
 	var mission: MissionDefinition = MissionRunState.active_mission
 	if mission == null:
 		return
+	# Pickups are carried during flight; commit them to objective progress at delivery.
+	# Without this, the route-map delivery check sees the cores as unreturned.
+	MissionRunState.validate_returned_objectives(mission)
 	if not ObjectiveTracker.can_deliver(mission):
 		status_label.text = "DELIVERY BLOCKED  /  COMPLETE ALL REQUIRED OBJECTIVES FIRST"
 		return
