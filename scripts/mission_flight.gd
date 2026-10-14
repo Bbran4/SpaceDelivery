@@ -179,7 +179,7 @@ func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: floa
 	if mission_resolved or mission == null:
 		return
 	if hull_damage > 0.0:
-		cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * mission.cargo_damage_sensitivity)
+		cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * CargoRules.get_damage_sensitivity(mission))
 		MissionRunState.cargo_integrity_percent = cargo_integrity
 	if is_instance_valid(player_ship):
 		MissionRunState.save_ship_condition(player_ship)
@@ -192,12 +192,7 @@ func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: floa
 func _update_cargo_status() -> void:
 	if not is_instance_valid(cargo_status_label) or mission == null:
 		return
-	if cargo_integrity >= float(mission.full_reward_integrity_percent):
-		cargo_condition = "INTACT"
-	elif cargo_integrity > 0.0:
-		cargo_condition = "DAMAGED"
-	else:
-		cargo_condition = "LOST"
+	cargo_condition = CargoRules.get_condition(mission, cargo_integrity)
 	cargo_status_label.text = "%s  /  %s  /  VALUE %d CR  /  INTEGRITY %d%%" % [mission.cargo_name.to_upper(), cargo_condition, mission.cargo_value_credits, roundi(cargo_integrity)]
 	if cargo_condition == "INTACT":
 		cargo_status_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72))
@@ -229,7 +224,10 @@ func _on_node_completed() -> void:
 	if mission_resolved or mission == null or selected_branch == null:
 		return
 	if cargo_integrity <= 0.0:
-		_resolve_mission(false, "Delivery failed: the shipment was destroyed and can no longer be delivered.")
+		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
+		return
+	if selected_branch.node_kind == MissionRouteNode.NodeKind.DESTINATION and not CargoRules.can_deliver(mission, cargo_integrity):
+		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
 		return
 	if is_instance_valid(player_ship):
 		var credits_after_node: int = player_ship.credits
@@ -275,9 +273,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	if is_instance_valid(player_ship):
 		credits_before_payout = player_ship.credits
 
-	var cargo_penalty_percent: int = 0
-	if success and cargo_integrity < float(mission.full_reward_integrity_percent):
-		cargo_penalty_percent = mission.damaged_cargo_payout_penalty_percent
+	var cargo_penalty_percent: int = CargoRules.get_payout_penalty_percent(mission, cargo_integrity)
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
 		credits_before_payout,
