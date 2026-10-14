@@ -10,6 +10,12 @@ enum NodeKind {
 	DESTINATION,
 }
 
+enum EncounterProfile {
+	STANDARD,
+	QUIET,
+	SALVAGE,
+}
+
 @export var node_id: StringName = &""
 @export var title: String = ""
 @export_multiline var description: String = ""
@@ -17,3 +23,4 @@ enum NodeKind {
 @export var next_node_ids: PackedStringArray = PackedStringArray()
 @export_range(0, 5, 1) var risk: int = 0
 @export_range(0, 100000, 1) var bonus_credits: int = 0
+@export var encounter_profile: EncounterProfile = EncounterProfile.STANDARD
