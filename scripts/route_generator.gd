@@ -67,5 +67,5 @@ static func generate_route(mission: MissionDefinition, seed_value: int = -1) -> 
 
 
 static func _add_connection(node: MissionRouteNode, next_id: StringName) -> void:
-	if not node.next_node_ids.has(next_id):
-		node.next_node_ids.append(next_id)
+	if not node.next_node_ids.has(String(next_id)):
+		node.next_node_ids.append(String(next_id))
