@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/mission_objective_pickup.gd" id="1_pickup"]
+
+[node name="MissionObjectivePickup" type="Area2D"]
+script = ExtResource("1_pickup")
+
+[node name="Visual" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, -10, 8, -5, 8, 5, 0, 10, -8, 5, -8, -5)
+color = Color(0.3, 0.95, 0.95, 1)
