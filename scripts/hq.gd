@@ -1,7 +1,7 @@
 extends Control
 class_name HQScreen
 
-const MISSION_FLIGHT_SCENE: String = "res://scenes/mission_flight.tscn"
+const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
 
 const MISSION_PATHS: Array[String] = [
 	"res://resources/missions/priority_medical_shipment.tres",
@@ -20,10 +20,8 @@ const MISSION_PATHS: Array[String] = [
 
 var available_missions: Array[MissionDefinition] = []
 var selected_mission: MissionDefinition
-var selected_branch_node_id: StringName = &""
 var mission_list: VBoxContainer
 var selected_details: VBoxContainer
-var route_preview: VBoxContainer
 var deliver_button: Button
 
 
@@ -70,7 +68,7 @@ func _load_missions() -> void:
 func _build_mission_board() -> void:
 	welcome_text.visible = false
 	status_panel.visible = true
-	status_label.text = "SELECT A CONTRACT TO REVIEW ITS ROUTE"
+	status_label.text = "SELECT A CONTRACT TO REVIEW ITS DETAILS"
 
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.name = "MissionBoardScroll"
@@ -100,17 +98,6 @@ func _build_mission_board() -> void:
 	selected_details.add_theme_constant_override("separation", 7)
 	board_content.add_child(selected_details)
 
-	var route_heading: Label = Label.new()
-	route_heading.text = "ROUTE MAP"
-	route_heading.add_theme_font_size_override("font_size", 13)
-	route_heading.add_theme_color_override("font_color", Color(0.45, 0.78, 0.92))
-	board_content.add_child(route_heading)
-
-	route_preview = VBoxContainer.new()
-	route_preview.name = "RoutePreview"
-	route_preview.add_theme_constant_override("separation", 5)
-	board_content.add_child(route_preview)
-
 	welcome_content.add_child(scroll)
 	welcome_content.move_child(scroll, 1)
 	_refresh_mission_list()
@@ -120,7 +107,7 @@ func _build_mission_board() -> void:
 func _build_deliver_button() -> void:
 	deliver_button = Button.new()
 	deliver_button.name = "DeliverButton"
-	deliver_button.text = "DELIVER  /  SELECT A CONTRACT"
+	deliver_button.text = "VIEW ROUTE  /  SELECT A CONTRACT"
 	deliver_button.custom_minimum_size = Vector2(0, 52)
 	deliver_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	deliver_button.disabled = true
@@ -150,29 +137,20 @@ func _refresh_mission_list() -> void:
 
 func _on_mission_button_pressed(mission: MissionDefinition) -> void:
 	selected_mission = mission
-	selected_branch_node_id = _get_default_branch_id(mission)
 	deliver_button.disabled = false
-	deliver_button.text = "DELIVER  /  %s" % mission.title.to_upper()
-	status_label.text = "CONTRACT SELECTED  /  REVIEW ROUTE BEFORE DEPARTURE"
+	deliver_button.text = "VIEW ROUTE  /  %s" % mission.title.to_upper()
+	status_label.text = "CONTRACT SELECTED  /  VIEW ROUTE TO BEGIN"
 	_refresh_mission_list()
 	_refresh_selected_details()
-	_refresh_route_preview()
 
 
 func _show_empty_selection() -> void:
 	_clear_children(selected_details)
-	_clear_children(route_preview)
 	var prompt: Label = Label.new()
-	prompt.text = "Select a contract above to inspect the cargo, payout, and route options."
+	prompt.text = "Select a contract above to inspect its cargo, client, destination, and payout. Route intelligence is generated after selection."
 	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	prompt.add_theme_color_override("font_color", Color(0.64, 0.74, 0.84))
 	selected_details.add_child(prompt)
-
-	var empty_route: Label = Label.new()
-	empty_route.text = "DISPATCH  →  ROUTE CHOICE  →  DESTINATION"
-	empty_route.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	empty_route.add_theme_color_override("font_color", Color(0.48, 0.61, 0.72))
-	route_preview.add_child(empty_route)
 
 
 func _refresh_selected_details() -> void:
@@ -214,119 +192,6 @@ func _refresh_selected_details() -> void:
 	selected_details.add_child(briefing_label)
 
 
-func _refresh_route_preview() -> void:
-	_clear_children(route_preview)
-	if selected_mission == null:
-		return
-
-	var start_node: MissionRouteNode = selected_mission.get_route_node(selected_mission.start_node_id)
-	if start_node == null:
-		return
-	_add_route_marker(start_node.title, "START")
-
-	var choice_node: MissionRouteNode
-	for route_node: MissionRouteNode in selected_mission.route_nodes:
-		if route_node.node_kind == MissionRouteNode.NodeKind.CHOICE:
-			choice_node = route_node
-			break
-
-	if choice_node != null:
-		_add_route_connector()
-		_add_route_marker(choice_node.title, "CHOOSE A BRANCH")
-		var branch_row: HBoxContainer = HBoxContainer.new()
-		branch_row.add_theme_constant_override("separation", 6)
-		for branch_id: StringName in choice_node.next_node_ids:
-			var branch: MissionRouteNode = selected_mission.get_route_node(branch_id)
-			if branch == null:
-				continue
-			var branch_button: Button = Button.new()
-			branch_button.toggle_mode = true
-			branch_button.button_pressed = branch.node_id == selected_branch_node_id
-			var profile_label: String = _get_encounter_profile_label(branch.encounter_profile)
-			branch_button.text = "%s\nRISK %d  ·  %s\n+%d CR" % [
-				branch.title,
-				branch.risk,
-				profile_label,
-				branch.bonus_credits,
-			]
-			branch_button.custom_minimum_size = Vector2(0, 64)
-			branch_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			branch_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-			branch_button.pressed.connect(_on_branch_selected.bind(branch.node_id))
-			branch_row.add_child(branch_button)
-		route_preview.add_child(branch_row)
-
-		var selected_branch: MissionRouteNode = selected_mission.get_route_node(selected_branch_node_id)
-		if selected_branch != null:
-			var branch_detail: Label = Label.new()
-			branch_detail.text = selected_branch.description
-			branch_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			branch_detail.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-			route_preview.add_child(branch_detail)
-
-	var merge_node: MissionRouteNode
-	var destination_node: MissionRouteNode = selected_mission.get_route_node(selected_mission.destination_node_id)
-	for route_node: MissionRouteNode in selected_mission.route_nodes:
-		if route_node.next_node_ids.has(selected_mission.destination_node_id):
-			merge_node = route_node
-			break
-
-	if merge_node != null:
-		_add_route_connector()
-		_add_route_marker(merge_node.title, "ROUTES REJOIN")
-	if destination_node != null:
-		_add_route_connector()
-		_add_route_marker(destination_node.title, "DELIVERY DESTINATION")
-
-
-func _get_encounter_profile_label(profile: int) -> String:
-	match profile:
-		MissionRouteNode.EncounterProfile.QUIET:
-			return "LIGHT PATROLS"
-		MissionRouteNode.EncounterProfile.SALVAGE:
-			return "HEAVY PATROLS · CACHE +50 CR"
-		_:
-			return "STANDARD PATROLS"
-
-
-func _on_branch_selected(branch_id: StringName) -> void:
-	selected_branch_node_id = branch_id
-	_refresh_route_preview()
-
-
-func _get_default_branch_id(mission: MissionDefinition) -> StringName:
-	for route_node: MissionRouteNode in mission.route_nodes:
-		if route_node.node_kind == MissionRouteNode.NodeKind.CHOICE and not route_node.next_node_ids.is_empty():
-			return route_node.next_node_ids[0]
-	return &""
-
-
-func _add_route_connector() -> void:
-	var connector: Label = Label.new()
-	connector.text = "↓"
-	connector.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	connector.add_theme_color_override("font_color", Color(0.42, 0.64, 0.76))
-	route_preview.add_child(connector)
-
-
-func _add_route_marker(title: String, subtitle: String) -> void:
-	var marker: PanelContainer = PanelContainer.new()
-	marker.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var content: VBoxContainer = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 2)
-	var title_label: Label = Label.new()
-	title_label.text = title
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var subtitle_label: Label = Label.new()
-	subtitle_label.text = subtitle
-	subtitle_label.add_theme_font_size_override("font_size", 10)
-	subtitle_label.add_theme_color_override("font_color", Color(0.45, 0.78, 0.92))
-	content.add_child(title_label)
-	content.add_child(subtitle_label)
-	marker.add_child(content)
-	route_preview.add_child(marker)
-
-
 func _clear_children(container: Node) -> void:
 	for child: Node in container.get_children():
 		container.remove_child(child)
@@ -337,22 +202,15 @@ func _on_deliver_pressed() -> void:
 	if selected_mission == null:
 		deliver_button.disabled = true
 		return
-	var selected_branch: MissionRouteNode = selected_mission.get_route_node(selected_branch_node_id)
-	if selected_branch == null:
-		status_label.text = "ROUTE ERROR  /  PLEASE SELECT THIS CONTRACT AGAIN"
-		return
 
-	MissionRunState.begin_mission(selected_mission, selected_branch_node_id)
+	MissionRunState.begin_mission(selected_mission)
 	deliver_button.disabled = true
-	status_label.text = "DISPATCHING  /  %s  /  %s" % [
-		selected_mission.title,
-		selected_branch.title,
-	]
-	var change_error: Error = get_tree().change_scene_to_file(MISSION_FLIGHT_SCENE)
+	status_label.text = "GENERATING ROUTE INTELLIGENCE  /  %s" % selected_mission.title.to_upper()
+	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
 	if change_error != OK:
 		MissionRunState.clear_mission()
 		deliver_button.disabled = false
-		status_label.text = "LAUNCH FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error
+		status_label.text = "ROUTE GENERATION FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error
 
 
 func _on_shipyard_pressed() -> void:
