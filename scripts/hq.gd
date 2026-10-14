@@ -53,15 +53,17 @@ func _load_missions() -> void:
 	for mission_path: String in MISSION_PATHS:
 		var mission: MissionDefinition = load(mission_path) as MissionDefinition
 		if mission == null:
-			push_warning("Could not load mission definition: " + mission_path)
+			push_error("Could not load mission definition: " + mission_path)
 			continue
-		var validation_errors: PackedStringArray = mission.validate_route_graph()
+
+		var validation_errors: PackedStringArray = mission.validate_generator_settings()
 		if not validation_errors.is_empty():
-			push_warning("Mission '%s' has an invalid route graph: %s" % [
+			push_error("Mission '%s' has invalid route-generation settings: %s" % [
 				mission.mission_id,
 				"; ".join(validation_errors),
 			])
-			continue
+		# Keep the contract visible even when its settings need correction. The
+		# generator has safe fallbacks, and the error above identifies the resource.
 		available_missions.append(mission)
 
 
@@ -114,7 +116,6 @@ func _build_deliver_button() -> void:
 	deliver_button.pressed.connect(_on_deliver_pressed)
 	services.add_child(deliver_button)
 	services.move_child(deliver_button, services.get_child_count() - 2)
-
 
 
 func _refresh_mission_list() -> void:
