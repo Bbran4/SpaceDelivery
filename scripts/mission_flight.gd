@@ -268,9 +268,9 @@ func _show_result_screen(result: Dictionary) -> void:
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -280.0
-	panel.offset_top = -190.0
+	panel.offset_top = -220.0
 	panel.offset_right = 280.0
-	panel.offset_bottom = 190.0
+	panel.offset_bottom = 220.0
 	layer.add_child(panel)
 
 	var content: VBoxContainer = VBoxContainer.new()
@@ -315,7 +315,8 @@ func _show_result_screen(result: Dictionary) -> void:
 	content.add_child(message_label)
 
 	var payout_label: Label = Label.new()
-	payout_label.text = "CONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
+	payout_label.text = "SALVAGED CREDITS  /  +%d CR\nCONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
+		int(result.get("credits_collected", 0)),
 		int(result.get("base_reward", 0)),
 		int(result.get("route_bonus", 0)),
 		int(result.get("cargo_penalty", 0)),
