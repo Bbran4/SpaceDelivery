@@ -37,6 +37,7 @@ func _ready() -> void:
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
 	MissionRunState.restore_ship_condition(player_ship)
+	MissionRunState.restore_ship_salvage(player_ship)
 	cargo_integrity = MissionRunState.cargo_integrity_percent
 	player_ship.credits = MissionRunState.total_credits
 	credits_at_encounter_start = player_ship.credits
@@ -168,7 +169,10 @@ func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: floa
 		MissionRunState.cargo_integrity_percent = cargo_integrity
 	if is_instance_valid(player_ship):
 		MissionRunState.save_ship_condition(player_ship)
+		MissionRunState.save_ship_salvage(player_ship)
 	_update_cargo_status()
+	if cargo_integrity <= 0.0:
+		_resolve_mission(false, "Delivery failed: the shipment was destroyed and can no longer be delivered.")
 
 
 func _update_cargo_status() -> void:
@@ -209,12 +213,16 @@ func _on_abort_pressed() -> void:
 func _on_node_completed() -> void:
 	if mission_resolved or mission == null or selected_branch == null:
 		return
+	if cargo_integrity <= 0.0:
+		_resolve_mission(false, "Delivery failed: the shipment was destroyed and can no longer be delivered.")
+		return
 	if is_instance_valid(player_ship):
 		var credits_after_node: int = player_ship.credits
 		var credits_before_node: int = MissionRunState.total_credits
 		MissionRunState.total_credits = credits_after_node
 		MissionRunState.add_node_rewards(selected_branch, credits_before_node, credits_after_node)
 		MissionRunState.save_ship_condition(player_ship)
+		MissionRunState.save_ship_salvage(player_ship)
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 	MissionRunState.complete_route_node(selected_branch.node_id)
 	var change_error: Error = get_tree().change_scene_to_file("res://scenes/route_map.tscn")
