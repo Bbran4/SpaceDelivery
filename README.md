@@ -97,7 +97,7 @@ Successful deliveries earn reputation. Higher reputation unlocks new contract ti
 
 ## Procedural routes and encounters
 
-Missions use a branching, node-based network of space encounters, like a procedural dungeon. A route has several locations, and the player's choice at each step decides which locations they can reach next. The node map is also the mission's story structure: branches should offer distinct trade-offs and encounters, not just different-looking paths. The opening node can split into two or more options, with branches later merging toward a shared destination or final approach. The first mission implementation should use a small, readable authored path before expanding into broader procedural variation.
+Missions use a procedurally generated, branching node network, like a compact dungeon. The contract defines the purpose and destination; a seeded generator creates the route graph and encounter details. The map uses progressive discovery: only the first node is shown initially, then completing a node reveals its connected next options. The player commits to one branch at a time, while previously completed nodes remain visible and marked complete. All generated paths must remain connected to the destination. Seeds should be recorded so unusual routes can be reproduced during debugging. Branches should communicate real differences in risk, enemy profile, bonus pay, and salvage opportunities rather than merely changing the map's appearance.
 
 ### Encounter stages
 
@@ -185,12 +185,12 @@ Crew members can provide passive bonuses or specialist effects, such as a naviga
 
 ## Development scope and priorities
 
-The first playable version should focus on the Delivery Pilot mode and prove that the core loop is fun. The first milestone is the mission-selection flow: selecting a mission should enable **Deliver**, while no selected mission leaves it disabled. The mission path should be visible and understandable before the player commits to the flight.
+The first playable version should focus on the Delivery Pilot mode and prove that the core loop is fun. HQ mission selection enables **View Route**, while the route map reveals only the initial node. Players select a visible node and press **Deliver** to enter it; completing that encounter returns them to the map and reveals the next connected choices. The destination appears at the end, where the player completes the delivery and receives the route summary.
 
 Suggested development order:
 
-1. **Mission-selection foundation:** Add a small set of mission data and a branching node-path view. Keep **Deliver** disabled until a valid mission is selected.
-2. **Vertical slice:** One delivery contract, a short route of 3-4 nodes, a couple of encounter types, Test Flight / Deliver flow, automatic combat, a payout, and a handful of skill tree upgrades.
+1. **Mission-selection and route-discovery foundation:** Select a contract in HQ, generate a seeded connected route, reveal nodes progressively, and validate that every reachable branch can reach the destination.
+2. **Vertical slice:** One delivery contract, a short procedural route, a couple of encounter types, Test Flight / Deliver flow, automatic combat, persistent hull and cargo condition between nodes, a payout, and a handful of skill tree upgrades.
 3. Add a mission-results report that communicates success, failure, rewards, cargo condition, and reputation with the game's dry corporate humour.
 4. Expand the route map and encounter library while keeping route structure valid, choices meaningful, and pacing intentional.
 4. Add cargo integrity, hazardous cargo, and cargo jettisoning.
