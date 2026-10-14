@@ -338,6 +338,10 @@ func _on_node_completed() -> void:
 	if cargo_integrity <= 0.0:
 		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
 		return
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective != null and objective.objective_type == MissionObjectiveDefinition.ObjectiveType.ESCAPE:
+			ObjectiveTracker.add_progress(mission, objective.objective_id, 1)
+			objective_timers.erase(objective.objective_id)
 	if selected_branch.node_kind == MissionRouteNode.NodeKind.DESTINATION:
 		MissionRunState.validate_returned_objectives(mission)
 		if not ObjectiveTracker.can_deliver(mission):

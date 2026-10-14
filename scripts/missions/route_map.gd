@@ -297,89 +297,64 @@ func _show_result(result: Dictionary) -> void:
 	result_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	result_layer.z_index = 20
 	add_child(result_layer)
-
 	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.008, 0.015, 0.028, 0.88)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	result_layer.add_child(shade)
-
 	var panel := PanelContainer.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -280
-	panel.offset_top = -220
-	panel.offset_right = 280
-	panel.offset_bottom = 220
+	panel.offset_left = -280.0
+	panel.offset_top = -205.0
+	panel.offset_right = 280.0
+	panel.offset_bottom = 205.0
 	result_layer.add_child(panel)
-
 	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 12)
+	content.add_theme_constant_override("separation", 8)
 	panel.add_child(content)
-
 	var success: bool = bool(result.get("success", false))
 	var heading := Label.new()
 	heading.text = "DELIVERY COMPLETE" if success else "DELIVERY REJECTED"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 25)
+	heading.add_theme_font_size_override("font_size", 24)
 	heading.add_theme_color_override("font_color", Color(0.42, 0.9, 0.68) if success else Color(1.0, 0.42, 0.42))
 	content.add_child(heading)
-
 	var contract := Label.new()
-	contract.text = "%s\nDESTINATION  /  %s" % [str(result.get("mission_title", "")), str(result.get("destination_name", ""))]
+	contract.text = "%s  /  %s" % [str(result.get("mission_title", "")), str(result.get("destination_name", ""))]
 	contract.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	contract.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(contract)
-
 	var cargo := Label.new()
-	cargo.text = "CARGO  /  %s  /  %s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "")), str(result.get("cargo_variant", "Standard")), str(result.get("cargo_condition", "")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
+	cargo.text = "%s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "Cargo")), str(result.get("cargo_condition", "UNKNOWN")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
 	cargo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cargo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(cargo)
-
 	var objective_lines: PackedStringArray = []
-	for objective_entry: Dictionary in result.get("objective_snapshot", []):
-		var objective_status: String = str(objective_entry.get("state", "UNKNOWN"))
-		var progress_text: String = "%d/%d" % [
-			int(objective_entry.get("progress", 0)),
-			int(objective_entry.get("required_quantity", 1)),
-		]
-		objective_lines.append("%s  /  %s%s" % [
-			str(objective_entry.get("title", objective_entry.get("id", "Objective"))),
-			objective_status,
-			"  (%s)" % progress_text if objective_status not in ["COMPLETED", "FAILED"] else "",
-		])
-	var objective_report: String = "\n".join(objective_lines)
-	if objective_report.is_empty():
-		objective_report = "No explicit objectives on this legacy delivery contract."
-	var report := Label.new()
-	report.text = "%s\n\nOBJECTIVES  /  %s\n%s\n\nROUTE SUMMARY  /  %s\n\nSALVAGED CREDITS  +%d CR\nROUTE CACHE  +%d CR\nCONTRACT PAY  %d CR\nROUTE BONUS  %d CR\nCARGO PENALTY  -%d CR\nTOTAL PAYOUT  %d CR" % [
-		str(result.get("message", "")),
-		str(result.get("objective_outcome", "NOT_TRACKED")),
-		objective_report,
-		str(result.get("route_summary", "")),
-		int(result.get("credits_collected", 0)),
-		int(result.get("salvage_recovered", 0)),
-		int(result.get("base_reward", 0)),
-		int(result.get("route_bonus", 0)),
-		int(result.get("cargo_penalty", 0)),
-		int(result.get("payout", 0)),
-	]
-	report.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	report.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	report.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
-	content.add_child(report)
-
+	for entry: Dictionary in result.get("objective_snapshot", []):
+		objective_lines.append("%s: %s (%d/%d)" % [str(entry.get("title", entry.get("id", "Objective"))), str(entry.get("state", "UNKNOWN")), int(entry.get("progress", 0)), int(entry.get("required_quantity", 1))])
+	var objectives := Label.new()
+	objectives.text = "\n".join(objective_lines) if not objective_lines.is_empty() else "No additional objectives."
+	objectives.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(objectives)
+	var payout := Label.new()
+	payout.text = "SIDE EARNINGS +%d CR    CONTRACT %d CR\nBONUS %d CR    PENALTY -%d CR\nTOTAL PAYOUT %d CR" % [int(result.get("credits_collected", 0)) + int(result.get("salvage_recovered", 0)), int(result.get("base_reward", 0)), int(result.get("route_bonus", 0)), int(result.get("cargo_penalty", 0)), int(result.get("payout", 0))]
+	payout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	payout.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	content.add_child(payout)
 	var balance := Label.new()
-	balance.text = "ACCOUNT BALANCE  /  %d CR" % int(result.get("total_credits", 0))
+	balance.text = "ACCOUNT BALANCE / %d CR" % int(result.get("total_credits", 0))
 	balance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	balance.add_theme_font_size_override("font_size", 16)
 	content.add_child(balance)
-
 	var finish := Button.new()
-	finish.text = "COMPLETE CONTRACT  /  RETURN TO HQ"
+	finish.text = "RETURN TO HQ"
 	finish.custom_minimum_size = Vector2(0, 44)
+	finish.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	finish.mouse_filter = Control.MOUSE_FILTER_STOP
 	finish.pressed.connect(_return_to_hq)
 	content.add_child(finish)
 
