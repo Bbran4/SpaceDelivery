@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player_ship.tscn" id="1_player"]
-[ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/fighter.tscn" id="3_fighter"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/scout.tscn" id="4_scout"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/heavy.tscn" id="5_heavy"]
