@@ -1,6 +1,6 @@
 [gd_resource type="Resource" script_class="EnemyLoadout" load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://scripts/enemy_loadout.gd" id="1_loadout"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_loadout.gd" id="1_loadout"]
 [ext_resource type="Resource" path="res://resources/modules/rapid_laser_module.tres" id="2_weapon"]
 [ext_resource type="Resource" path="res://resources/rewards/raider_rewards.tres" id="3_rewards"]
 

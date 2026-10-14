@@ -236,11 +236,11 @@ Confirmed from the project configuration and current source:
 - **Game dimension:** 2D; gameplay uses 2D scene and physics nodes.
 - **Primary language:** GDScript.
 - **Startup scene:** `res://scenes/hq.tscn`.
-- **Shared mission state:** `res://scripts/mission_run_state.gd`, registered as the `MissionRunState` autoload.
-- **Procedural route generation:** `res://scripts/route_generator.gd`. Mission resources configure `layer_node_counts`, `branch_chance`, `risk_bias`, and optional `fixed_beats` in `res://scripts/mission_definition.gd`.
-- **Route-map presentation and interaction:** `res://scripts/route_map.gd` and `res://scenes/route_map.tscn`.
-- **Flight stage:** `res://scripts/mission_flight.gd`.
-- **Route node data:** `res://scripts/mission_route_node.gd`.
+- **Shared mission state:** `res://scripts/missions/mission_run_state.gd`, registered as the `MissionRunState` autoload.
+- **Procedural route generation:** `res://scripts/missions/route_generator.gd`. Mission resources configure `layer_node_counts`, `branch_chance`, `risk_bias`, and optional `fixed_beats` in `res://scripts/missions/mission_definition.gd`.
+- **Route-map presentation and interaction:** `res://scripts/missions/route_map.gd` and `res://scenes/route_map.tscn`.
+- **Flight stage:** `res://scripts/missions/mission_flight.gd`.
+- **Route node data:** `res://scripts/missions/mission_route_node.gd`.
 - **Save format:** The save location and persistence implementation should be documented after confirming the current save/load path; do not assume that runtime mission state is the save system.
 - **Physics note:** `project.godot` enables Jolt for 3D physics. The game is 2D, so this setting is not evidence of a 3D gameplay requirement and can be reviewed separately.
 - **Windows rendering driver:** Direct3D 12.

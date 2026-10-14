@@ -17,8 +17,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-MissionRunState="*res://scripts/mission_run_state.gd"
-ObjectiveTracker="*res://scripts/mission_objective_tracker.gd"
+MissionRunState="*res://scripts/missions/mission_run_state.gd"
+ObjectiveTracker="*res://scripts/missions/mission_objective_tracker.gd"
 
 [display]
 
