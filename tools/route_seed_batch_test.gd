@@ -33,7 +33,7 @@ func _run_batch() -> void:
 func _new_stats() -> Dictionary:
 	return {
 		"routes": 0, "validation_failures": 0, "failure_examples": [],
-		"first_encounter_risk_3_plus": 0, "exit_total": 0, "node_total": 0,
+		"first_encounter_risk_3_plus": 0, "exit_total": 0, "node_total": 0, "minimum_exits": 2147483647,
 		"single_exit_nodes": 0, "duplicate_sibling_routes": 0, "no_service_routes": 0,
 		"worst_risk_streak": 0, "min_path_risk": 2147483647, "max_path_risk": 0,
 		"min_path_bonus": 2147483647, "max_path_bonus": 0,
@@ -59,6 +59,8 @@ func _record_route(stats: Dictionary, route: Array[MissionRouteNode], errors: Pa
 		layers[node.depth].append(node)
 		stats["node_total"] += 1
 		stats["exit_total"] += node.next_node_ids.size()
+		if node.node_kind != MissionRouteNode.NodeKind.DESTINATION:
+			stats["minimum_exits"] = mini(int(stats["minimum_exits"]), node.next_node_ids.size())
 		if node.next_node_ids.size() == 1:
 			stats["single_exit_nodes"] += 1
 		if node.node_kind == MissionRouteNode.NodeKind.SERVICE:
@@ -127,7 +129,7 @@ func _print_stats(mission_path: String, seed_count: int, stats: Dictionary) -> v
 	print("Seeds: 1..%d | Routes: %d | Validation failures: %d" % [seed_count, routes, stats["validation_failures"]])
 	print("First encounter risk >= 3: %d (%.2f%%)" % [stats["first_encounter_risk_3_plus"], first_risk_share])
 	print("Exits per node: average %.2f | minimum %d | single-exit share %.2f%%" % [
-		exit_average, _minimum_exits_for_shape(), single_exit_share
+		exit_average, int(stats["minimum_exits"]), single_exit_share
 	])
 	print("Routes with duplicate sibling profile+risk: %d (%.2f%%)" % [stats["duplicate_sibling_routes"], duplicate_share])
 	print("Routes without a service stop: %d (%.2f%%)" % [stats["no_service_routes"], service_missing_share])
@@ -137,7 +139,3 @@ func _print_stats(mission_path: String, seed_count: int, stats: Dictionary) -> v
 	for example: String in stats["failure_examples"]:
 		print("  FAILURE: %s" % example)
 
-
-func _minimum_exits_for_shape() -> int:
-	# Non-destination nodes should all have an exit; destination has zero.
-	return 0
