@@ -44,13 +44,34 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	contact_count = clampi(2 + selected_branch.risk, 3, 8)
+	contact_count = _get_contact_count(selected_branch)
 	encounter_spawner.spawn_count = contact_count
 	encounter_spawner.spawn_on_ready = false
 	_build_flight_overlay()
 	if is_instance_valid(route_label):
 		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
-	call_deferred("_start_encounter")
+	if selected_branch.node_kind == MissionRouteNode.NodeKind.CHOICE:
+		call_deferred("_start_service_node")
+	else:
+		call_deferred("_start_encounter")
+
+
+func _get_contact_count(node: MissionRouteNode) -> int:
+	if node.encounter_profile == MissionRouteNode.EncounterProfile.QUIET:
+		return clampi(node.risk, 1, 2)
+	if node.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE:
+		return clampi(1 + node.risk, 2, 4)
+	return clampi(1 + node.risk, 2, 4)
+
+
+func _start_service_node() -> void:
+	if mission_resolved:
+		return
+	if is_instance_valid(route_label):
+		route_label.text = "SERVICE STOP  /  NO HOSTILES DETECTED"
+	if is_instance_valid(abort_button):
+		abort_button.disabled = true
+	_show_destination_button("COMPLETE SERVICE STOP  /  RETURN TO ROUTE MAP")
 
 
 func _start_encounter() -> void:
@@ -251,7 +272,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	_show_result_screen(result)
 
 
-func _show_destination_button() -> void:
+func _show_destination_button(button_text: String = "RETURN TO ROUTE MAP  /  NODE COMPLETE") -> void:
 	if resolution_pending or mission_resolved:
 		return
 	resolution_pending = true
@@ -262,7 +283,7 @@ func _show_destination_button() -> void:
 		return
 	destination_button = Button.new()
 	destination_button.name = "CompleteDeliveryButton"
-	destination_button.text = "RETURN TO ROUTE MAP  /  NODE COMPLETE"
+	destination_button.text = button_text
 	destination_button.anchor_left = 0.5
 	destination_button.anchor_right = 0.5
 	destination_button.anchor_top = 1.0
