@@ -16,6 +16,7 @@ const MISSION_PATHS: Array[String] = [
 @onready var status_label: Label = $Margin/Layout/MainContent/WelcomePanel/WelcomeContent/StatusPanel/StatusLabel
 @onready var services: VBoxContainer = $Margin/Layout/MainContent/ServicesPanel/Services
 @onready var test_flight_button: Button = $Margin/Layout/MainContent/ServicesPanel/Services/TestFlightButton
+@onready var footer_label: Label = $Margin/Layout/Footer/FooterLabel
 
 var available_missions: Array[MissionDefinition] = []
 var selected_mission: MissionDefinition
@@ -30,6 +31,23 @@ func _ready() -> void:
 	_load_missions()
 	_build_mission_board()
 	_build_deliver_button()
+	_refresh_campaign_status()
+
+
+func _refresh_campaign_status() -> void:
+	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %d CR" % MissionRunState.total_credits
+	if MissionRunState.last_mission_result.is_empty():
+		return
+
+	var result: Dictionary = MissionRunState.last_mission_result
+	var success: bool = bool(result.get("success", false))
+	var mission_title: String = str(result.get("mission_title", "Last Contract"))
+	var payout: int = int(result.get("payout", 0))
+	status_label.text = "%s  /  %s  /  %s CR AWARDED" % [
+		"LAST DELIVERY COMPLETE" if success else "LAST MISSION FAILED",
+		mission_title.to_upper(),
+		payout,
+	]
 
 
 func _load_missions() -> void:
