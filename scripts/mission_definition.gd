@@ -10,6 +10,7 @@ class_name MissionDefinition
 @export var cargo_type: String = "General Freight"
 @export var cargo_description: String = ""
 @export_range(0, 1000000, 1) var cargo_value_credits: int = 0
+@export_range(1, 100000, 1) var cargo_capacity_required: int = 1
 @export_range(0.0, 3.0, 0.1) var cargo_damage_sensitivity: float = 1.0
 @export_range(1, 100, 1) var minimum_delivery_integrity_percent: int = 1
 @export_range(1, 100, 1) var full_reward_integrity_percent: int = 75
