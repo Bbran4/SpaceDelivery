@@ -35,7 +35,7 @@ func begin_mission(mission: MissionDefinition) -> void:
 	accumulated_salvage_cache = 0
 	credits_collected_this_mission = 0
 	current_node_id = generated_route_nodes[0].node_id if not generated_route_nodes.is_empty() else &""
-	selected_route_node_id = current_node_id
+	selected_route_node_id = &""
 	selected_branch_node_id = &""
 	if current_node_id != &"":
 		visible_node_ids.append(current_node_id)
@@ -68,7 +68,7 @@ func complete_route_node(node_id: StringName) -> void:
 	for next_id: StringName in node.next_node_ids:
 		if not visible_node_ids.has(next_id):
 			visible_node_ids.append(next_id)
-	selected_route_node_id = StringName(node.next_node_ids[0]) if not node.next_node_ids.is_empty() else &""
+	selected_route_node_id = &""
 
 
 func add_node_rewards(node: MissionRouteNode, credits_before: int, credits_after: int) -> void:
