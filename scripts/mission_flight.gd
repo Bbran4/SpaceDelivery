@@ -50,7 +50,7 @@ func _ready() -> void:
 	_build_flight_overlay()
 	if is_instance_valid(route_label):
 		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
-	if selected_branch.node_kind == MissionRouteNode.NodeKind.CHOICE:
+	if selected_branch.node_kind == MissionRouteNode.NodeKind.SERVICE:
 		call_deferred("_start_service_node")
 	else:
 		call_deferred("_start_encounter")
