@@ -7,6 +7,8 @@ class_name MissionDefinition
 @export var title: String = ""
 @export var client_name: String = ""
 @export var cargo_description: String = ""
+@export_range(0.0, 3.0, 0.1) var cargo_damage_sensitivity: float = 1.0
+@export_range(0, 100, 1) var damaged_cargo_payout_penalty_percent: int = 25
 @export var destination_name: String = ""
 @export_multiline var briefing: String = ""
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
