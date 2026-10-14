@@ -34,7 +34,21 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 		var seed_rng := RandomNumberGenerator.new()
 		seed_rng.randomize()
 		route_seed = seed_rng.randi()
-	generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
+	var validation_errors: PackedStringArray = []
+	generated_route_nodes.clear()
+	for attempt: int in range(5):
+		generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
+		validation_errors = RouteGenerator.validate_route(generated_route_nodes)
+		if validation_errors.is_empty():
+			break
+		if forced_seed >= 0:
+			# A forced seed is a debugging contract: preserve it and report its failure.
+			break
+		route_seed += 1
+	if not validation_errors.is_empty():
+		push_error("Generated route failed validation for mission '%s' seed %d: %s" % [
+			mission.mission_id, route_seed, "; ".join(validation_errors)
+		])
 	completed_node_ids.clear()
 	visible_node_ids.clear()
 	route_flags.clear()
