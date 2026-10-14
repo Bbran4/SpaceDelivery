@@ -94,7 +94,7 @@ Players choose which contracts to accept. Clients can differ in cargo, fees, haz
 
 ## Procedural routes and encounters
 
-Routes are seeded, branching graphs generated for the selected contract. Progressive discovery shows only the starting node initially. Completing a node reveals its connected successors while completed nodes remain marked. Branches should eventually lead to a reachable destination, and the stored seed should make a problematic route reproducible during debugging.
+Routes are seeded, branching graphs generated for the selected contract. Progressive discovery shows only the starting node initially. Completing a node reveals its connected successors while completed nodes remain marked. The generator guarantees exits for non-destination nodes and at least two distinct exits wherever the next layer offers alternatives. Encounter siblings are kept distinct where possible, early encounters are capped at risk 2, and later layers scale risk with some relief after harder layers. Service stops are less common than combat nodes, provide no direct credit bonus, repair 35% of maximum hull, and restore shields. `MissionRunState.begin_mission(mission, forced_seed)` can replay a specific route; completed node history and route flags are recorded for future event logic.
 
 **Committed generation rules:**
 
@@ -105,9 +105,9 @@ Routes are seeded, branching graphs generated for the selected contract. Progres
 5. Pressure and relief alternate where practical. Avoid repeatedly stacking the hardest encounters without recovery or variation.
 6. Branches communicate real trade-offs in risk, recovery, bonus pay, and salvage.
 7. Use route history and flags to make later events respond to earlier choices.
-8. Test batches of seeds for connectivity, pacing, repetition, difficulty spikes, and reward distribution. A valid graph is necessary, but human playtesting is still required to judge whether a route feels good.
+8. Run the seeded route validator across batches of seeds, then expand it to measure pacing, difficulty spikes, and reward distribution. A valid graph is necessary, but human playtesting is still required to judge whether a route feels good.
 
-Possible encounter types include combat, elite fights, salvage, recovery/service beacons, escort or rescue events, inspections, anomalies, and the destination. The current route-map implementation includes progressive node discovery and service nodes; other encounter types remain subject to implementation.
+Possible encounter types include combat, elite fights, salvage, recovery/service beacons, escort or rescue events, inspections, anomalies, and the destination. The current route-map implementation includes progressive node discovery and repair service nodes; other encounter types remain subject to implementation. The initial batch validator is available at `tools/route_seed_batch_test.gd` and checks graph reachability, dead ends, branch availability, and repeated encounter titles.
 
 ## Combat feel and piloting
 
