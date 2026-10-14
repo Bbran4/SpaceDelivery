@@ -2,6 +2,7 @@ extends Resource
 class_name MissionDefinition
 
 ## Authored delivery contract and parameters for procedural route generation.
+## Treat this resource as immutable during play; per-attempt progress belongs to MissionRunState.
 
 @export var mission_id: StringName = &""
 @export var title: String = ""
@@ -19,6 +20,9 @@ class_name MissionDefinition
 @export_multiline var briefing: String = ""
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
 @export var risk_label: String = "Routine"
+
+## Required and optional objectives. Empty preserves legacy delivery-only contracts.
+@export var objectives: Array[MissionObjectiveDefinition] = []
 
 ## Number of nodes in each route layer, including the start and destination.
 ## Keep the first and last values at 1 for a single start and destination.
@@ -52,3 +56,82 @@ func validate_generator_settings() -> PackedStringArray:
 		elif beat.lane < 0 or beat.lane >= layer_node_counts[beat.depth]:
 			errors.append("Fixed beat '%s' lane %d is outside layer %d." % [beat.node_id, beat.lane, beat.depth])
 	return errors
+
+
+## Full authoring validation, run before a contract is offered or launched.
+func validate_contract() -> PackedStringArray:
+	var errors: PackedStringArray = validate_generator_settings()
+	if mission_id == &"":
+		errors.append("Mission ID cannot be empty.")
+	if title.strip_edges().is_empty():
+		errors.append("Mission title cannot be empty.")
+	if client_name.strip_edges().is_empty():
+		errors.append("Mission '%s' needs a client name." % mission_id)
+	if destination_name.strip_edges().is_empty():
+		errors.append("Mission '%s' needs a destination." % mission_id)
+	if base_reward_credits < 0:
+		errors.append("Mission '%s' has a negative base reward." % mission_id)
+	if cargo_capacity_required < 1:
+		errors.append("Mission '%s' must require at least one cargo unit." % mission_id)
+	if minimum_delivery_integrity_percent < 1 or minimum_delivery_integrity_percent > 100:
+		errors.append("Mission '%s' has an invalid minimum cargo integrity." % mission_id)
+	if full_reward_integrity_percent < minimum_delivery_integrity_percent or full_reward_integrity_percent > 100:
+		errors.append("Mission '%s' full-reward integrity must be at least the delivery minimum and at most 100." % mission_id)
+	if damaged_cargo_payout_penalty_percent < 0 or damaged_cargo_payout_penalty_percent > 100:
+		errors.append("Mission '%s' cargo penalty must be between 0 and 100 percent." % mission_id)
+	if cargo_damage_sensitivity < 0.0:
+		errors.append("Mission '%s' cargo damage sensitivity cannot be negative." % mission_id)
+
+	var objective_ids: Dictionary = {}
+	for objective: MissionObjectiveDefinition in objectives:
+		if objective == null:
+			errors.append("Mission '%s' contains an empty objective." % mission_id)
+			continue
+		for objective_error: String in objective.validate_definition():
+			errors.append("Mission '%s': %s" % [mission_id, objective_error])
+		if objective_ids.has(objective.objective_id):
+			errors.append("Mission '%s' has duplicate objective ID '%s'." % [mission_id, objective.objective_id])
+		objective_ids[objective.objective_id] = objective
+	for objective: MissionObjectiveDefinition in objectives:
+		if objective == null:
+			continue
+		for prerequisite_id: StringName in objective.prerequisite_ids:
+			if not objective_ids.has(prerequisite_id):
+				errors.append("Objective '%s' references missing prerequisite '%s'." % [objective.objective_id, prerequisite_id])
+			elif prerequisite_id == objective.objective_id:
+				errors.append("Objective '%s' cannot depend on itself." % objective.objective_id)
+
+	if not _objectives_have_acyclic_prerequisites(objective_ids):
+		errors.append("Mission '%s' objective prerequisites contain a cycle." % mission_id)
+	return errors
+
+
+func _objectives_have_acyclic_prerequisites(objective_ids: Dictionary) -> bool:
+	var visiting: Dictionary = {}
+	var visited: Dictionary = {}
+	for objective_id: Variant in objective_ids.keys():
+		if not _visit_objective(StringName(objective_id), objective_ids, visiting, visited):
+			return false
+	return true
+
+
+func _visit_objective(
+	objective_id: StringName,
+	objective_ids: Dictionary,
+	visiting: Dictionary,
+	visited: Dictionary
+) -> bool:
+	if visited.has(objective_id):
+		return true
+	if visiting.has(objective_id):
+		return false
+	var objective: MissionObjectiveDefinition = objective_ids.get(objective_id) as MissionObjectiveDefinition
+	if objective == null:
+		return true
+	visiting[objective_id] = true
+	for prerequisite_id: StringName in objective.prerequisite_ids:
+		if objective_ids.has(prerequisite_id) and not _visit_objective(prerequisite_id, objective_ids, visiting, visited):
+			return false
+	visiting.erase(objective_id)
+	visited[objective_id] = true
+	return true
