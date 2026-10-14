@@ -56,7 +56,8 @@ func finish_mission(
 	result_message: String,
 	cargo_condition: String = "INTACT",
 	cargo_penalty_percent: int = 0,
-	credits_collected: int = 0
+	credits_collected: int = 0,
+	salvage_recovered: int = 0
 ) -> Dictionary:
 	if mission_resolved:
 		return last_mission_result
@@ -89,6 +90,7 @@ func finish_mission(
 		"cargo_penalty_percent": penalty_percent,
 		"cargo_penalty": cargo_penalty,
 		"credits_collected": maxi(0, credits_collected),
+		"salvage_recovered": maxi(0, salvage_recovered) if success else 0,
 		"gross_payout": gross_payout,
 		"total_credits": total_credits,
 	}
