@@ -18,6 +18,8 @@ var accumulated_route_bonus: int = 0
 var accumulated_salvage_cache: int = 0
 var credits_collected_this_mission: int = 0
 var route_seed: int = 0
+var route_flags: Dictionary = {}
+var route_history: Array[Dictionary] = []
 
 
 func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
@@ -35,6 +37,8 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 	generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
 	completed_node_ids.clear()
 	visible_node_ids.clear()
+	route_flags.clear()
+	route_history.clear()
 	accumulated_route_bonus = 0
 	accumulated_salvage_cache = 0
 	credits_collected_this_mission = 0
@@ -67,6 +71,20 @@ func complete_route_node(node_id: StringName) -> void:
 	if node == null:
 		return
 	completed_node_ids.append(node_id)
+	route_history.append({
+		"node_id": String(node.node_id),
+		"title": node.title,
+		"kind": int(node.node_kind),
+		"risk": node.risk,
+		"depth": node.depth,
+		"lane": node.lane,
+	})
+	route_flags["visited_%s" % String(node.node_kind).to_lower()] = true
+	route_flags["max_depth_reached"] = maxi(int(route_flags.get("max_depth_reached", 0)), node.depth)
+	if node.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE:
+		route_flags["salvage_seen"] = true
+	if node.node_kind == MissionRouteNode.NodeKind.SERVICE:
+		route_flags["service_seen"] = true
 	current_node_id = node_id
 	visible_node_ids = completed_node_ids.duplicate()
 	for next_id: StringName in node.next_node_ids:
@@ -166,6 +184,8 @@ func finish_mission(
 		"gross_payout": gross_payout,
 		"total_credits": total_credits,
 		"route_seed": route_seed,
+		"route_flags": route_flags.duplicate(true),
+		"route_history": route_history.duplicate(true),
 		"completed_nodes": completed_node_ids.size(),
 		"route_summary": "  →  ".join(route_titles),
 	}
