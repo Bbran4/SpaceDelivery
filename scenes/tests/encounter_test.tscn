@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/enemies/fighter.tscn" id="3_fighter"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/scout.tscn" id="4_scout"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/heavy.tscn" id="5_heavy"]
-[ext_resource type="Script" path="res://scripts/encounter_spawner.gd" id="6_spawner"]
+[ext_resource type="Script" path="res://scripts/combat/encounter_spawner.gd" id="6_spawner"]
 
 [node name="EncounterTest" type="Node2D"]
 

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://baenafql7lfj7"]
 
-[ext_resource type="Script" uid="uid://bunb5dno4wvbr" path="res://scripts/ship_builder.gd" id="1_builder"]
+[ext_resource type="Script" uid="uid://bunb5dno4wvbr" path="res://scripts/ui/ship_builder.gd" id="1_builder"]
 
 [node name="ShipBuilder" type="Control" unique_id=59839730]
 layout_mode = 3
