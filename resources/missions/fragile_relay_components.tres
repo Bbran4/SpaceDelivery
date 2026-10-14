@@ -30,6 +30,7 @@ node_kind = 1
 next_node_ids = PackedStringArray("merge")
 risk = 1
 bonus_credits = 10
+encounter_profile = 1
 
 [sub_resource type="Resource" id="debris_cut"]
 script = ExtResource("2_node")
@@ -40,6 +41,7 @@ node_kind = 1
 next_node_ids = PackedStringArray("merge")
 risk = 3
 bonus_credits = 80
+encounter_profile = 2
 
 [sub_resource type="Resource" id="merge"]
 script = ExtResource("2_node")
