@@ -289,6 +289,8 @@ func finish_mission(
 		"destination_name": active_mission.destination_name if active_mission != null else "Unknown Destination",
 		"cargo_name": active_mission.cargo_name if active_mission != null else "Unknown Cargo",
 		"cargo_type": active_mission.cargo_type if active_mission != null else "Unknown Type",
+		"cargo_variant": CargoRules.get_variant_name(active_mission.cargo_variant) if active_mission != null else "Unknown Variant",
+		"cargo_capacity_required": CargoRules.get_required_capacity(active_mission),
 		"cargo_value_credits": active_mission.cargo_value_credits if active_mission != null else 0,
 		"cargo_integrity_percent": cargo_integrity_percent,
 		"cargo_minimum_integrity_percent": active_mission.minimum_delivery_integrity_percent if active_mission != null else 0,
