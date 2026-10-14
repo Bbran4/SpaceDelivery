@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="EnemyRewardTable" load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://scripts/enemy_reward_table.gd" id="1_table"]
-[ext_resource type="Script" path="res://scripts/salvage_item_data.gd" id="2_item"]
+[ext_resource type="Script" path="res://scripts/combat/enemy_reward_table.gd" id="1_table"]
+[ext_resource type="Script" path="res://scripts/economy/salvage_item_data.gd" id="2_item"]
 [ext_resource type="Resource" path="res://resources/salvage/scrap_components.tres" id="3_common"]
 [ext_resource type="Resource" path="res://resources/salvage/refined_circuit.tres" id="4_uncommon"]
 [ext_resource type="Resource" path="res://resources/salvage/targeting_crystal.tres" id="5_rare"]
