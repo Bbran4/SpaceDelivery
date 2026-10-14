@@ -135,6 +135,11 @@ func finish_mission(
 		final_credits_before_payout += maxi(0, salvage_recovered)
 	total_credits = final_credits_before_payout + payout
 	repair_ship_condition()
+	var route_titles: PackedStringArray = []
+	for completed_id: StringName in completed_node_ids:
+		var completed_node: MissionRouteNode = get_route_node(completed_id)
+		if completed_node != null:
+			route_titles.append(completed_node.title)
 	last_mission_result = {
 		"success": success,
 		"mission_title": active_mission.title if active_mission != null else "Unknown Contract",
@@ -158,6 +163,7 @@ func finish_mission(
 		"total_credits": total_credits,
 		"route_seed": route_seed,
 		"completed_nodes": completed_node_ids.size(),
+		"route_summary": "  →  ".join(route_titles),
 	}
 	return last_mission_result
 
