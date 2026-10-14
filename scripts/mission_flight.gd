@@ -245,6 +245,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
 		player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
 		MissionRunState.save_ship_condition(player_ship)
+		MissionRunState.save_ship_salvage(player_ship)
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
@@ -255,10 +256,6 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 
 	# Salvage-profile routes include a recoverable cache, paid only when the delivery succeeds.
 	var salvage_recovered: int = 50 if success and selected_branch != null and selected_branch.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE else 0
-	if salvage_recovered > 0 and is_instance_valid(player_ship):
-		player_ship.credits += salvage_recovered
-		player_ship.credits_changed.emit(player_ship.credits)
-
 	var credits_before_payout: int = MissionRunState.total_credits
 	if is_instance_valid(player_ship):
 		credits_before_payout = player_ship.credits
