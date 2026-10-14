@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/mission_definition.gd" id="1_mission"]
+[ext_resource type="Script" path="res://scripts/mission_route_node.gd" id="2_node"]
+
+[sub_resource type="Resource" id="quiet_corridor"]
+script = ExtResource("2_node")
+node_id = &"quiet_corridor"
+title = "Quiet Corridor"
+description = "Lower chance of hostile contact. Little salvage expected."
+node_kind = 1
+risk = 1
+bonus_credits = 15
+encounter_profile = 1
+depth = 1
+lane = 0
+
+[sub_resource type="Resource" id="salvage_lane"]
+script = ExtResource("2_node")
+node_id = &"salvage_lane"
+title = "Salvage Lane"
+description = "Unstable wreck field. Greater threat, better recovery prospects."
+node_kind = 1
+risk = 2
+bonus_credits = 65
+encounter_profile = 2
+depth = 1
+lane = 1
+
+[resource]
+script = ExtResource("1_mission")
+mission_id = &"bulk_freight_manifest"
+title = "Bulk Freight Manifest"
+client_name = "Orion Industrial Exchange"
+cargo_name = "Modular Refinery Components"
+cargo_type = "Industrial Freight"
+cargo_description = "A secured stack of modular refinery components. The freight is robust, but it needs a larger hold and a wider turning circle."
+cargo_value_credits = 680
+cargo_damage_sensitivity = 0.9
+minimum_delivery_integrity_percent = 35
+full_reward_integrity_percent = 70
+damaged_cargo_payout_penalty_percent = 20
+destination_name = "Orion Foundry Platform"
+briefing = "A foundry needs a replacement component batch. The manifest is larger than your starter hold can legally carry. Dispatch recommends reading that sentence before accepting."
+base_reward_credits = 310
+risk_label = "Moderate"
+layer_node_counts = Array[int]([1, 2, 3, 2, 1])
+branch_chance = 0.55
+risk_bias = 0
+fixed_beats = Array[ExtResource("2_node")]([SubResource("quiet_corridor"), SubResource("salvage_lane")])
