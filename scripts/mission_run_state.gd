@@ -20,15 +20,18 @@ var credits_collected_this_mission: int = 0
 var route_seed: int = 0
 
 
-func begin_mission(mission: MissionDefinition) -> void:
+func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 	ship_condition.clear()
 	active_mission = mission
 	mission_resolved = false
 	cargo_integrity_percent = 100.0
 	last_mission_result.clear()
-	var seed_rng := RandomNumberGenerator.new()
-	seed_rng.randomize()
-	route_seed = seed_rng.randi()
+	if forced_seed >= 0:
+		route_seed = forced_seed
+	else:
+		var seed_rng := RandomNumberGenerator.new()
+		seed_rng.randomize()
+		route_seed = seed_rng.randi()
 	generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
 	completed_node_ids.clear()
 	visible_node_ids.clear()
