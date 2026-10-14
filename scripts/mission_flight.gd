@@ -32,51 +32,27 @@ func _ready() -> void:
 func _build_flight_overlay() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	layer.name = "MissionOverlay"
+	layer.layer = 10
 	add_child(layer)
 
-	var panel: PanelContainer = PanelContainer.new()
-	panel.position = Vector2(18, 18)
-	panel.custom_minimum_size = Vector2(340, 0)
-	layer.add_child(panel)
-
-	var content: VBoxContainer = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 6)
-	panel.add_child(content)
-
-	var heading: Label = Label.new()
-	heading.text = "MISSION ACTIVE  /  SPACE DELIVERY"
-	heading.add_theme_font_size_override("font_size", 12)
-	heading.add_theme_color_override("font_color", Color(0.45, 0.78, 0.92))
-	content.add_child(heading)
-
-	var title_label: Label = Label.new()
-	title_label.text = mission.title
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.add_theme_font_size_override("font_size", 18)
-	content.add_child(title_label)
-
-	var route_label: Label = Label.new()
-	route_label.text = "ROUTE  /  %s\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR\nROUTE BONUS  /  %d CR\nHOSTILE CONTACTS  /  %d" % [
-		selected_branch.title,
-		mission.destination_name,
-		mission.base_reward_credits,
-		selected_branch.bonus_credits,
-		contact_count,
-	]
-	route_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(route_label)
-
-	var objective_label: Label = Label.new()
-	objective_label.text = "CURRENT OBJECTIVE\nClear the hostile contacts along your selected corridor."
-	objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objective_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	content.add_child(objective_label)
-
-	var return_button: Button = Button.new()
-	return_button.text = "ABORT DELIVERY  /  RETURN TO HQ"
-	return_button.custom_minimum_size = Vector2(0, 42)
-	return_button.pressed.connect(_return_to_hq)
-	content.add_child(return_button)
+	var mission_label: Label = Label.new()
+	mission_label.name = "ActiveMissionLabel"
+	mission_label.anchor_left = 1.0
+	mission_label.anchor_right = 1.0
+	mission_label.offset_left = -460.0
+	mission_label.offset_top = 18.0
+	mission_label.offset_right = -24.0
+	mission_label.offset_bottom = 48.0
+	mission_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mission_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mission_label.text = "MISSION  /  %s" % mission.title.to_upper()
+	mission_label.add_theme_font_size_override("font_size", 14)
+	mission_label.add_theme_color_override("font_color", Color(0.78, 0.9, 0.98))
+	mission_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.04, 0.08, 0.9))
+	mission_label.add_theme_constant_override("shadow_offset_x", 1)
+	mission_label.add_theme_constant_override("shadow_offset_y", 1)
+	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(mission_label)
 
 
 func _return_to_hq() -> void:
