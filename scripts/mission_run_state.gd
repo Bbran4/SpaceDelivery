@@ -102,7 +102,7 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 
 
 func carry_mission_objective(objective_id: StringName) -> bool:
-	if objective_id == &"" or carried_mission_objective_ids.has(objective_id):
+	if objective_id == &"":
 		return false
 	carried_mission_objective_ids.append(objective_id)
 	return true
@@ -119,11 +119,13 @@ func validate_returned_objectives(mission: MissionDefinition) -> Array[StringNam
 			MissionObjectiveDefinition.ObjectiveType.RESCUE,
 		]:
 			continue
-		if carried_mission_objective_ids.has(objective.objective_id):
-			if ObjectiveTracker.add_progress(mission, objective.objective_id, objective.required_quantity):
+		var carried_count: int = carried_mission_objective_ids.count(objective.objective_id)
+		if carried_count > 0:
+			if ObjectiveTracker.add_progress(mission, objective.objective_id, carried_count):
 				delivered.append(objective.objective_id)
 	for objective_id: StringName in delivered:
-		carried_mission_objective_ids.erase(objective_id)
+		while carried_mission_objective_ids.has(objective_id):
+			carried_mission_objective_ids.erase(objective_id)
 	return delivered
 
 
