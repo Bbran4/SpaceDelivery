@@ -29,7 +29,16 @@ var active_mission_id: StringName = &""
 var last_error: String = ""
 
 
+func reset_run() -> void:
+	contract_state = ContractState.AVAILABLE
+	objective_states.clear()
+	objective_progress.clear()
+	active_mission_id = &""
+	last_error = ""
+
+
 func begin_run(mission: MissionDefinition) -> bool:
+	reset_run()
 	last_error = ""
 	if mission == null:
 		last_error = "No contract was selected."
@@ -115,14 +124,29 @@ func can_deliver(mission: MissionDefinition) -> bool:
 func mark_delivered(mission: MissionDefinition, success: bool) -> bool:
 	if not can_deliver(mission):
 		return false
-	contract_state = ContractState.DELIVERED if success else ContractState.FAILED
+	contract_state = ContractState.DELIVERED
 	if success:
 		contract_state = ContractState.SUCCEEDED
+	else:
+		contract_state = ContractState.FAILED
 	return true
 
 
-func mark_settled(success: bool) -> void:
-	contract_state = ContractState.SETTLED if success else ContractState.SETTLED
+func mark_failed() -> void:
+	if contract_state == ContractState.SETTLED:
+		return
+	contract_state = ContractState.FAILED
+
+
+func mark_abandoned() -> void:
+	if contract_state == ContractState.SETTLED:
+		return
+	contract_state = ContractState.ABANDONED
+
+
+func mark_settled() -> void:
+	if contract_state != ContractState.SETTLED:
+		contract_state = ContractState.SETTLED
 
 
 func get_objective_snapshot(mission: MissionDefinition) -> Array[Dictionary]:
