@@ -173,11 +173,11 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 		abort_button.disabled = true
 
 	if is_instance_valid(player_ship):
-		if success:
-			player_ship.current_hull = player_ship.max_hull
-			player_ship.current_shield = player_ship.max_shield
-			player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
-			player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
+		# Returning to HQ always restores hull and shields, whether the mission succeeded or was aborted/failed.
+		player_ship.current_hull = player_ship.max_hull
+		player_ship.current_shield = player_ship.max_shield
+		player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
+		player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
 		MissionRunState.save_ship_condition(player_ship)
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 
