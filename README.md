@@ -204,10 +204,11 @@ This is a test specification for the intended experience; the named beats may ne
 - HQ validates the selected contract and initializes a separate objective tracker before route generation. Invalid generated routes fail launch rather than continuing with an unusable graph.
 - Objective progress supports LOCKED, AVAILABLE, ACTIVE, COMPLETED, and FAILED states, prerequisites, quantities, and required-versus-optional objectives.
 - Delivery is blocked when explicit mandatory objectives remain incomplete. Existing delivery-only contracts with no explicit objectives keep their current flow.
+- Settlement records an objective snapshot and contract outcome in the mission result; the debrief displays objective status and progress. Abandonment is explicitly tracked, and tracker state is cleared when the mission is cleared.
 - Seeded route generation remains owned by `MissionRunState.begin_mission(mission, forced_seed)`; forced seeds are not silently changed after validation failure.
 - Existing `MissionRunState.finish_mission` remains the single idempotent payout resolver: base contract pay is success-only, while eligible side earnings remain outside the contract payout.
 
-**Not yet complete:** objective-specific gameplay handlers, comprehensive objective snapshots in every debrief, automated Godot headless validation, and full test coverage for settlement edge cases. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
+**Not yet complete:** objective-specific gameplay handlers, automated Godot headless validation, and full test coverage for settlement edge cases. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
 
 ## Open design questions
 
