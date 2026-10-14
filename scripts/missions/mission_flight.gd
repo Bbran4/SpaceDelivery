@@ -21,6 +21,8 @@ var credits_at_encounter_start: int = 0
 var route_label: Label
 var destination_button: Button
 var stolen_cargo_drop_spawned: bool = false
+var objective_timers: Dictionary = {}
+var hazard_tick: float = 0.0
 
 
 func _ready() -> void:
@@ -57,6 +59,53 @@ func _ready() -> void:
 	if cargo_integrity <= 75.0:
 		call_deferred("_spawn_stolen_cargo_drop")
 	call_deferred("_start_selected_objective")
+	call_deferred("_start_timed_objectives")
+
+
+func _process(delta: float) -> void:
+	if mission_resolved or selected_branch == null or not is_instance_valid(player_ship):
+		return
+	for objective_id: Variant in objective_timers.keys():
+		var timer: Dictionary = objective_timers[objective_id]
+		timer["remaining"] = float(timer.get("remaining", 0.0)) - delta
+		objective_timers[objective_id] = timer
+		var remaining: float = maxf(0.0, float(timer["remaining"]))
+		if is_instance_valid(route_label):
+			route_label.text = "%s  /  %.1f SEC" % [str(timer.get("title", "OBJECTIVE")).to_upper(), remaining]
+		if remaining > 0.0:
+			continue
+		if int(timer.get("type", -1)) == MissionObjectiveDefinition.ObjectiveType.SURVIVE:
+			ObjectiveTracker.add_progress(mission, objective_id, 1)
+			objective_timers.erase(objective_id)
+		else:
+			ObjectiveTracker.fail_objective(mission, objective_id)
+			objective_timers.erase(objective_id)
+			_resolve_mission(false, "Deadline missed: %s was not completed in time." % str(timer.get("title", "Objective")))
+			return
+	if selected_branch.node_kind == MissionRouteNode.NodeKind.ENCOUNTER and selected_branch.risk >= 3:
+		hazard_tick += delta
+		var interval: float = 4.0 if selected_branch.risk < 5 else 2.8
+		if hazard_tick >= interval:
+			hazard_tick = 0.0
+			player_ship.take_damage(2.0 + float(selected_branch.risk) * 0.8)
+			if is_instance_valid(route_label):
+				route_label.text = "ENVIRONMENTAL EXPOSURE  /  RISK %d" % selected_branch.risk
+
+
+func _start_timed_objectives() -> void:
+	if mission == null:
+		return
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or not objective.required:
+			continue
+		if objective.objective_type not in [MissionObjectiveDefinition.ObjectiveType.SURVIVE, MissionObjectiveDefinition.ObjectiveType.ESCAPE, MissionObjectiveDefinition.ObjectiveType.INTERCEPT]:
+			continue
+		if not ObjectiveTracker.activate_objective(mission, objective.objective_id):
+			continue
+		var duration: float = float(objective.deadline_seconds)
+		if duration <= 0.0:
+			duration = 10.0 if objective.objective_type == MissionObjectiveDefinition.ObjectiveType.SURVIVE else 20.0
+		objective_timers[objective.objective_id] = {"remaining": duration, "type": objective.objective_type, "title": objective.title}
 
 
 func _start_selected_objective() -> void:
@@ -267,6 +316,10 @@ func _on_enemy_destroyed() -> void:
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
 	ObjectiveTracker.report_enemy_destroyed(mission, remaining_enemies)
 	if remaining_enemies == 0:
+		for objective: MissionObjectiveDefinition in mission.objectives:
+			if objective != null and objective.objective_type == MissionObjectiveDefinition.ObjectiveType.INTERCEPT:
+				ObjectiveTracker.add_progress(mission, objective.objective_id, 1)
+				objective_timers.erase(objective.objective_id)
 		# Leave flight and loot pickups active until the pilot chooses to proceed.
 		_show_destination_button()
 
@@ -384,132 +437,71 @@ func _show_destination_button(button_text: String = "RETURN TO ROUTE MAP  /  NOD
 
 
 func _show_result_screen(result: Dictionary) -> void:
-	var layer: CanvasLayer = get_node_or_null("MissionResultLayer") as CanvasLayer
-	if layer != null:
-		layer.queue_free()
-		layer = null
-	if layer == null:
-		layer = CanvasLayer.new()
-		layer.name = "MissionResultLayer"
-		layer.layer = 20
-		add_child(layer)
-
-	var shade: ColorRect = ColorRect.new()
+	var layer := CanvasLayer.new()
+	layer.name = "MissionResultLayer"
+	layer.layer = 20
+	add_child(layer)
+	var shade := ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.008, 0.015, 0.028, 0.78)
+	shade.color = Color(0.008, 0.015, 0.028, 0.82)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	layer.add_child(shade)
-
-	var panel: PanelContainer = PanelContainer.new()
+	var panel := PanelContainer.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -280.0
-	panel.offset_top = -250.0
-	panel.offset_right = 280.0
-	panel.offset_bottom = 250.0
+	panel.offset_left = -270.0
+	panel.offset_top = -205.0
+	panel.offset_right = 270.0
+	panel.offset_bottom = 205.0
 	layer.add_child(panel)
-
-	var content: VBoxContainer = VBoxContainer.new()
-	content.add_theme_constant_override("separation", 14)
-	panel.add_child(content)
-
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 8)
+	panel.add_child(layout)
 	var success: bool = bool(result.get("success", false))
-	var heading: Label = Label.new()
+	var heading := Label.new()
 	heading.text = "DELIVERY COMPLETE" if success else "MISSION FAILED"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 26)
-	heading.add_theme_color_override(
-		"font_color",
-		Color(0.42, 0.9, 0.68) if success else Color(1.0, 0.42, 0.42)
-	)
-	content.add_child(heading)
-
-	var contract_label: Label = Label.new()
-	contract_label.text = str(result.get("mission_title", "Unknown Contract"))
-	contract_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	contract_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	contract_label.add_theme_font_size_override("font_size", 18)
-	content.add_child(contract_label)
-
-	var destination_label: Label = Label.new()
-	destination_label.text = "DESTINATION  /  %s" % str(result.get("destination_name", "Unknown Destination"))
-	destination_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	destination_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	destination_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	content.add_child(destination_label)
-
-	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s  ·  %s  ·  VALUE %d CR  ·  INTEGRITY %d%%" % [
-		str(result.get("cargo_name", "Unknown Cargo")),
-		str(result.get("cargo_condition", "UNKNOWN")),
-		int(result.get("cargo_value_credits", 0)),
-		roundi(float(result.get("cargo_integrity_percent", 0.0))),
-	]
-	cargo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cargo_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	cargo_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72) if str(result.get("cargo_condition", "")) == "INTACT" else (Color(1.0, 0.78, 0.35) if str(result.get("cargo_condition", "")) == "DAMAGED" else Color(1.0, 0.42, 0.42)))
-	content.add_child(cargo_label)
-
-	var requirement_label: Label = Label.new()
-	requirement_label.text = "DELIVERY MINIMUM  /  %d%%     FULL REWARD  /  %d%%" % [
-		int(result.get("cargo_minimum_integrity_percent", 0)),
-		int(result.get("cargo_full_reward_integrity_percent", 0)),
-	]
-	requirement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	requirement_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	content.add_child(requirement_label)
-
-	var message_label: Label = Label.new()
-	message_label.text = str(result.get("message", ""))
-	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(message_label)
-
+	heading.add_theme_font_size_override("font_size", 24)
+	heading.add_theme_color_override("font_color", Color(0.42, 0.9, 0.68) if success else Color(1.0, 0.42, 0.42))
+	layout.add_child(heading)
+	var contract := Label.new()
+	contract.text = "%s  /  %s" % [str(result.get("mission_title", "Unknown Contract")), str(result.get("destination_name", "Unknown Destination"))]
+	contract.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contract.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(contract)
+	var cargo := Label.new()
+	cargo.text = "%s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "Cargo")), str(result.get("cargo_condition", "UNKNOWN")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
+	cargo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cargo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(cargo)
 	var objective_lines: PackedStringArray = []
-	for objective_entry: Dictionary in result.get("objective_snapshot", []):
-		var objective_status: String = str(objective_entry.get("state", "UNKNOWN"))
-		objective_lines.append("%s  /  %s  /  %d of %d" % [
-			str(objective_entry.get("title", objective_entry.get("id", "Objective"))),
-			objective_status,
-			int(objective_entry.get("progress", 0)),
-			int(objective_entry.get("required_quantity", 1)),
-		])
-	var objective_label: Label = Label.new()
-	objective_label.text = "OBJECTIVES  /  %s\n%s" % [
-		str(result.get("objective_outcome", "NOT_TRACKED")),
-		"\n".join(objective_lines) if not objective_lines.is_empty() else "No explicit objectives on this legacy delivery contract.",
-	]
-	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	objective_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objective_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	content.add_child(objective_label)
-
-	var payout_label: Label = Label.new()
-	payout_label.text = "SALVAGED CREDITS  /  +%d CR\nROUTE CACHE  /  +%d CR\nCONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
-		int(result.get("credits_collected", 0)),
-		int(result.get("salvage_recovered", 0)),
-		int(result.get("base_reward", 0)),
-		int(result.get("route_bonus", 0)),
-		int(result.get("cargo_penalty", 0)),
-		int(result.get("payout", 0)),
-	]
-	payout_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	payout_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
-	content.add_child(payout_label)
-
-	var balance_label: Label = Label.new()
-	balance_label.text = "ACCOUNT BALANCE  /  %d CR" % int(result.get("total_credits", 0))
-	balance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	balance_label.add_theme_font_size_override("font_size", 16)
-	content.add_child(balance_label)
-
-	var return_button: Button = Button.new()
+	for entry: Dictionary in result.get("objective_snapshot", []):
+		objective_lines.append("%s: %s (%d/%d)" % [str(entry.get("title", entry.get("id", "Objective"))), str(entry.get("state", "UNKNOWN")), int(entry.get("progress", 0)), int(entry.get("required_quantity", 1))])
+	var objectives := Label.new()
+	objectives.text = "\n".join(objective_lines) if not objective_lines.is_empty() else "No additional objectives."
+	objectives.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	objectives.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
+	layout.add_child(objectives)
+	var payout := Label.new()
+	payout.text = "SIDE EARNINGS +%d CR    CONTRACT %d CR\nBONUS %d CR    PENALTY -%d CR\nTOTAL PAYOUT %d CR" % [int(result.get("credits_collected", 0)) + int(result.get("salvage_recovered", 0)), int(result.get("base_reward", 0)), int(result.get("route_bonus", 0)), int(result.get("cargo_penalty", 0)), int(result.get("payout", 0))]
+	payout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	payout.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
+	layout.add_child(payout)
+	var balance := Label.new()
+	balance.text = "ACCOUNT BALANCE / %d CR" % int(result.get("total_credits", 0))
+	balance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	balance.add_theme_font_size_override("font_size", 16)
+	layout.add_child(balance)
+	var return_button := Button.new()
 	return_button.text = "RETURN TO HQ"
-	return_button.custom_minimum_size = Vector2(0, 46)
+	return_button.custom_minimum_size = Vector2(0, 44)
+	return_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	return_button.pressed.connect(_return_to_hq)
-	content.add_child(return_button)
+	layout.add_child(return_button)
 
 
 func _return_to_hq() -> void:

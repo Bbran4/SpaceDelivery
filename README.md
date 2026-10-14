@@ -214,7 +214,7 @@ This is a test specification for the intended experience; the named beats may ne
 - Seeded route generation remains owned by `MissionRunState.begin_mission(mission, forced_seed)`; forced seeds are not silently changed after validation failure.
 - Existing `MissionRunState.finish_mission` remains the single idempotent payout resolver: base contract pay is success-only, while eligible side earnings remain outside the contract payout.
 
-**Not yet complete:** objective-specific gameplay handlers, automated Godot headless validation, and full test coverage for settlement edge cases. Shared cargo variant rules now cover standard, fragile, bulk, and valuable contracts in the HQ catalog; balance tuning and engine-level verification remain. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
+**Implemented in the hazard/timer pass:** high-risk encounters apply periodic environmental exposure damage through the normal ship damage pipeline; required SURVIVE objectives use a countdown and complete if the pilot remains alive; required ESCAPE and INTERCEPT objectives have deadlines, with interception completing when the encounter is cleared in time. Missed deadlines fail the contract. Timers use `deadline_seconds` or a default when omitted. Authored test contracts and Godot playtesting remain. Shared cargo variant rules now cover standard, fragile, bulk, and valuable contracts in the HQ catalog; balance tuning and engine-level verification remain. Do not treat adding an objective definition as proof that its in-flight mechanic has been implemented.
 
 ## Open design questions
 
