@@ -25,6 +25,8 @@ var credits_collected_this_mission: int = 0
 var route_seed: int = 0
 var route_flags: Dictionary = {}
 var route_history: Array[Dictionary] = []
+## Mission objects collected in flight but not yet validated at destination.
+var carried_mission_objective_ids: Array[StringName] = []
 
 const ACCOUNT_SAVE_PATH: String = "user://account_progress.cfg"
 
@@ -54,6 +56,7 @@ func _save_account_credits() -> void:
 
 func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	ship_condition.clear()
+	carried_mission_objective_ids.clear()
 	active_mission = mission
 	mission_resolved = false
 	cargo_integrity_percent = 100.0
@@ -96,6 +99,34 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	if current_node_id != &"":
 		visible_node_ids.append(current_node_id)
 	return true
+
+
+func carry_mission_objective(objective_id: StringName) -> bool:
+	if objective_id == &"":
+		return false
+	carried_mission_objective_ids.append(objective_id)
+	return true
+
+
+## Validates carried objective items only when the player reaches the destination.
+func validate_returned_objectives(mission: MissionDefinition) -> Array[StringName]:
+	var delivered: Array[StringName] = []
+	if mission == null:
+		return delivered
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or objective.objective_type not in [
+			MissionObjectiveDefinition.ObjectiveType.COLLECT,
+			MissionObjectiveDefinition.ObjectiveType.RESCUE,
+		]:
+			continue
+		var carried_count: int = carried_mission_objective_ids.count(objective.objective_id)
+		if carried_count > 0:
+			if ObjectiveTracker.add_progress(mission, objective.objective_id, carried_count):
+				delivered.append(objective.objective_id)
+	for objective_id: StringName in delivered:
+		while carried_mission_objective_ids.has(objective_id):
+			carried_mission_objective_ids.erase(objective_id)
+	return delivered
 
 
 func get_route_node(node_id: StringName) -> MissionRouteNode:
@@ -318,6 +349,7 @@ func finish_mission(
 
 
 func clear_mission() -> void:
+	carried_mission_objective_ids.clear()
 	if is_instance_valid(ObjectiveTracker):
 		ObjectiveTracker.reset_run()
 	ship_condition.clear()

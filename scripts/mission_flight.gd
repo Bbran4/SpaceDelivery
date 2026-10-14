@@ -1,6 +1,7 @@
 extends Node2D
 
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
+const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -19,6 +20,7 @@ var resolution_pending: bool = false
 var credits_at_encounter_start: int = 0
 var route_label: Label
 var destination_button: Button
+var stolen_cargo_drop_spawned: bool = false
 
 
 func _ready() -> void:
@@ -51,6 +53,9 @@ func _ready() -> void:
 	_build_flight_overlay()
 	if is_instance_valid(route_label):
 		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
+	call_deferred("_spawn_available_objectives")
+	if cargo_integrity <= 75.0:
+		call_deferred("_spawn_stolen_cargo_drop")
 	call_deferred("_start_selected_objective")
 
 
@@ -66,9 +71,60 @@ func _start_selected_objective() -> void:
 			_start_encounter()
 		MissionRouteNode.ObjectiveType.SERVICE:
 			_start_service_node()
+		MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY, MissionRouteNode.ObjectiveType.RESCUE:
+			if selected_branch.objective_type == MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY:
+				_show_destination_button("RETURN RECOVERED CARGO  /  CONTINUE")
+			else:
+				_show_destination_button("RETURN RESCUEES  /  CONTINUE")
 		_:
-			push_warning("Objective '%s' is not implemented yet; this node cannot be entered as a combat encounter." % MissionRouteNode.ObjectiveType.keys()[selected_branch.objective_type])
+			push_warning("Objective '%s' is not implemented yet." % MissionRouteNode.ObjectiveType.keys()[selected_branch.objective_type])
 			_resolve_mission(false, "Dispatch failed: this route objective is not available in the current build.")
+
+
+
+func _spawn_available_objectives() -> void:
+	if mission == null:
+		return
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or objective.objective_type not in [
+			MissionObjectiveDefinition.ObjectiveType.COLLECT,
+			MissionObjectiveDefinition.ObjectiveType.RESCUE,
+		]:
+			continue
+		if objective.target_id == &"stolen_cargo":
+			continue
+		var progress: int = int(ObjectiveTracker.objective_progress.get(objective.objective_id, 0))
+		var carried: int = MissionRunState.carried_mission_objective_ids.count(objective.objective_id)
+		var remaining: int = objective.required_quantity - progress - carried
+		for item_index: int in range(maxi(0, remaining)):
+			var pickup: MissionObjectivePickup = OBJECTIVE_PICKUP_SCENE.instantiate() as MissionObjectivePickup
+			if pickup == null:
+				continue
+			pickup.configure(objective)
+			add_child(pickup)
+			pickup.global_position = Vector2(760.0, 230.0) + Vector2(float(item_index % 4) * 30.0, float(item_index / 4) * 30.0)
+
+
+func _spawn_stolen_cargo_drop() -> void:
+	if stolen_cargo_drop_spawned or mission == null:
+		return
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or objective.objective_type != MissionObjectiveDefinition.ObjectiveType.COLLECT:
+			continue
+		if objective.target_id != &"stolen_cargo":
+			continue
+		var objective_progress: int = int(ObjectiveTracker.objective_progress.get(objective.objective_id, 0))
+		var carried_quantity: int = MissionRunState.carried_mission_objective_ids.count(objective.objective_id)
+		if objective_progress + carried_quantity >= objective.required_quantity:
+			return
+		var pickup: MissionObjectivePickup = OBJECTIVE_PICKUP_SCENE.instantiate() as MissionObjectivePickup
+		if pickup == null:
+			return
+		pickup.configure(objective)
+		add_child(pickup)
+		pickup.global_position = player_ship.global_position + Vector2(48.0, 0.0)
+		stolen_cargo_drop_spawned = true
+		return
 
 
 func _get_contact_count(node: MissionRouteNode) -> int:
@@ -179,8 +235,11 @@ func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: floa
 	if mission_resolved or mission == null:
 		return
 	if hull_damage > 0.0:
+		var previous_integrity: float = cargo_integrity
 		cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * CargoRules.get_damage_sensitivity(mission))
 		MissionRunState.cargo_integrity_percent = cargo_integrity
+		if previous_integrity > 75.0 and cargo_integrity <= 75.0:
+			_spawn_stolen_cargo_drop()
 	if is_instance_valid(player_ship):
 		MissionRunState.save_ship_condition(player_ship)
 		MissionRunState.save_ship_salvage(player_ship)
@@ -226,9 +285,14 @@ func _on_node_completed() -> void:
 	if cargo_integrity <= 0.0:
 		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
 		return
-	if selected_branch.node_kind == MissionRouteNode.NodeKind.DESTINATION and not CargoRules.can_deliver(mission, cargo_integrity):
-		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
-		return
+	if selected_branch.node_kind == MissionRouteNode.NodeKind.DESTINATION:
+		MissionRunState.validate_returned_objectives(mission)
+		if not ObjectiveTracker.can_deliver(mission):
+			_resolve_mission(false, "Delivery failed: required recovered cargo or rescue objectives were not returned to %s." % mission.destination_name)
+			return
+		if not CargoRules.can_deliver(mission, cargo_integrity):
+			_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
+			return
 	if is_instance_valid(player_ship):
 		var credits_after_node: int = player_ship.credits
 		var credits_before_node: int = MissionRunState.total_credits
