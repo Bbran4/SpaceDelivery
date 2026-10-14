@@ -179,6 +179,22 @@ func _on_abort_pressed() -> void:
 	_resolve_mission(false, "Mission aborted by the pilot. Contract payment was forfeited.")
 
 
+func _on_node_completed() -> void:
+	if mission_resolved or mission == null or selected_branch == null:
+		return
+	if is_instance_valid(player_ship):
+		var credits_after_node: int = player_ship.credits
+		var credits_before_node: int = MissionRunState.total_credits
+		MissionRunState.total_credits = credits_after_node
+		MissionRunState.add_node_rewards(selected_branch, credits_before_node, credits_after_node)
+		MissionRunState.save_ship_condition(player_ship)
+	MissionRunState.cargo_integrity_percent = cargo_integrity
+	MissionRunState.complete_route_node(selected_branch.node_id)
+	var change_error: Error = get_tree().change_scene_to_file("res://scenes/route_map.tscn")
+	if change_error != OK:
+		_resolve_mission(false, "Navigation failure: the route map could not be restored after this node.")
+
+
 func _resolve_mission(success: bool, result_message: String) -> void:
 	if mission_resolved:
 		return
@@ -258,17 +274,6 @@ func _show_destination_button() -> void:
 	destination_button.custom_minimum_size = Vector2(380, 44)
 	destination_button.pressed.connect(_on_node_completed)
 	overlay.add_child(destination_button)
-
-
-func _on_destination_pressed() -> void:
-	if mission_resolved or mission == null:
-		return
-	if cargo_integrity < float(mission.minimum_delivery_integrity_percent):
-		_resolve_mission(false, "Delivery rejected: cargo integrity is below the contract minimum of %d%%." % mission.minimum_delivery_integrity_percent)
-	elif cargo_integrity < float(mission.full_reward_integrity_percent):
-		_resolve_mission(true, "Delivery accepted with damage. Contract payment reduced under the cargo condition clause.")
-	else:
-		_resolve_mission(true, "Delivery accepted at %s. Cargo condition meets the full-reward requirement." % mission.destination_name)
 
 
 func _show_result_screen(result: Dictionary) -> void:
