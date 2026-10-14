@@ -242,9 +242,11 @@ func _refresh_route_preview() -> void:
 			var branch_button: Button = Button.new()
 			branch_button.toggle_mode = true
 			branch_button.button_pressed = branch.node_id == selected_branch_node_id
-			branch_button.text = "%s\nRISK %d  ·  +%d CR" % [
+			var profile_label: String = _get_encounter_profile_label(branch.encounter_profile)
+			branch_button.text = "%s\nRISK %d  ·  %s\n+%d CR" % [
 				branch.title,
 				branch.risk,
+				profile_label,
 				branch.bonus_credits,
 			]
 			branch_button.custom_minimum_size = Vector2(0, 64)
@@ -275,6 +277,16 @@ func _refresh_route_preview() -> void:
 	if destination_node != null:
 		_add_route_connector()
 		_add_route_marker(destination_node.title, "DELIVERY DESTINATION")
+
+
+func _get_encounter_profile_label(profile: int) -> String:
+	match profile:
+		MissionRouteNode.EncounterProfile.QUIET:
+			return "LIGHT PATROLS"
+		MissionRouteNode.EncounterProfile.SALVAGE:
+			return "HEAVY PATROLS"
+		_:
+			return "STANDARD PATROLS"
 
 
 func _on_branch_selected(branch_id: StringName) -> void:
