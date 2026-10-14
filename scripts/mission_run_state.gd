@@ -68,7 +68,7 @@ func complete_route_node(node_id: StringName) -> void:
 	for next_id: StringName in node.next_node_ids:
 		if not visible_node_ids.has(next_id):
 			visible_node_ids.append(next_id)
-	selected_route_node_id = node.next_node_ids[0] if not node.next_node_ids.is_empty() else &""
+	selected_route_node_id = StringName(node.next_node_ids[0]) if not node.next_node_ids.is_empty() else &""
 
 
 func add_node_rewards(node: MissionRouteNode, credits_before: int, credits_after: int) -> void:
