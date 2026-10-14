@@ -12,6 +12,9 @@ var remaining_enemies: int = 0
 var mission_resolved: bool = false
 var mission_label: Label
 var abort_button: Button
+var cargo_status_label: Label
+var cargo_integrity: float = 100.0
+var cargo_condition: String = "INTACT"
 
 
 func _ready() -> void:
@@ -32,6 +35,7 @@ func _ready() -> void:
 	player_ship.credits = MissionRunState.total_credits
 	player_ship.credits_changed.emit(player_ship.credits)
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
+	player_ship.damaged.connect(_on_player_damaged)
 
 	contact_count = clampi(3 + selected_branch.risk, 3, 8)
 	encounter_spawner.spawn_count = contact_count
@@ -77,6 +81,22 @@ func _build_flight_overlay() -> void:
 	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(mission_label)
 
+	cargo_status_label = Label.new()
+	cargo_status_label.name = "CargoStatusLabel"
+	cargo_status_label.anchor_left = 1.0
+	cargo_status_label.anchor_right = 1.0
+	cargo_status_label.offset_left = -460.0
+	cargo_status_label.offset_top = 48.0
+	cargo_status_label.offset_right = -24.0
+	cargo_status_label.offset_bottom = 74.0
+	cargo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cargo_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cargo_status_label.add_theme_font_size_override("font_size", 12)
+	cargo_status_label.add_theme_color_override("font_color", Color(0.72, 0.86, 0.92))
+	cargo_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(cargo_status_label)
+	_update_cargo_status()
+
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
 	abort_button.text = "ABORT MISSION"
@@ -91,13 +111,43 @@ func _build_flight_overlay() -> void:
 	layer.add_child(abort_button)
 
 
+func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: float) -> void:
+	if mission_resolved or hull_damage <= 0.0 or mission == null:
+		return
+	cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * mission.cargo_damage_sensitivity)
+	_update_cargo_status()
+
+
+func _update_cargo_status() -> void:
+	if not is_instance_valid(cargo_status_label) or mission == null:
+		return
+	if cargo_integrity >= 75.0:
+		cargo_condition = "INTACT"
+	elif cargo_integrity > 0.0:
+		cargo_condition = "DAMAGED"
+	else:
+		cargo_condition = "LOST"
+	cargo_status_label.text = "CARGO  /  %s  /  INTEGRITY %d%%" % [cargo_condition, roundi(cargo_integrity)]
+	if cargo_condition == "INTACT":
+		cargo_status_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72))
+	elif cargo_condition == "DAMAGED":
+		cargo_status_label.add_theme_color_override("font_color", Color(1.0, 0.78, 0.35))
+	else:
+		cargo_status_label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42))
+
+
 func _on_enemy_destroyed() -> void:
 	if mission_resolved:
 		return
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
 	if remaining_enemies == 0:
-		# All hostiles are gone. The ship has reached the delivery destination.
-		_resolve_mission(true, "All hostiles cleared. Cargo delivered to the destination.")
+		# Clearing the encounter opens the final approach to the destination.
+		if cargo_integrity <= 0.0:
+			_resolve_mission(false, "Delivery failed: the cargo was destroyed during the encounter.")
+		elif cargo_integrity < 75.0:
+			_resolve_mission(true, "Delivery accepted with cargo damage. The client has deducted a handling penalty.")
+		else:
+			_resolve_mission(true, "All hostiles cleared. Cargo delivered intact to the destination.")
 
 
 func _on_player_destroyed() -> void:
@@ -122,12 +172,17 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
 	var route_bonus: int = selected_branch.bonus_credits if selected_branch != null else 0
+	var cargo_penalty_percent: int = 0
+	if success and cargo_condition == "DAMAGED" and mission != null:
+		cargo_penalty_percent = mission.damaged_cargo_payout_penalty_percent
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
 		credits_before_payout,
 		base_reward,
 		route_bonus,
-		result_message
+		result_message,
+		cargo_condition,
+		cargo_penalty_percent
 	)
 
 	if is_instance_valid(player_ship):
@@ -195,6 +250,12 @@ func _show_result_screen(result: Dictionary) -> void:
 	destination_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
 	content.add_child(destination_label)
 
+	var cargo_label: Label = Label.new()
+	cargo_label.text = "CARGO CONDITION  /  %s" % str(result.get("cargo_condition", "UNKNOWN"))
+	cargo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cargo_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72) if str(result.get("cargo_condition", "")) == "INTACT" else (Color(1.0, 0.78, 0.35) if str(result.get("cargo_condition", "")) == "DAMAGED" else Color(1.0, 0.42, 0.42)))
+	content.add_child(cargo_label)
+
 	var message_label: Label = Label.new()
 	message_label.text = str(result.get("message", ""))
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -202,9 +263,10 @@ func _show_result_screen(result: Dictionary) -> void:
 	content.add_child(message_label)
 
 	var payout_label: Label = Label.new()
-	payout_label.text = "CONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nTOTAL PAYOUT  /  %d CR" % [
+	payout_label.text = "CONTRACT PAY  /  %d CR\nROUTE BONUS  /  %d CR\nCARGO PENALTY  /  -%d CR\nTOTAL PAYOUT  /  %d CR" % [
 		int(result.get("base_reward", 0)),
 		int(result.get("route_bonus", 0)),
+		int(result.get("cargo_penalty", 0)),
 		int(result.get("payout", 0)),
 	]
 	payout_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
