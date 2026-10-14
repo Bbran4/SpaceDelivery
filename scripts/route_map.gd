@@ -139,10 +139,13 @@ func _refresh_map() -> void:
 			if other.depth == node.depth and MissionRunState.is_node_visible(other.node_id):
 				nodes_in_layer.append(other)
 		var x: float = 82.0 + (width - 164.0) * float(node.depth) / maxf(1.0, float(max_depth))
-		var y: float = height * 0.5
-		if nodes_in_layer.size() > 1:
-			var visible_lane_index: int = nodes_in_layer.find(node)
-			y = height * float(visible_lane_index + 1) / float(nodes_in_layer.size() + 1)
+		# Use the authored/generated lane slot, not the count of currently visible
+		# nodes, so revealing a branch never moves nodes already on the map.
+		var layer_node_count: int = 1
+		for other: MissionRouteNode in nodes:
+			if other.depth == node.depth:
+				layer_node_count = maxi(layer_node_count, other.lane + 1)
+		var y: float = height * float(node.lane + 1) / float(layer_node_count + 1)
 		node_positions[node.node_id] = Vector2(x, y)
 
 	# Draw only connections whose endpoints have both been revealed.
