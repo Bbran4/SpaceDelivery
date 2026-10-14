@@ -79,7 +79,13 @@ func complete_route_node(node_id: StringName) -> void:
 		"depth": node.depth,
 		"lane": node.lane,
 	})
-	route_flags["visited_%s" % String(node.node_kind).to_lower()] = true
+	match node.node_kind:
+		MissionRouteNode.NodeKind.SERVICE:
+			route_flags["visited_service"] = true
+		MissionRouteNode.NodeKind.ENCOUNTER:
+			route_flags["visited_encounter"] = true
+		MissionRouteNode.NodeKind.DESTINATION:
+			route_flags["visited_destination"] = true
 	route_flags["max_depth_reached"] = maxi(int(route_flags.get("max_depth_reached", 0)), node.depth)
 	if node.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE:
 		route_flags["salvage_seen"] = true
