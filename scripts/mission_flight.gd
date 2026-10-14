@@ -63,7 +63,7 @@ func _ready() -> void:
 func _start_encounter() -> void:
 	if mission_resolved:
 		return
-	var spawned_enemies: Array[Ship] = encounter_spawner.spawn_encounter()
+	var spawned_enemies: Array[Ship] = encounter_spawner.spawn_encounter(selected_branch.encounter_profile)
 	remaining_enemies = spawned_enemies.size()
 	for enemy: Ship in spawned_enemies:
 		enemy.destroyed.connect(_on_enemy_destroyed, CONNECT_ONE_SHOT)
