@@ -18,6 +18,7 @@ var cargo_condition: String = "INTACT"
 var resolution_pending: bool = false
 var credits_at_encounter_start: int = 0
 var countdown_label: Label
+var destination_button: Button
 
 
 func _ready() -> void:
@@ -35,6 +36,8 @@ func _ready() -> void:
 
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
+	MissionRunState.restore_ship_condition(player_ship)
+	cargo_integrity = MissionRunState.cargo_integrity_percent
 	player_ship.credits = MissionRunState.total_credits
 	credits_at_encounter_start = player_ship.credits
 	player_ship.credits_changed.emit(player_ship.credits)
@@ -116,9 +119,13 @@ func _build_flight_overlay() -> void:
 
 
 func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: float) -> void:
-	if mission_resolved or hull_damage <= 0.0 or mission == null:
+	if mission_resolved or mission == null:
 		return
-	cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * mission.cargo_damage_sensitivity)
+	if hull_damage > 0.0:
+		cargo_integrity = maxf(0.0, cargo_integrity - hull_damage * mission.cargo_damage_sensitivity)
+		MissionRunState.cargo_integrity_percent = cargo_integrity
+	if is_instance_valid(player_ship):
+		MissionRunState.save_ship_condition(player_ship)
 	_update_cargo_status()
 
 
@@ -131,7 +138,7 @@ func _update_cargo_status() -> void:
 		cargo_condition = "DAMAGED"
 	else:
 		cargo_condition = "LOST"
-	cargo_status_label.text = "CARGO  /  %s  /  INTEGRITY %d%%" % [cargo_condition, roundi(cargo_integrity)]
+	cargo_status_label.text = "%s  /  %s  /  VALUE %d CR  /  INTEGRITY %d%%" % [mission.cargo_name.to_upper(), cargo_condition, mission.cargo_value_credits, roundi(cargo_integrity)]
 	if cargo_condition == "INTACT":
 		cargo_status_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72))
 	elif cargo_condition == "DAMAGED":
@@ -165,6 +172,15 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	if is_instance_valid(abort_button):
 		abort_button.disabled = true
 
+	if is_instance_valid(player_ship):
+		if success:
+			player_ship.current_hull = player_ship.max_hull
+			player_ship.current_shield = player_ship.max_shield
+			player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
+			player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
+		MissionRunState.save_ship_condition(player_ship)
+	MissionRunState.cargo_integrity_percent = cargo_integrity
+
 	var credits_before_payout: int = MissionRunState.total_credits
 	if is_instance_valid(player_ship):
 		credits_before_payout = player_ship.credits
@@ -175,7 +191,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	if is_instance_valid(player_ship):
 		credits_collected = maxi(0, player_ship.credits - credits_at_encounter_start)
 	var cargo_penalty_percent: int = 0
-	if success and cargo_condition == "DAMAGED" and mission != null:
+	if success and cargo_integrity < float(mission.full_reward_integrity_percent):
 		cargo_penalty_percent = mission.damaged_cargo_payout_penalty_percent
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
@@ -237,12 +253,37 @@ func _finish_countdown() -> void:
 		await get_tree().create_timer(1.0).timeout
 	if mission_resolved:
 		return
-	if cargo_integrity <= 0.0:
-		_resolve_mission(false, "Delivery failed: the cargo was destroyed during the encounter.")
-	elif cargo_integrity < 75.0:
-		_resolve_mission(true, "Delivery accepted with cargo damage. The client has deducted a handling penalty.")
+	if is_instance_valid(countdown_label):
+		countdown_label.text = "HOSTILES CLEARED  /  FINAL APPROACH OPEN"
+		countdown_label.visible = false
+	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
+	if overlay == null:
+		return
+	destination_button = Button.new()
+	destination_button.name = "CompleteDeliveryButton"
+	destination_button.text = "PROCEED TO DESTINATION  /  %s" % mission.destination_name.to_upper()
+	destination_button.anchor_left = 0.5
+	destination_button.anchor_right = 0.5
+	destination_button.anchor_top = 1.0
+	destination_button.anchor_bottom = 1.0
+	destination_button.offset_left = -190.0
+	destination_button.offset_top = -66.0
+	destination_button.offset_right = 190.0
+	destination_button.offset_bottom = -18.0
+	destination_button.custom_minimum_size = Vector2(380, 44)
+	destination_button.pressed.connect(_on_destination_pressed)
+	overlay.add_child(destination_button)
+
+
+func _on_destination_pressed() -> void:
+	if mission_resolved or mission == null:
+		return
+	if cargo_integrity < float(mission.minimum_delivery_integrity_percent):
+		_resolve_mission(false, "Delivery rejected: cargo integrity is below the contract minimum of %d%%." % mission.minimum_delivery_integrity_percent)
+	elif cargo_integrity < float(mission.full_reward_integrity_percent):
+		_resolve_mission(true, "Delivery accepted with damage. Contract payment reduced under the cargo condition clause.")
 	else:
-		_resolve_mission(true, "All hostiles cleared. Cargo delivered intact to the destination.")
+		_resolve_mission(true, "Delivery accepted at %s. Cargo condition meets the full-reward requirement." % mission.destination_name)
 
 
 func _show_result_screen(result: Dictionary) -> void:
@@ -303,7 +344,12 @@ func _show_result_screen(result: Dictionary) -> void:
 	content.add_child(destination_label)
 
 	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO CONDITION  /  %s" % str(result.get("cargo_condition", "UNKNOWN"))
+	cargo_label.text = "CARGO  /  %s  ·  %s  ·  VALUE %d CR  ·  INTEGRITY %d%%" % [
+		str(result.get("cargo_name", "Unknown Cargo")),
+		str(result.get("cargo_condition", "UNKNOWN")),
+		int(result.get("cargo_value_credits", 0)),
+		roundi(float(result.get("cargo_integrity_percent", 0.0))),
+	]
 	cargo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cargo_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72) if str(result.get("cargo_condition", "")) == "INTACT" else (Color(1.0, 0.78, 0.35) if str(result.get("cargo_condition", "")) == "DAMAGED" else Color(1.0, 0.42, 0.42)))
 	content.add_child(cargo_label)
