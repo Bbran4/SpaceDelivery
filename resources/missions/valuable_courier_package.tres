@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/mission_definition.gd" id="1_mission"]
+[ext_resource type="Script" path="res://scripts/mission_route_node.gd" id="2_node"]
+
+[sub_resource type="Resource" id="quiet_corridor"]
+script = ExtResource("2_node")
+node_id = &"quiet_corridor"
+title = "Quiet Corridor"
+description = "Lower chance of hostile contact. Little salvage expected."
+node_kind = 1
+risk = 1
+bonus_credits = 15
+encounter_profile = 1
+depth = 1
+lane = 0
+
+[sub_resource type="Resource" id="salvage_lane"]
+script = ExtResource("2_node")
+node_id = &"salvage_lane"
+title = "Salvage Lane"
+description = "Unstable wreck field. Greater threat, better recovery prospects."
+node_kind = 1
+risk = 2
+bonus_credits = 65
+encounter_profile = 2
+depth = 1
+lane = 1
+
+[resource]
+script = ExtResource("1_mission")
+mission_id = &"valuable_courier_package"
+title = "Valuable Courier Package"
+client_name = "Asterion Private Logistics"
+cargo_name = "Quantum Navigation Core"
+cargo_type = "High-Value Electronics"
+cargo_variant = 3
+cargo_description = "A compact navigation core with an extravagant declared value and a remarkably ordinary shipping label."
+cargo_value_credits = 1250
+cargo_damage_sensitivity = 1.0
+minimum_delivery_integrity_percent = 60
+full_reward_integrity_percent = 90
+damaged_cargo_payout_penalty_percent = 45
+destination_name = "Asterion Exchange Vault"
+briefing = "Deliver the navigation core intact enough to function. Client security is unusually thorough, and the declared value has attracted attention from people who do not work in accounting."
+base_reward_credits = 390
+risk_label = "High Value"
+layer_node_counts = Array[int]([1, 2, 3, 2, 1])
+branch_chance = 0.55
+risk_bias = 0
+fixed_beats = Array[ExtResource("2_node")]([SubResource("quiet_corridor"), SubResource("salvage_lane")])

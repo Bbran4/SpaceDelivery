@@ -34,6 +34,7 @@ title = "Fragile Relay Components"
 client_name = "Outer Ring Communications"
 cargo_name = "Kestrel Precision Relay Kit"
 cargo_type = "Fragile Electronics"
+cargo_variant = 1
 cargo_description = "Precision relay components in shock-sensitive packaging. Any surviving shipment can be delivered, but full payment requires pristine condition."
 cargo_value_credits = 560
 cargo_damage_sensitivity = 1.3

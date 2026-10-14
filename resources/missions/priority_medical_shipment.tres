@@ -34,6 +34,7 @@ title = "Priority Medical Shipment"
 client_name = "Helix Regional Clinics"
 cargo_name = "Clinic Cold-Chain Pack"
 cargo_type = "Temperature-Controlled Medical Supplies"
+cargo_variant = 0
 cargo_description = "Sealed vaccine carriers and essential clinic supplies. Keep the shipment above the minimum safe integrity threshold."
 cargo_value_credits = 420
 cargo_damage_sensitivity = 1.1

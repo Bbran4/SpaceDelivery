@@ -142,7 +142,7 @@ func _refresh_weapon_gates() -> void:
 	var has_weapon: bool = not active_build.is_empty()
 	if active_build.is_empty():
 		has_weapon = ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
-	var has_capacity: bool = selected_mission == null or _active_ship_cargo_capacity() >= selected_mission.cargo_capacity_required
+	var has_capacity: bool = selected_mission == null or _active_ship_cargo_capacity() >= CargoRules.get_required_capacity(selected_mission)
 	if is_instance_valid(deliver_button):
 		deliver_button.disabled = selected_mission == null or not has_weapon or not has_capacity
 	if is_instance_valid(cargo_capacity_warning_label):
@@ -289,15 +289,16 @@ func _refresh_selected_details() -> void:
 	selected_details.add_child(client_label)
 
 	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nCARGO CAPACITY REQUIRED  /  %d UNITS\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
+	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s  ·  CLASS / %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nCARGO CAPACITY REQUIRED  /  %d UNITS\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
 		selected_mission.cargo_name,
 		selected_mission.cargo_type,
+		CargoRules.get_variant_name(selected_mission.cargo_variant).to_upper(),
 		selected_mission.cargo_description,
 		selected_mission.cargo_value_credits,
 		selected_mission.destination_name,
 		selected_mission.base_reward_credits,
 		selected_mission.risk_label,
-		selected_mission.cargo_capacity_required,
+		CargoRules.get_required_capacity(selected_mission),
 		selected_mission.minimum_delivery_integrity_percent,
 		selected_mission.full_reward_integrity_percent,
 		selected_mission.damaged_cargo_payout_penalty_percent,

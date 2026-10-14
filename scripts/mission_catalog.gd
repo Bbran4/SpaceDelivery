@@ -5,6 +5,8 @@ class_name MissionCatalog
 const MISSION_PATHS: Array[String] = [
 	"res://resources/missions/priority_medical_shipment.tres",
 	"res://resources/missions/fragile_relay_components.tres",
+	"res://resources/missions/bulk_freight_manifest.tres",
+	"res://resources/missions/valuable_courier_package.tres",
 ]
 
 

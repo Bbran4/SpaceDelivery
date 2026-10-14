@@ -9,6 +9,7 @@ class_name MissionDefinition
 @export var client_name: String = ""
 @export var cargo_name: String = "Undeclared Cargo"
 @export var cargo_type: String = "General Freight"
+@export_enum("Standard", "Fragile", "Bulk", "Valuable") var cargo_variant: int = 0
 @export var cargo_description: String = ""
 @export_range(0, 1000000, 1) var cargo_value_credits: int = 0
 @export_range(1, 100000, 1) var cargo_capacity_required: int = 1
@@ -71,6 +72,8 @@ func validate_contract() -> PackedStringArray:
 		errors.append("Mission '%s' needs a destination." % mission_id)
 	if base_reward_credits < 0:
 		errors.append("Mission '%s' has a negative base reward." % mission_id)
+	if cargo_variant < CargoRules.CargoVariant.STANDARD or cargo_variant > CargoRules.CargoVariant.VALUABLE:
+		errors.append("Mission cargo variant is unsupported.")
 	if cargo_capacity_required < 1:
 		errors.append("Mission '%s' must require at least one cargo unit." % mission_id)
 	if minimum_delivery_integrity_percent < 1 or minimum_delivery_integrity_percent > 100:
