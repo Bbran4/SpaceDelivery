@@ -76,6 +76,15 @@ theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
 theme_override_font_sizes/font_size = 15
 text = "Your ship, your contracts, your next departure."
 
+[node name="AccountBalance" type="Label" parent="Margin/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
+theme_override_font_sizes/font_size = 20
+text = "CREDITS  /  0 CR"
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="Divider" type="ColorRect" parent="Margin/Layout"]
 custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
