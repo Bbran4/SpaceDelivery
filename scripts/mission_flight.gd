@@ -17,7 +17,7 @@ var cargo_integrity: float = 100.0
 var cargo_condition: String = "INTACT"
 var resolution_pending: bool = false
 var credits_at_encounter_start: int = 0
-var countdown_label: Label
+var route_label: Label
 var destination_button: Button
 
 
@@ -44,10 +44,19 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	contact_count = clampi(3 + selected_branch.risk, 3, 8)
+	var executed_route: Array[MissionRouteNode] = _get_executed_route()
+	var route_risk: int = 0
+	var route_titles: PackedStringArray = []
+	for route_node: MissionRouteNode in executed_route:
+		route_titles.append(route_node.title)
+		if route_node.node_kind == MissionRouteNode.NodeKind.ENCOUNTER:
+			route_risk += route_node.risk
+	contact_count = clampi(2 + route_risk, 3, 8)
 	encounter_spawner.spawn_count = contact_count
 	encounter_spawner.spawn_on_ready = false
 	_build_flight_overlay()
+	if is_instance_valid(route_label):
+		route_label.text = "ROUTE  /  %s" % "  →  ".join(route_titles)
 	call_deferred("_start_encounter")
 
 
@@ -104,6 +113,19 @@ func _build_flight_overlay() -> void:
 	layer.add_child(cargo_status_label)
 	_update_cargo_status()
 
+	route_label = Label.new()
+	route_label.name = "ExecutedRouteLabel"
+	route_label.anchor_left = 0.0
+	route_label.anchor_right = 1.0
+	route_label.offset_left = 24.0
+	route_label.offset_top = 82.0
+	route_label.offset_right = -24.0
+	route_label.offset_bottom = 108.0
+	route_label.add_theme_font_size_override("font_size", 12)
+	route_label.add_theme_color_override("font_color", Color(0.72, 0.82, 0.9))
+	route_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(route_label)
+
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
 	abort_button.text = "ABORT MISSION"
@@ -152,8 +174,29 @@ func _on_enemy_destroyed() -> void:
 		return
 	remaining_enemies = maxi(remaining_enemies - 1, 0)
 	if remaining_enemies == 0:
-		# Keep flight and loot pickup active while the pilot has time to collect drops.
-		_begin_completion_countdown()
+		# Leave flight and loot pickups active until the pilot chooses to proceed.
+		_show_destination_button()
+
+
+func _get_executed_route() -> Array[MissionRouteNode]:
+	var route: Array[MissionRouteNode] = []
+	if mission == null or selected_branch == null:
+		return route
+
+	var current: MissionRouteNode = mission.get_route_node(mission.start_node_id)
+	var visited: Dictionary = {}
+	while current != null and not visited.has(current.node_id):
+		visited[current.node_id] = true
+		route.append(current)
+		if current.node_kind == MissionRouteNode.NodeKind.CHOICE:
+			current = selected_branch
+		elif current.node_id == mission.destination_node_id:
+			break
+		elif current.next_node_ids.is_empty():
+			break
+		else:
+			current = mission.get_route_node(current.next_node_ids[0])
+	return route
 
 
 func _on_player_destroyed() -> void:
@@ -212,50 +255,12 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	_show_result_screen(result)
 
 
-func _begin_completion_countdown() -> void:
+func _show_destination_button() -> void:
 	if resolution_pending or mission_resolved:
 		return
 	resolution_pending = true
 	if is_instance_valid(abort_button):
 		abort_button.disabled = true
-	countdown_label = Label.new()
-	countdown_label.name = "LootCountdownLabel"
-	countdown_label.anchor_left = 0.5
-	countdown_label.anchor_top = 0.5
-	countdown_label.anchor_right = 0.5
-	countdown_label.anchor_bottom = 0.5
-	countdown_label.offset_left = -300.0
-	countdown_label.offset_top = -62.0
-	countdown_label.offset_right = 300.0
-	countdown_label.offset_bottom = 20.0
-	countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	countdown_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	countdown_label.add_theme_font_size_override("font_size", 25)
-	countdown_label.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
-	countdown_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.04, 0.08, 0.9))
-	countdown_label.add_theme_constant_override("shadow_offset_x", 2)
-	countdown_label.add_theme_constant_override("shadow_offset_y", 2)
-	countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
-	if overlay != null:
-		overlay.add_child(countdown_label)
-	else:
-		add_child(countdown_label)
-	_finish_countdown()
-
-
-func _finish_countdown() -> void:
-	for seconds_left: int in range(5, 0, -1):
-		if mission_resolved:
-			return
-		if is_instance_valid(countdown_label):
-			countdown_label.text = "HOSTILES CLEARED  /  COLLECT REMAINING LOOT  /  %d" % seconds_left
-		await get_tree().create_timer(1.0).timeout
-	if mission_resolved:
-		return
-	if is_instance_valid(countdown_label):
-		countdown_label.text = "HOSTILES CLEARED  /  FINAL APPROACH OPEN"
-		countdown_label.visible = false
 	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
 	if overlay == null:
 		return
