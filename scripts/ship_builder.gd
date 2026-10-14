@@ -361,6 +361,9 @@ func _refresh_stats() -> void:
 func _on_save_pressed() -> void:
 	if selected_hull == null:
 		return
+	if not has_active_weapon():
+		status_label.text = "Cannot save: install a weapon before saving this build."
+		return
 	var build_name: String = build_name_input.text.strip_edges()
 	if build_name.is_empty():
 		status_label.text = "Enter a name before saving."
@@ -381,7 +384,7 @@ func _on_load_pressed() -> void:
 	var build_name: String = str(saved_build_picker.get_item_metadata(saved_build_picker.selected))
 	var build: Dictionary = ShipBuildStore.load_build(build_name)
 	if build.is_empty():
-		status_label.text = "Saved build could not be found."
+		status_label.text = "Saved build is invalid or has no compatible weapon."
 		return
 	var hull_path: String = str(build.get("hull_path", ""))
 	var loaded_hull: ShipHull = load(hull_path) as ShipHull
@@ -389,27 +392,10 @@ func _on_load_pressed() -> void:
 	if loaded_hull == null or hull_index < 0:
 		status_label.text = "The saved hull resource is missing."
 		return
-	selected_hull = loaded_hull
-	hull_picker.select(hull_index)
-	selected_modules.clear()
-	selected_module_paths.clear()
-	selected_modules.resize(selected_hull.slot_categories.size())
-	selected_module_paths.resize(selected_hull.slot_categories.size())
-	var module_paths: Variant = build.get("module_paths", PackedStringArray())
-	for slot_index: int in range(selected_module_paths.size()):
-		var module_path: String = str(module_paths[slot_index]) if slot_index < module_paths.size() else ""
-		var module: ShipModule = load(module_path) as ShipModule if not module_path.is_empty() else null
-		if module != null and not _category_fits(selected_hull.slot_categories[slot_index], module.category):
-			module = null
-			module_path = ""
-		selected_modules[slot_index] = module
-		selected_module_paths[slot_index] = module_path
-	_update_hull_preview()
-	_rebuild_slot_groups()
-	_rebuild_module_groups()
-	_refresh_stats()
-	build_name_input.text = build_name
-	status_label.text = "Loaded '%s' · now active." % build_name
+	_apply_build_to_editor(build, build_name, hull_index)
+	if not has_active_weapon():
+		status_label.text = "This saved build has no active weapon and cannot be loaded."
+		return
 	ShipBuildStore.save_build(build_name, hull_path, selected_module_paths, true)
 
 
