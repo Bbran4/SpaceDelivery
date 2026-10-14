@@ -256,6 +256,9 @@ func _complete_delivery() -> void:
 	var mission: MissionDefinition = MissionRunState.active_mission
 	if mission == null:
 		return
+	if not ObjectiveTracker.can_deliver(mission):
+		status_label.text = "DELIVERY BLOCKED  /  COMPLETE ALL REQUIRED OBJECTIVES FIRST"
+		return
 	var integrity: float = MissionRunState.cargo_integrity_percent
 	var success: bool = integrity >= float(mission.minimum_delivery_integrity_percent)
 	var condition: String = "INTACT" if integrity >= float(mission.full_reward_integrity_percent) else ("DAMAGED" if integrity > 0.0 else "LOST")
@@ -270,6 +273,7 @@ func _complete_delivery() -> void:
 	var destination_node: MissionRouteNode = MissionRunState.get_route_node(MissionRunState.selected_route_node_id)
 	if destination_node != null and destination_node.node_kind == MissionRouteNode.NodeKind.DESTINATION:
 		MissionRunState.complete_route_node(destination_node.node_id)
+	ObjectiveTracker.mark_delivered(mission, success)
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
 		MissionRunState.total_credits,
