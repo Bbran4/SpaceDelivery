@@ -52,7 +52,7 @@ func _save_account_credits() -> void:
 		push_warning("Could not save account credits: %s" % error_string(save_error))
 
 
-func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
+func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	ship_condition.clear()
 	active_mission = mission
 	mission_resolved = false
@@ -79,6 +79,10 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 		push_error("Generated route failed validation for mission '%s' seed %d: %s" % [
 			mission.mission_id, route_seed, "; ".join(validation_errors)
 		])
+		active_mission = null
+		generated_route_nodes.clear()
+		mission_resolved = false
+		return false
 	completed_node_ids.clear()
 	visible_node_ids.clear()
 	route_flags.clear()
@@ -91,6 +95,7 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> void:
 	selected_branch_node_id = &""
 	if current_node_id != &"":
 		visible_node_ids.append(current_node_id)
+	return true
 
 
 func get_route_node(node_id: StringName) -> MissionRouteNode:
