@@ -6,8 +6,13 @@ class_name MissionDefinition
 @export var mission_id: StringName = &""
 @export var title: String = ""
 @export var client_name: String = ""
+@export var cargo_name: String = "Undeclared Cargo"
+@export var cargo_type: String = "General Freight"
 @export var cargo_description: String = ""
+@export_range(0, 1000000, 1) var cargo_value_credits: int = 0
 @export_range(0.0, 3.0, 0.1) var cargo_damage_sensitivity: float = 1.0
+@export_range(1, 100, 1) var minimum_delivery_integrity_percent: int = 1
+@export_range(1, 100, 1) var full_reward_integrity_percent: int = 75
 @export_range(0, 100, 1) var damaged_cargo_payout_penalty_percent: int = 25
 @export var destination_name: String = ""
 @export_multiline var briefing: String = ""
