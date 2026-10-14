@@ -1,12 +1,7 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://f3rpwim3h5va"]
 
-[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" uid="uid://03233vvtdkt0" path="res://scripts/combat/weapon_data.gd" id="1_data"]
 
 [resource]
 script = ExtResource("1_data")
-display_name = "Basic Laser"
-fire_rate = 1.0
-range = 300.0
 projectile_damage = 12.0
-projectile_speed = 600.0
-projectile_lifetime = 2.0

@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="ShipModule" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ShipModule" format=3 uid="uid://usegf3iax1fk"]
 
-[ext_resource type="Script" path="res://scripts/player/ship_module.gd" id="1_module"]
+[ext_resource type="Script" uid="uid://ic6y37pmdp1s" path="res://scripts/player/ship_module.gd" id="1_module"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/rapid_fire_laser.tscn" id="2_weapon"]
 
 [resource]

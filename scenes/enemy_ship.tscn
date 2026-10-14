@@ -1,0 +1,38 @@
+[gd_scene format=3 uid="uid://b2fcf4khk8lg5"]
+
+[ext_resource type="Script" path="res://scripts/ship.gd" id="1_ship"]
+[ext_resource type="Script" path="res://scripts/enemy_controller.gd" id="2_enemy_controller"]
+[ext_resource type="Resource" uid="uid://cwo4gxj2aychd" path="res://resources/modules/basic_laser_module.tres" id="3_weapon_module"]
+[ext_resource type="PackedScene" path="res://scenes/ui/enemy_status_bar.tscn" id="4_status_bar"]
+[ext_resource type="Resource" uid="uid://c5yarycgvlkqv" path="res://resources/rewards/raider_rewards.tres" id="5_rewards"]
+[ext_resource type="Resource" uid="uid://bhtt7k5r70byf" path="res://resources/enemies/fighter.tres" id="6_loadout"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_collision"]
+radius = 14.0
+
+[node name="EnemyShip" type="CharacterBody2D" unique_id=1273037019 groups=["enemy"]]
+script = ExtResource("1_ship")
+ship_name = "Raider"
+max_hull = 20.0
+max_shield = 10.0
+shield_recharge_rate = 8.0
+shield_recharge_delay = 2.0
+hull_recharge_rate = 2.0
+movement_speed = 160.0
+acceleration = 350.0
+turn_rate = 150.0
+starting_weapon_module = ExtResource("3_weapon_module")
+reward_table = ExtResource("5_rewards")
+enemy_loadout = ExtResource("6_loadout")
+
+[node name="ShipVisual" type="Polygon2D" parent="." unique_id=2061797963]
+color = Color(1, 0.28, 0.22, 1)
+polygon = PackedVector2Array(18, 0, -12, -11, -7, 0, -12, 11)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2020656404]
+shape = SubResource("CircleShape2D_collision")
+
+[node name="EnemyController" type="Node" parent="." unique_id=1560785702]
+script = ExtResource("2_enemy_controller")
+
+[node name="EnemyStatusBar" parent="." unique_id=1230216589 instance=ExtResource("4_status_bar")]

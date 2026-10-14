@@ -1,16 +1,14 @@
-[gd_resource type="Resource" script_class="EnemyLoadout" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="EnemyLoadout" format=3 uid="uid://cq7fsv4lfyknf"]
 
-[ext_resource type="Script" path="res://scripts/combat/enemy_loadout.gd" id="1_loadout"]
-[ext_resource type="Resource" path="res://resources/modules/rapid_laser_module.tres" id="2_weapon"]
-[ext_resource type="Resource" path="res://resources/rewards/raider_rewards.tres" id="3_rewards"]
+[ext_resource type="Script" uid="uid://brihp4hj64ein" path="res://scripts/combat/enemy_loadout.gd" id="1_loadout"]
+[ext_resource type="Resource" uid="uid://usegf3iax1fk" path="res://resources/modules/rapid_laser_module.tres" id="2_weapon"]
+[ext_resource type="Resource" uid="uid://c5yarycgvlkqv" path="res://resources/rewards/raider_rewards.tres" id="3_rewards"]
 
 [resource]
 script = ExtResource("1_loadout")
 archetype_name = "Scout"
 max_hull = 12.0
 max_shield = 0.0
-shield_recharge_rate = 0.0
-hull_recharge_rate = 0.0
 movement_speed = 285.0
 acceleration = 720.0
 linear_drag = 45.0

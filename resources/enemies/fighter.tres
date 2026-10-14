@@ -1,24 +1,14 @@
-[gd_resource type="Resource" script_class="EnemyLoadout" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="EnemyLoadout" format=3 uid="uid://bhtt7k5r70byf"]
 
-[ext_resource type="Script" path="res://scripts/combat/enemy_loadout.gd" id="1_loadout"]
-[ext_resource type="Resource" path="res://resources/modules/basic_laser_module.tres" id="2_weapon"]
-[ext_resource type="Resource" path="res://resources/rewards/raider_rewards.tres" id="3_rewards"]
+[ext_resource type="Script" uid="uid://brihp4hj64ein" path="res://scripts/combat/enemy_loadout.gd" id="1_loadout"]
+[ext_resource type="Resource" uid="uid://cwo4gxj2aychd" path="res://resources/modules/basic_laser_module.tres" id="2_weapon"]
+[ext_resource type="Resource" uid="uid://c5yarycgvlkqv" path="res://resources/rewards/raider_rewards.tres" id="3_rewards"]
 
 [resource]
 script = ExtResource("1_loadout")
-archetype_name = "Fighter"
-max_hull = 30.0
 max_shield = 12.0
 shield_recharge_rate = 5.0
-shield_recharge_delay = 2.0
 hull_recharge_rate = 0.5
-hull_recharge_delay = 5.0
-movement_speed = 160.0
-acceleration = 350.0
-turn_rate = 150.0
-preferred_distance = 180.0
-pursuit_angle_tolerance = 65.0
 weapon_module = ExtResource("2_weapon")
 reward_table = ExtResource("3_rewards")
-visual_color = Color(1, 0.28, 0.22, 1)
 visual_polygon = PackedVector2Array(18, 0, -12, -11, -7, 0, -12, 11)

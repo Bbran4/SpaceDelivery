@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="WeaponData" format=3 uid="uid://2ot2cpjps1di"]
 
-[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_data"]
+[ext_resource type="Script" uid="uid://03233vvtdkt0" path="res://scripts/combat/weapon_data.gd" id="1_data"]
 
 [resource]
 script = ExtResource("1_data")
@@ -10,7 +10,5 @@ range = 330.0
 projectile_damage = 3.5
 projectile_speed = 850.0
 projectile_lifetime = 1.0
-projectile_style = 0
 projectile_color = Color(0.25, 0.95, 1, 1)
 projectile_scale = 0.65
-impact_radius = 0.0

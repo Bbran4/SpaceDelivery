@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="ShipModule" load_steps=3 format=3]
+[gd_resource type="Resource" script_class="ShipModule" format=3 uid="uid://cwo4gxj2aychd"]
 
-[ext_resource type="Script" path="res://scripts/player/ship_module.gd" id="1_module"]
+[ext_resource type="Script" uid="uid://ic6y37pmdp1s" path="res://scripts/player/ship_module.gd" id="1_module"]
 [ext_resource type="PackedScene" path="res://scenes/weapons/basic_weapon.tscn" id="2_weapon"]
 
 [resource]
@@ -9,5 +9,4 @@ module_id = &"basic_laser"
 display_name = "Basic Laser"
 description = "A reliable starter weapon that automatically targets hostile ships."
 category = 0
-rarity = 0
 weapon_scene = ExtResource("2_weapon")
