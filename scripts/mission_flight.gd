@@ -28,7 +28,7 @@ func _ready() -> void:
 		_return_to_hq()
 		return
 
-	selected_branch = mission.get_route_node(MissionRunState.selected_branch_node_id)
+	selected_branch = MissionRunState.get_route_node(MissionRunState.selected_branch_node_id)
 	if selected_branch == null:
 		push_warning("Selected mission branch is missing. Returning to HQ.")
 		_return_to_hq()
@@ -44,19 +44,12 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	var executed_route: Array[MissionRouteNode] = _get_executed_route()
-	var route_risk: int = 0
-	var route_titles: PackedStringArray = []
-	for route_node: MissionRouteNode in executed_route:
-		route_titles.append(route_node.title)
-		if route_node.node_kind == MissionRouteNode.NodeKind.ENCOUNTER:
-			route_risk += route_node.risk
-	contact_count = clampi(2 + route_risk, 3, 8)
+	contact_count = clampi(2 + selected_branch.risk, 3, 8)
 	encounter_spawner.spawn_count = contact_count
 	encounter_spawner.spawn_on_ready = false
 	_build_flight_overlay()
 	if is_instance_valid(route_label):
-		route_label.text = "ROUTE  /  %s" % "  →  ".join(route_titles)
+		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
 	call_deferred("_start_encounter")
 
 
@@ -178,27 +171,6 @@ func _on_enemy_destroyed() -> void:
 		_show_destination_button()
 
 
-func _get_executed_route() -> Array[MissionRouteNode]:
-	var route: Array[MissionRouteNode] = []
-	if mission == null or selected_branch == null:
-		return route
-
-	var current: MissionRouteNode = mission.get_route_node(mission.start_node_id)
-	var visited: Dictionary = {}
-	while current != null and not visited.has(current.node_id):
-		visited[current.node_id] = true
-		route.append(current)
-		if current.node_kind == MissionRouteNode.NodeKind.CHOICE:
-			current = selected_branch
-		elif current.node_id == mission.destination_node_id:
-			break
-		elif current.next_node_ids.is_empty():
-			break
-		else:
-			current = mission.get_route_node(current.next_node_ids[0])
-	return route
-
-
 func _on_player_destroyed() -> void:
 	_resolve_mission(false, "Delivery failed: your ship was destroyed before the contract could be completed.")
 
@@ -226,9 +198,9 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
 	var route_bonus: int = selected_branch.bonus_credits if selected_branch != null else 0
-	var credits_collected: int = 0
+	var credits_collected: int = MissionRunState.credits_collected_this_mission
 	if is_instance_valid(player_ship):
-		credits_collected = maxi(0, player_ship.credits - credits_at_encounter_start)
+		credits_collected += maxi(0, player_ship.credits - credits_at_encounter_start)
 
 	# Salvage-profile routes include a recoverable cache, paid only when the delivery succeeds.
 	var salvage_recovered: int = 50 if success and selected_branch != null and selected_branch.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE else 0
@@ -274,7 +246,7 @@ func _show_destination_button() -> void:
 		return
 	destination_button = Button.new()
 	destination_button.name = "CompleteDeliveryButton"
-	destination_button.text = "PROCEED TO DESTINATION  /  %s" % mission.destination_name.to_upper()
+	destination_button.text = "RETURN TO ROUTE MAP  /  NODE COMPLETE"
 	destination_button.anchor_left = 0.5
 	destination_button.anchor_right = 0.5
 	destination_button.anchor_top = 1.0
@@ -284,7 +256,7 @@ func _show_destination_button() -> void:
 	destination_button.offset_right = 190.0
 	destination_button.offset_bottom = -18.0
 	destination_button.custom_minimum_size = Vector2(380, 44)
-	destination_button.pressed.connect(_on_destination_pressed)
+	destination_button.pressed.connect(_on_node_completed)
 	overlay.add_child(destination_button)
 
 
