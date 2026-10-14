@@ -22,13 +22,20 @@ func finish_mission(
 	credits_before_payout: int,
 	base_reward: int,
 	route_bonus: int,
-	result_message: String
+	result_message: String,
+	cargo_condition: String = "INTACT",
+	cargo_penalty_percent: int = 0
 ) -> Dictionary:
 	if mission_resolved:
 		return last_mission_result
 
 	mission_resolved = true
-	var payout: int = maxi(0, base_reward) + maxi(0, route_bonus) if success else 0
+	var safe_base_reward: int = maxi(0, base_reward)
+	var safe_route_bonus: int = maxi(0, route_bonus)
+	var gross_payout: int = safe_base_reward + safe_route_bonus if success else 0
+	var penalty_percent: int = clampi(cargo_penalty_percent, 0, 100) if success else 0
+	var cargo_penalty: int = roundi(float(gross_payout) * float(penalty_percent) / 100.0)
+	var payout: int = maxi(0, gross_payout - cargo_penalty)
 	total_credits = maxi(0, credits_before_payout) + payout
 	last_mission_result = {
 		"success": success,
@@ -38,6 +45,10 @@ func finish_mission(
 		"base_reward": maxi(0, base_reward) if success else 0,
 		"route_bonus": maxi(0, route_bonus) if success else 0,
 		"payout": payout,
+		"cargo_condition": cargo_condition,
+		"cargo_penalty_percent": penalty_percent,
+		"cargo_penalty": cargo_penalty,
+		"gross_payout": gross_payout,
 		"total_credits": total_credits,
 	}
 	return last_mission_result
