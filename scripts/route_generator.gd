@@ -119,14 +119,14 @@ static func _apply_generated_encounter(
 	if is_service_stop:
 		node.title = "Unmanned Service Beacon"
 		node.description = "A neglected automated service beacon offers a brief systems check and a chance to catch your breath. The maintenance contract expired, naturally."
-		node.node_kind = MissionRouteNode.NodeKind.CHOICE
+		node.node_kind = MissionRouteNode.NodeKind.SERVICE
 		node.encounter_profile = MissionRouteNode.EncounterProfile.QUIET
 		node.risk = 0
 		node.bonus_credits = 10 + rng.randi_range(0, 10)
 	else:
 		node.title = str(encounter["title"])
 		node.description = str(encounter["description"])
-		node.node_kind = MissionRouteNode.NodeKind.START if layer_index == 0 else MissionRouteNode.NodeKind.ENCOUNTER
+		node.node_kind = MissionRouteNode.NodeKind.ENCOUNTER
 		node.encounter_profile = int(encounter["profile"])
 		node.risk = clampi(int(encounter["risk"]) + mission.risk_bias, 0, 5)
 		node.bonus_credits = int(encounter["bonus"]) + rng.randi_range(0, 15)
