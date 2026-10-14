@@ -132,7 +132,7 @@ func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: floa
 func _update_cargo_status() -> void:
 	if not is_instance_valid(cargo_status_label) or mission == null:
 		return
-	if cargo_integrity >= 75.0:
+	if cargo_integrity >= float(mission.full_reward_integrity_percent):
 		cargo_condition = "INTACT"
 	elif cargo_integrity > 0.0:
 		cargo_condition = "DAMAGED"
@@ -309,9 +309,9 @@ func _show_result_screen(result: Dictionary) -> void:
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -280.0
-	panel.offset_top = -220.0
+	panel.offset_top = -250.0
 	panel.offset_right = 280.0
-	panel.offset_bottom = 220.0
+	panel.offset_bottom = 250.0
 	layer.add_child(panel)
 
 	var content: VBoxContainer = VBoxContainer.new()
@@ -351,8 +351,18 @@ func _show_result_screen(result: Dictionary) -> void:
 		roundi(float(result.get("cargo_integrity_percent", 0.0))),
 	]
 	cargo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cargo_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	cargo_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72) if str(result.get("cargo_condition", "")) == "INTACT" else (Color(1.0, 0.78, 0.35) if str(result.get("cargo_condition", "")) == "DAMAGED" else Color(1.0, 0.42, 0.42)))
 	content.add_child(cargo_label)
+
+	var requirement_label: Label = Label.new()
+	requirement_label.text = "DELIVERY MINIMUM  /  %d%%     FULL REWARD  /  %d%%" % [
+		int(result.get("cargo_minimum_integrity_percent", 0)),
+		int(result.get("cargo_full_reward_integrity_percent", 0)),
+	]
+	requirement_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	requirement_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
+	content.add_child(requirement_label)
 
 	var message_label: Label = Label.new()
 	message_label.text = str(result.get("message", ""))
