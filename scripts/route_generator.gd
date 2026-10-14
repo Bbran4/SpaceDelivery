@@ -120,6 +120,7 @@ static func _apply_fixed_beat(node: MissionRouteNode, beat: MissionRouteNode) ->
 	node.description = beat.description
 	node.node_kind = beat.node_kind
 	node.encounter_profile = beat.encounter_profile
+	node.objective_type = beat.objective_type
 	node.risk = clampi(beat.risk, 0, 5)
 	node.bonus_credits = maxi(0, beat.bonus_credits)
 
