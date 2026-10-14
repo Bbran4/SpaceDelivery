@@ -21,6 +21,7 @@ var route_seed: int = 0
 
 
 func begin_mission(mission: MissionDefinition) -> void:
+	ship_condition.clear()
 	active_mission = mission
 	mission_resolved = false
 	cargo_integrity_percent = 100.0
@@ -169,6 +170,7 @@ func finish_mission(
 
 
 func clear_mission() -> void:
+	ship_condition.clear()
 	active_mission = null
 	selected_branch_node_id = &""
 	selected_route_node_id = &""
