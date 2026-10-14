@@ -109,7 +109,7 @@ func fail_objective(mission: MissionDefinition, objective_id: StringName) -> boo
 	if not _matches_active_mission(mission):
 		return false
 	var objective: MissionObjectiveDefinition = _find_objective(mission, objective_id)
-	if objective == null or int(objective_states.get(objective_id, ObjectiveState.LOCKED)) in [ObjectiveState.COMPLETED, ObjectiveState.FAILED]:
+	if objective == null or int(objective_states.get(objective_id, ObjectiveState.LOCKED)) not in [ObjectiveState.AVAILABLE, ObjectiveState.ACTIVE]:
 		return false
 	objective_states[objective_id] = ObjectiveState.FAILED
 	if objective.required:
