@@ -51,10 +51,24 @@ func _ready() -> void:
 	_build_flight_overlay()
 	if is_instance_valid(route_label):
 		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
+	call_deferred("_start_selected_objective")
+
+
+func _start_selected_objective() -> void:
+	if mission_resolved or selected_branch == null:
+		return
+	# Preserve legacy service nodes while new authored nodes use explicit objectives.
 	if selected_branch.node_kind == MissionRouteNode.NodeKind.SERVICE:
-		call_deferred("_start_service_node")
-	else:
-		call_deferred("_start_encounter")
+		_start_service_node()
+		return
+	match selected_branch.objective_type:
+		MissionRouteNode.ObjectiveType.COMBAT:
+			_start_encounter()
+		MissionRouteNode.ObjectiveType.SERVICE:
+			_start_service_node()
+		_:
+			push_warning("Objective '%s' is not implemented yet; this node cannot be entered as a combat encounter." % MissionRouteNode.ObjectiveType.keys()[selected_branch.objective_type])
+			_resolve_mission(false, "Dispatch failed: this route objective is not available in the current build.")
 
 
 func _get_contact_count(node: MissionRouteNode) -> int:
