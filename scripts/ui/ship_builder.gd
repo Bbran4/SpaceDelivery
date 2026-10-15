@@ -29,6 +29,10 @@ const NARROW_WIDTH: float = 820.0
 signal builder_closed
 signal build_changed
 
+## When true the builder is a permanent part of the HQ screen: it cannot be
+## closed, so the Close and Return buttons are hidden.
+@export var embedded: bool = false
+
 @onready var body: BoxContainer = %Body
 @onready var hull_picker: OptionButton = %HullPicker
 @onready var preview_ship: Polygon2D = %PreviewShip
@@ -60,11 +64,31 @@ func _ready() -> void:
 	module_hint.visible = false
 	module_scroll.visible = false
 	close_button.pressed.connect(_on_back_pressed)
-	close_button.visible = false
+	close_button.visible = not embedded
+	if embedded:
+		_apply_embedded_layout()
 	_center_ship_preview()
 	_populate_hulls()
 	_refresh_saved_builds()
 	_load_active_build_into_editor()
+
+
+func _apply_embedded_layout() -> void:
+	var return_button: Button = get_node_or_null("Margin/Layout/Footer/BuildControls/TestFlightButton") as Button
+	if return_button != null:
+		return_button.visible = false
+	# In the narrow HQ column the panels stack vertically: show the hull
+	# preview first and keep every panel compact so little scrolling is needed.
+	var center_panel: Control = body.get_node_or_null("CenterPanel") as Control
+	if center_panel != null:
+		body.move_child(center_panel, 0)
+		center_panel.custom_minimum_size.y = 170.0
+	var slots_panel: Control = body.get_node_or_null("SlotsPanel") as Control
+	if slots_panel != null:
+		slots_panel.custom_minimum_size.y = 150.0
+	var modules_panel: Control = body.get_node_or_null("ModulesPanel") as Control
+	if modules_panel != null:
+		modules_panel.custom_minimum_size.y = 150.0
 
 
 func _update_layout() -> void:
@@ -473,6 +497,8 @@ func _clear_container(container: Node) -> void:
 
 
 func _on_back_pressed() -> void:
+	if embedded:
+		return
 	visible = false
 	module_title.visible = false
 	module_hint.visible = false

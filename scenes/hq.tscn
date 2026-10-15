@@ -4,6 +4,38 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/ship_builder.tscn" id="2_builder"]
 [ext_resource type="Script" path="res://scripts/ui/focus_panel.gd" id="3_focus"]
 
+[sub_resource type="StyleBoxFlat" id="MissionPanelStyle"]
+bg_color = Color(0.035, 0.065, 0.1, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.78, 0.92, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxFlat" id="SkillPanelStyle"]
+bg_color = Color(0.05, 0.07, 0.06, 0.97)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.72, 0.38, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 14.0
+content_margin_top = 12.0
+content_margin_right = 14.0
+content_margin_bottom = 12.0
+
 [node name="HQ" type="Control"]
 layout_mode = 3
 anchors_preset = 15
@@ -42,6 +74,10 @@ theme_override_constants/separation = 12
 [node name="Header" type="HBoxContainer" parent="Layout/Column"]
 layout_mode = 2
 
+[node name="HeaderSpacer" type="Control" parent="Layout/Column/Header"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+
 [node name="Brand" type="VBoxContainer" parent="Layout/Column/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -50,12 +86,14 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 30
-text = "SPACEDELIVERY / HOME BASE"
+text = "SPACEDELIVERY"
+horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Layout/Column/Header/Brand"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
 text = "Your package. Our problem."
+horizontal_alignment = 1
 
 [node name="AccountBalance" type="Label" parent="Layout/Column/Header"]
 unique_name_in_owner = true
@@ -73,7 +111,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 14
 
 [node name="MissionSlot" type="Control" parent="Layout/Column/Main"]
-custom_minimum_size = Vector2(250, 0)
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -81,7 +119,7 @@ mouse_filter = 2
 [node name="Center" type="VBoxContainer" parent="Layout/Column/Main"]
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.7
+size_flags_stretch_ratio = 1.5
 theme_override_constants/separation = 8
 
 [node name="BuilderPanel" type="PanelContainer" parent="Layout/Column/Main/Center"]
@@ -93,6 +131,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+embedded = true
 
 [node name="CenterActions" type="VBoxContainer" parent="Layout/Column/Main/Center"]
 unique_name_in_owner = true
@@ -106,7 +145,7 @@ layout_mode = 2
 text = "TEST FLIGHT"
 
 [node name="SkillSlot" type="Control" parent="Layout/Column/Main"]
-custom_minimum_size = Vector2(250, 0)
+custom_minimum_size = Vector2(260, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
@@ -143,12 +182,13 @@ grow_vertical = 2
 mouse_filter = 0
 color = Color(0.008, 0.015, 0.028, 0.8)
 
-[node name="MissionPanel" type="PanelContainer" parent="PanelLayer" groups=["hq_focus_panels"]]
+[node name="MissionPanel" type="PanelContainer" parent="PanelLayer" node_paths=PackedStringArray("slot", "dim")]
 layout_mode = 0
+theme_override_styles/panel = SubResource("MissionPanelStyle")
 script = ExtResource("3_focus")
 slot = NodePath("../../Layout/Column/Main/MissionSlot")
 dim = NodePath("../Dim")
-focus_size = Vector2(680, 620)
+focus_size = Vector2(460, 600)
 
 [node name="MissionVBox" type="VBoxContainer" parent="PanelLayer/MissionPanel"]
 layout_mode = 2
@@ -176,6 +216,7 @@ theme_override_constants/separation = 8
 
 [node name="WelcomeText" type="Label" parent="PanelLayer/MissionPanel/MissionVBox/WelcomeContent"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Browse available contracts."
 autowrap_mode = 3
@@ -196,12 +237,13 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="SkillPanel" type="PanelContainer" parent="PanelLayer" groups=["hq_focus_panels"]]
+[node name="SkillPanel" type="PanelContainer" parent="PanelLayer" node_paths=PackedStringArray("slot", "dim")]
 layout_mode = 0
+theme_override_styles/panel = SubResource("SkillPanelStyle")
 script = ExtResource("3_focus")
 slot = NodePath("../../Layout/Column/Main/SkillSlot")
 dim = NodePath("../Dim")
-focus_size = Vector2(680, 620)
+focus_size = Vector2(460, 600)
 
 [node name="SkillVBox" type="VBoxContainer" parent="PanelLayer/SkillPanel"]
 layout_mode = 2
