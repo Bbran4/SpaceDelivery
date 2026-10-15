@@ -9,7 +9,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/ninepatch/skill_screen.svg" id="6_skill_screen"]
 
 [sub_resource type="StyleBoxTexture" id="BuilderScreenStyle"]
-texture = ExtResource("panel")
+texture = ExtResource("2_qlv4n")
 texture_margin_left = 30.0
 texture_margin_top = 30.0
 texture_margin_right = 30.0
