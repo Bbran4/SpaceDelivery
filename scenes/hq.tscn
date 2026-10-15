@@ -250,6 +250,7 @@ color = Color(0.008, 0.015, 0.028, 0.8)
 
 [node name="MissionPanel" type="PanelContainer" parent="PanelLayer" unique_id=640000377 node_paths=PackedStringArray("slot", "dim")]
 layout_mode = 0
+theme_override_styles/panel = SubResource("MissionScreenStyle")
 script = ExtResource("3_focus")
 slot = NodePath("../../Layout/Column/Main/MissionSlot")
 dim = NodePath("../Dim")
@@ -303,6 +304,7 @@ theme_override_constants/separation = 6
 
 [node name="SkillPanel" type="PanelContainer" parent="PanelLayer" unique_id=1324376676 node_paths=PackedStringArray("slot", "dim")]
 layout_mode = 0
+theme_override_styles/panel = SubResource("SkillScreenStyle")
 script = ExtResource("3_focus")
 slot = NodePath("../../Layout/Column/Main/SkillSlot")
 dim = NodePath("../Dim")
