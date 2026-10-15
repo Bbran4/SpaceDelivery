@@ -27,7 +27,7 @@ func set_slot_content(title: String, module: ShipModule, path: String) -> void:
 	if slot_title != null:
 		slot_title.text = title
 	if module_title != null:
-		module_title.text = "Empty slot · drop module here" if module == null else module.display_name
+		module_title.text = "Empty" if module == null else module.display_name
 
 
 

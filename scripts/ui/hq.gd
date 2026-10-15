@@ -13,6 +13,7 @@ const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
 @onready var skill_tree: VBoxContainer = %SkillTree
 @onready var skill_credits_label: Label = %SkillCredits
 @onready var test_flight_button: Button = %TestFlightButton
+@onready var confirm_build_button: Button = %ConfirmBuildButton
 @onready var footer_label: Label = %FooterLabel
 @onready var account_balance_label: Label = %AccountBalance
 
@@ -33,6 +34,7 @@ func _ready() -> void:
 	_build_weapon_warnings()
 	_refresh_campaign_status()
 	ship_builder.build_changed.connect(_refresh_weapon_gates)
+	confirm_build_button.pressed.connect(ship_builder.confirm_build)
 	_show_salvage_recovery()
 	_refresh_weapon_gates()
 	_build_skill_tree()
@@ -142,7 +144,7 @@ func _build_weapon_warnings() -> void:
 	test_flight_warning_label.add_theme_font_size_override("font_size", 12)
 	test_flight_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	center_actions.add_child(test_flight_warning_label)
-	center_actions.move_child(test_flight_warning_label, test_flight_button.get_index())
+	center_actions.move_child(test_flight_warning_label, 0)
 
 
 func _refresh_weapon_gates() -> void:
