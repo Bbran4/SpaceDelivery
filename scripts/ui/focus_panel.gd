@@ -28,9 +28,7 @@ func _ready() -> void:
 	_click_catcher.mouse_exited.connect(_set_hover.bind(false))
 	add_child(_click_catcher)
 
-	if dim != null:
-		dim.visible = false
-		dim.modulate.a = 0.0
+	if dim != null and not dim.gui_input.is_connected(_on_dim_input):
 		dim.gui_input.connect(_on_dim_input)
 
 	if slot != null:
@@ -43,16 +41,21 @@ func _ready() -> void:
 func focus() -> void:
 	if is_focused:
 		return
+
+	# Only one panel may own the shared backdrop at a time. Return any other
+	# panel to its dock immediately so its tween cannot fight this transition.
 	for panel in get_tree().get_nodes_in_group("hq_focus_panels"):
-		if panel != self and panel is FocusPanel:
-			panel.unfocus()
+		if panel != self and panel is FocusPanel and panel.is_focused:
+			panel._snap_home()
+
 	is_focused = true
 	z_index = 10
 	modulate = Color.WHITE
 	_click_catcher.visible = false
 	if dim != null:
 		dim.visible = true
-	_animate_to(_focus_position(), _focus_target_size(), 1.0)
+		dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_animate_to(_focus_position_for(_focus_target_size()), _focus_target_size(), 1.0)
 	focused.emit()
 
 
@@ -60,9 +63,23 @@ func unfocus() -> void:
 	if not is_focused:
 		return
 	is_focused = false
-	var tween: Tween = _animate_to(_home_position(), _home_size(), 0.0)
+	var home_size: Vector2 = _home_size()
+	var tween: Tween = _animate_to(_home_position_for(home_size), home_size, 0.0)
 	tween.chain().tween_callback(_on_unfocus_finished)
 	unfocused.emit()
+
+
+func _snap_home() -> void:
+	if _tween != null:
+		_tween.kill()
+	is_focused = false
+	size = _home_size()
+	global_position = _home_position_for(size)
+	z_index = 1
+	_click_catcher.visible = true
+	modulate = Color.WHITE
+	if dim != null:
+		dim.modulate.a = 1.0
 
 
 func _on_unfocus_finished() -> void:
@@ -72,6 +89,7 @@ func _on_unfocus_finished() -> void:
 	_click_catcher.visible = true
 	if dim != null:
 		dim.visible = false
+		dim.modulate.a = 0.0
 
 
 func _animate_to(target_position: Vector2, target_size: Vector2, dim_alpha: float) -> Tween:
@@ -92,11 +110,12 @@ func _refresh_layout() -> void:
 	if _tween != null and _tween.is_running():
 		return
 	if is_focused:
-		size = _focus_target_size()
-		global_position = _focus_position()
+		var target_size: Vector2 = _focus_target_size()
+		size = target_size
+		global_position = _focus_position_for(target_size)
 	else:
 		size = _home_size()
-		global_position = _home_position()
+		global_position = _home_position_for(size)
 	_refresh_catcher()
 
 
@@ -115,10 +134,10 @@ func _home_size() -> Vector2:
 	)
 
 
-func _home_position() -> Vector2:
+func _home_position_for(target_size: Vector2) -> Vector2:
 	if slot == null:
 		return global_position
-	return slot.global_position + (slot.size - size) * 0.5
+	return slot.global_position + (slot.size - target_size) * 0.5
 
 
 func _focus_target_size() -> Vector2:
@@ -128,8 +147,8 @@ func _focus_target_size() -> Vector2:
 	return focus_size * ratio
 
 
-func _focus_position() -> Vector2:
-	return (get_viewport_rect().size - size) * 0.5
+func _focus_position_for(target_size: Vector2) -> Vector2:
+	return (get_viewport_rect().size - target_size) * 0.5
 
 
 func _set_hover(hovered: bool) -> void:
@@ -147,6 +166,7 @@ func _on_catcher_input(event: InputEvent) -> void:
 func _on_dim_input(event: InputEvent) -> void:
 	if is_focused and event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		unfocus()
+		dim.accept_event()
 
 
 func _unhandled_input(event: InputEvent) -> void:
