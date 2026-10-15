@@ -248,6 +248,10 @@ func _show_salvage_recovery() -> void:
 func _refresh_mission_list() -> void:
 	_clear_children(mission_list)
 	for mission: MissionDefinition in available_missions:
+		var mission_row: HBoxContainer = HBoxContainer.new()
+		mission_row.add_theme_constant_override("separation", 8)
+		mission_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
 		var mission_button: Button = Button.new()
 		mission_button.theme_type_variation = &"MissionCard"
 		mission_button.toggle_mode = true
@@ -257,11 +261,66 @@ func _refresh_mission_list() -> void:
 			mission.client_name,
 			mission.base_reward_credits,
 		]
-		mission_button.custom_minimum_size = Vector2(0, 58)
+		mission_button.custom_minimum_size = Vector2(0, 62)
 		mission_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mission_button.size_flags_stretch_ratio = 3.0
 		mission_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		mission_button.pressed.connect(_on_mission_button_pressed.bind(mission))
-		mission_list.add_child(mission_button)
+		mission_row.add_child(mission_button)
+
+		var action_button: Button = Button.new()
+		action_button.text = _mission_action_label(mission)
+		action_button.custom_minimum_size = Vector2(104, 62)
+		action_button.tooltip_text = "Select and start this contract"
+		action_button.pressed.connect(_on_mission_action_pressed.bind(mission))
+		mission_row.add_child(action_button)
+		mission_list.add_child(mission_row)
+
+
+func _mission_action_label(mission: MissionDefinition) -> String:
+	if mission == null:
+		return "SELECT"
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or not objective.required:
+			continue
+		match objective.objective_type:
+			MissionObjectiveDefinition.ObjectiveType.COLLECT:
+				return "COLLECT"
+			MissionObjectiveDefinition.ObjectiveType.RESCUE:
+				return "RESCUE"
+			MissionObjectiveDefinition.ObjectiveType.ESCORT:
+				return "ESCORT"
+			MissionObjectiveDefinition.ObjectiveType.INTERCEPT:
+				return "INTERCEPT"
+			MissionObjectiveDefinition.ObjectiveType.INVESTIGATE:
+				return "INVESTIGATE"
+			MissionObjectiveDefinition.ObjectiveType.ESCAPE:
+				return "ESCAPE"
+			MissionObjectiveDefinition.ObjectiveType.SURVIVE:
+				return "SURVIVE"
+			MissionObjectiveDefinition.ObjectiveType.DEFEND:
+				return "DEFEND"
+			MissionObjectiveDefinition.ObjectiveType.DISABLE:
+				return "DISABLE"
+			MissionObjectiveDefinition.ObjectiveType.DESTROY, MissionObjectiveDefinition.ObjectiveType.ELIMINATE_GROUP:
+				return "DESTROY"
+			MissionObjectiveDefinition.ObjectiveType.REACH:
+				return "REACH"
+			MissionObjectiveDefinition.ObjectiveType.INTERACT:
+				return "INTERACT"
+			MissionObjectiveDefinition.ObjectiveType.DELIVER_ALL, MissionObjectiveDefinition.ObjectiveType.DELIVER:
+				return "DELIVER"
+			MissionObjectiveDefinition.ObjectiveType.COMPLETE_SEQUENCE:
+				return "COMPLETE"
+	return "DELIVER"
+
+
+func _on_mission_action_pressed(mission: MissionDefinition) -> void:
+	selected_mission = mission
+	_refresh_mission_list()
+	_refresh_selected_details()
+	_refresh_weapon_gates()
+	_on_deliver_pressed()
 
 
 func _on_mission_button_pressed(mission: MissionDefinition) -> void:
