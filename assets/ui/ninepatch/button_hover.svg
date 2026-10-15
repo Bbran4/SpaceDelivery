@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64" viewBox="0 0 128 64">
+<defs><linearGradient id="metal" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#4c8198"/><stop offset=".48" stop-color="#244f65"/><stop offset="1" stop-color="#102c3c"/></linearGradient>
+<linearGradient id="surface" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2233"/><stop offset="1" stop-color="#061522"/></linearGradient>
+<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect x="2" y="2" width="124" height="60" rx="12" fill="url(#metal)" stroke="#07131d" stroke-width="3"/>
+<rect x="5" y="5" width="118" height="54" rx="7" fill="url(#surface)" stroke="#55eaff" stroke-width="2.5"/>
+<rect x="10" y="10" width="108" height="44" rx="4" fill="none" stroke="#1a5068" stroke-width="1"/>
+<path d="M 12 6 H 18 L 27 6 M 110 6 H 116" fill="none" stroke="#00dfff" stroke-width="4" opacity=".95" filter="url(#glow)"/>
+<path d="M 6 12 V 18 L 6 27 M 122 46 V 52" fill="none" stroke="#00dfff" stroke-width="3.5" opacity=".85"/>
+<path d="M 12 58 H 18 M 110 58 H 116" fill="none" stroke="#55eaff" stroke-width="1.5" opacity=".8"/>
+<g fill="#07131d" stroke="#a5d8e8" stroke-width="1.1" opacity=".9">
+<circle cx="16" cy="14" r="2.5"/><circle cx="112" cy="14" r="2.5"/>
+<circle cx="16" cy="50" r="2.5"/><circle cx="112" cy="50" r="2.5"/>
+</g>
+<g fill="none" stroke="#55eaff" stroke-width="1" opacity=".45">
+<path d="M 13 20 l 5 5 M 115 20 l -5 5 M 13 44 l 5 -5 M 115 44 l -5 -5"/>
+</g>
+</svg>

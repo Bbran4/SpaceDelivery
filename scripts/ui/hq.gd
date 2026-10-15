@@ -249,6 +249,7 @@ func _refresh_mission_list() -> void:
 	_clear_children(mission_list)
 	for mission: MissionDefinition in available_missions:
 		var mission_button: Button = Button.new()
+		mission_button.theme_type_variation = &"MissionCard"
 		mission_button.toggle_mode = true
 		mission_button.button_pressed = mission == selected_mission
 		mission_button.text = "%s\n%s  ·  %d CR" % [
