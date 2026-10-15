@@ -5,6 +5,41 @@
 [ext_resource type="Texture2D" uid="uid://dobrxri6jxj7m" path="res://assets/ui/Cartoon Spaceport Through the Cockpit Window.png" id="2_qlv4n"]
 [ext_resource type="Script" uid="uid://cmq5g22j7pvj6" path="res://scripts/ui/focus_panel.gd" id="3_focus"]
 [ext_resource type="Theme" path="res://resources/ui/space_delivery_theme.tres" id="4_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/mission_screen.svg" id="5_mission_screen"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/skill_screen.svg" id="6_skill_screen"]
+
+[sub_resource type="StyleBoxTexture" id="BuilderScreenStyle"]
+texture = ExtResource("panel")
+texture_margin_left = 30.0
+texture_margin_top = 30.0
+texture_margin_right = 30.0
+texture_margin_bottom = 30.0
+content_margin_left = 20.0
+content_margin_top = 18.0
+content_margin_right = 20.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxTexture" id="MissionScreenStyle"]
+texture = ExtResource("5_mission_screen")
+texture_margin_left = 28.0
+texture_margin_top = 48.0
+texture_margin_right = 28.0
+texture_margin_bottom = 28.0
+content_margin_left = 18.0
+content_margin_top = 42.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
+
+[sub_resource type="StyleBoxTexture" id="SkillScreenStyle"]
+texture = ExtResource("6_skill_screen")
+texture_margin_left = 28.0
+texture_margin_top = 48.0
+texture_margin_right = 28.0
+texture_margin_bottom = 28.0
+content_margin_left = 18.0
+content_margin_top = 42.0
+content_margin_right = 18.0
+content_margin_bottom = 18.0
 
 [sub_resource type="StyleBoxFlat" id="BuilderPanelStyle"]
 content_margin_left = 12.0
