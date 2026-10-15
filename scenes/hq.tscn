@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bg21u75jsvlm8" path="res://scripts/ui/hq.gd" id="1_hq"]
 [ext_resource type="PackedScene" uid="uid://baenafql7lfj7" path="res://scenes/ui/ship_builder.tscn" id="2_builder"]
+[ext_resource type="Texture2D" uid="uid://dobrxri6jxj7m" path="res://assets/ui/Cartoon Spaceport Through the Cockpit Window.png" id="2_qlv4n"]
 [ext_resource type="Script" uid="uid://cmq5g22j7pvj6" path="res://scripts/ui/focus_panel.gd" id="3_focus"]
 
 [sub_resource type="StyleBoxFlat" id="BuilderPanelStyle"]
@@ -61,15 +62,12 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_hq")
 
-[node name="Background" type="ColorRect" parent="." unique_id=307527261]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.018, 0.03, 0.052, 1)
+[node name="Background" type="TextureRect" parent="." unique_id=894045324]
+layout_mode = 0
+offset_left = -25.0
+offset_right = 1955.3888
+offset_bottom = 1080.0
+texture = ExtResource("2_qlv4n")
 
 [node name="Layout" type="MarginContainer" parent="." unique_id=47706714]
 layout_mode = 1
@@ -79,7 +77,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 18
 
@@ -111,8 +108,13 @@ theme_override_colors/font_color = Color(0.64, 0.74, 0.84, 1)
 text = "Your package. Our problem."
 horizontal_alignment = 1
 
+[node name="HeaderSpacer2" type="Control" parent="Layout/Column/Header" unique_id=1528033251]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+
 [node name="AccountBalance" type="Label" parent="Layout/Column/Header" unique_id=402900004]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(210, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.82, 0.3, 1)
