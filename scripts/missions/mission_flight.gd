@@ -220,6 +220,7 @@ func _start_current_phase() -> void:
 			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
 			phase_targets_remaining = hostiles.size()
 			for hostile: Ship in hostiles:
+				_set_enemy_pursuit_activation(hostile)
 				hostile.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
 			if phase_targets_remaining <= 0:
 				_resolve_mission(false, "Pirate ambush could not be spawned.")
@@ -227,6 +228,17 @@ func _start_current_phase() -> void:
 			if is_instance_valid(route_label):
 				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
+
+
+
+func _set_enemy_pursuit_activation(hostile: Ship) -> void:
+	if hostile == null:
+		return
+	var controller: EnemyController = hostile.get_node_or_null("EnemyController") as EnemyController
+	if controller != null:
+		# The asteroid ring ends near x=1800. Give the player a little breathing
+		# room beyond it before any route enemy starts pursuing.
+		controller.pursuit_activation_x = ASTEROID_BELT_X + 500.0
 
 
 func _process_route_encounters() -> void:
@@ -249,6 +261,7 @@ func _process_route_encounters() -> void:
 		encounter_spawner.spawn_count = 2 + (index % 2)
 		var patrol: Array[Ship] = encounter_spawner.spawn_encounter()
 		for hostile: Ship in patrol:
+			_set_enemy_pursuit_activation(hostile)
 			hostile.name = "RoutePatrol_%d_%s" % [index + 1, hostile.name]
 
 
