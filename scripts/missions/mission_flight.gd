@@ -292,7 +292,7 @@ func _spawn_asteroid_belt(target_count: int) -> void:
 		var row: int = index / 3
 		asteroid.global_position = Vector2(
 			ASTEROID_BELT_X - 105.0 + float(column) * 105.0,
-			-360.0 + float(row) * 180.0
+			-270.0 + float(row) * 180.0
 		)
 		asteroid.rotation = float(index) * 0.37
 		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
