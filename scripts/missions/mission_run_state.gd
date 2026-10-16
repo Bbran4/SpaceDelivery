@@ -27,6 +27,9 @@ var route_flags: Dictionary = {}
 var route_history: Array[Dictionary] = []
 ## Mission objects collected in flight but not yet validated at destination.
 var carried_mission_objective_ids: Array[StringName] = []
+var current_phase_index: int = 0
+var completed_phase_ids: Array[StringName] = []
+var completed_mission_ids: Array[StringName] = []
 
 const ACCOUNT_SAVE_PATH: String = "user://account_progress.cfg"
 
@@ -61,31 +64,15 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	mission_resolved = false
 	cargo_integrity_percent = 100.0
 	last_mission_result.clear()
+	current_phase_index = 0
+	completed_phase_ids.clear()
 	if forced_seed >= 0:
 		route_seed = forced_seed
 	else:
 		var seed_rng := RandomNumberGenerator.new()
 		seed_rng.randomize()
 		route_seed = seed_rng.randi()
-	var validation_errors: PackedStringArray = []
 	generated_route_nodes.clear()
-	for attempt: int in range(5):
-		generated_route_nodes = RouteGenerator.generate_route(mission, route_seed)
-		validation_errors = RouteGenerator.validate_route(generated_route_nodes)
-		if validation_errors.is_empty():
-			break
-		if forced_seed >= 0:
-			# A forced seed is a debugging contract: preserve it and report its failure.
-			break
-		route_seed += 1
-	if not validation_errors.is_empty():
-		push_error("Generated route failed validation for mission '%s' seed %d: %s" % [
-			mission.mission_id, route_seed, "; ".join(validation_errors)
-		])
-		active_mission = null
-		generated_route_nodes.clear()
-		mission_resolved = false
-		return false
 	completed_node_ids.clear()
 	visible_node_ids.clear()
 	route_flags.clear()
@@ -93,12 +80,11 @@ func begin_mission(mission: MissionDefinition, forced_seed: int = -1) -> bool:
 	accumulated_route_bonus = 0
 	accumulated_salvage_cache = 0
 	credits_collected_this_mission = 0
-	current_node_id = generated_route_nodes[0].node_id if not generated_route_nodes.is_empty() else &""
+	current_node_id = &""
 	selected_route_node_id = &""
 	selected_branch_node_id = &""
-	if current_node_id != &"":
-		visible_node_ids.append(current_node_id)
-	return true
+	return mission != null
+
 
 
 func carry_mission_objective(objective_id: StringName) -> bool:
@@ -312,6 +298,8 @@ func finish_mission(
 			ObjectiveTracker.mark_failed()
 		objective_snapshot = ObjectiveTracker.get_objective_snapshot(active_mission)
 		objective_outcome = ObjectiveTracker.ContractState.keys()[ObjectiveTracker.contract_state]
+	if success and active_mission != null and not completed_mission_ids.has(active_mission.mission_id):
+		completed_mission_ids.append(active_mission.mission_id)
 	last_mission_result = {
 		"success": success,
 		"objective_snapshot": objective_snapshot,
@@ -354,6 +342,8 @@ func clear_mission() -> void:
 		ObjectiveTracker.reset_run()
 	ship_condition.clear()
 	active_mission = null
+	current_phase_index = 0
+	completed_phase_ids.clear()
 	selected_branch_node_id = &""
 	selected_route_node_id = &""
 	mission_resolved = false
