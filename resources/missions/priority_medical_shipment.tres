@@ -32,10 +32,10 @@ lane = 1
 script = ExtResource("3_phase")
 phase_id = &"asteroid_bounty"
 title = "Asteroid Bounty"
-briefing = "Break apart five bounty rocks. Each asteroid takes two hits and drops one credit."
+briefing = "Break through the orbital asteroid belt. Destroy every blocking rock within 60 seconds; each takes two hits and drops one credit."
 phase_type = 0
 duration_seconds = 60
-target_count = 5
+target_count = 12
 bonus_credits = 20
 
 [sub_resource type="Resource" id="phase_pirate_ambush"]
