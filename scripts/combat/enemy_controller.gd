@@ -8,6 +8,8 @@ class_name EnemyController
 @export_range(1.0, 89.0, 1.0) var pursuit_angle_tolerance: float = 65.0
 
 var target: Ship
+## Enemies assigned to a mission can wait until the player clears a hazard zone.
+@export var pursuit_activation_x: float = 0.0
 
 
 func _ready() -> void:
@@ -26,6 +28,9 @@ func _physics_process(_delta: float) -> void:
 	if ship == null or ship.is_destroyed:
 		return
 	if not is_instance_valid(target) or target.is_destroyed:
+		ship.set_movement_input(Vector2.ZERO)
+		return
+	if target.global_position.x < pursuit_activation_x:
 		ship.set_movement_input(Vector2.ZERO)
 		return
 

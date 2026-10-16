@@ -236,8 +236,13 @@ func _spawn_reward_drops() -> void:
 	if loot_parent == null:
 		return
 
-	var minimum_credits: int = reward_table.minimum_credits if reward_table != null else 5
-	var maximum_credits: int = reward_table.maximum_credits if reward_table != null else 12
+	# Asteroids are a mining opportunity, not guaranteed pocket change.
+	# Only five percent of destroyed asteroids produce a currency pickup.
+	var is_asteroid: bool = is_in_group("mission_asteroid")
+	if is_asteroid and randf() >= 0.05:
+		return
+	var minimum_credits: int = 1 if is_asteroid else (reward_table.minimum_credits if reward_table != null else 5)
+	var maximum_credits: int = 1 if is_asteroid else (reward_table.maximum_credits if reward_table != null else 12)
 	var currency_drop: LootPickup = LOOT_PICKUP_SCENE.instantiate() as LootPickup
 	if currency_drop != null:
 		currency_drop.configure_currency(randi_range(
