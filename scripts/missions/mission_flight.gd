@@ -531,6 +531,43 @@ func _build_flight_overlay() -> void:
 	route_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(route_label)
 
+
+	minimap = Control.new() as MissionMinimap
+	minimap.set_script(MINIMAP_SCRIPT)
+	minimap.name = "MissionMinimap"
+	minimap.anchor_left = 1.0
+	minimap.anchor_right = 1.0
+	minimap.offset_left = -274.0
+	minimap.offset_top = 94.0
+	minimap.offset_right = -20.0
+	minimap.offset_bottom = 274.0
+	minimap.player_ship = player_ship
+	minimap.destination_position = DESTINATION_POSITION
+	minimap.asteroid_belt_x = ASTEROID_BELT_X
+	layer.add_child(minimap)
+
+	asteroid_warning_label = Label.new()
+	asteroid_warning_label.name = "AsteroidFieldWarning"
+	asteroid_warning_label.anchor_left = 0.5
+	asteroid_warning_label.anchor_right = 0.5
+	asteroid_warning_label.anchor_top = 0.28
+	asteroid_warning_label.anchor_bottom = 0.28
+	asteroid_warning_label.offset_left = -330.0
+	asteroid_warning_label.offset_right = 330.0
+	asteroid_warning_label.offset_top = -30.0
+	asteroid_warning_label.offset_bottom = 30.0
+	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
+	asteroid_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	asteroid_warning_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	asteroid_warning_label.add_theme_font_size_override("font_size", 28)
+	asteroid_warning_label.add_theme_color_override("font_color", Color(1.0, 0.38, 0.22))
+	asteroid_warning_label.add_theme_color_override("font_shadow_color", Color(0.12, 0.015, 0.01, 1.0))
+	asteroid_warning_label.add_theme_constant_override("shadow_offset_x", 2)
+	asteroid_warning_label.add_theme_constant_override("shadow_offset_y", 2)
+	asteroid_warning_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	asteroid_warning_label.visible = false
+	layer.add_child(asteroid_warning_label)
+
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
 	abort_button.text = "ABORT MISSION"
