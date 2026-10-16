@@ -306,13 +306,6 @@ func _on_phase_target_destroyed() -> void:
 			phase_time_remaining,
 		]
 	if phase_targets_remaining <= 0:
-		if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
-			if is_instance_valid(asteroid_barrier):
-				asteroid_barrier.queue_free()
-				asteroid_barrier = null
-			if is_instance_valid(asteroid_field_controller):
-				asteroid_field_controller.queue_free()
-				asteroid_field_controller = null
 		_complete_current_phase()
 
 
