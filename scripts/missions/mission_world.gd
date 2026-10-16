@@ -33,10 +33,10 @@ func _draw() -> void:
 	draw_arc(planet_center, 205.0, 0.0, TAU, 96, Color(0.22, 0.53, 0.76, 0.22), 1.0)
 	# A debris ring encircles the planet; the breakable lane rocks are concentrated
 	# on the outward-facing arc where the courier crosses the ring.
-	draw_arc(planet_center, 520.0, 0.0, TAU, 128, Color(0.4, 0.57, 0.68, 0.35), 2.0)
+	draw_arc(planet_center, 1680.0, 0.0, TAU, 192, Color(0.4, 0.57, 0.68, 0.35), 3.0)
 	for rock_index: int in range(52):
 		var angle: float = TAU * float(rock_index) / 52.0 + belt_angle
-		var radius: float = 520.0 + sin(float(rock_index) * 2.13) * 24.0
+		var radius: float = 1680.0 + sin(float(rock_index) * 2.13) * 65.0
 		var rock_position: Vector2 = planet_center + Vector2.RIGHT.rotated(angle) * radius
 		var rock_size: float = 2.0 if rock_index % 4 == 0 else 1.2
 		draw_circle(rock_position, rock_size, Color(0.55, 0.62, 0.68, 0.78))
