@@ -3,6 +3,13 @@ extends Node2D
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
 const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
+const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
+const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
+const ASTEROID_FIELD_SCRIPT: Script = preload("res://scripts/missions/mission_asteroid_field.gd")
+const DESTINATION_POSITION: Vector2 = Vector2(2200.0, 0.0)
+const ASTEROID_BELT_X: float = 660.0
+const ASTEROID_DETECTION_DISTANCE: float = 280.0
+const DESTINATION_ARRIVAL_DISTANCE: float = 145.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -29,6 +36,11 @@ var phase_time_remaining: float = 60.0
 var phase_targets_remaining: int = 0
 var phase_bonus_credits: int = 0
 var phase_mode: bool = true
+var asteroid_belt_detected: bool = false
+var asteroid_barrier: StaticBody2D
+var asteroid_field_controller: Node2D
+var asteroid_warning_label: Label
+var minimap: MissionMinimap
 
 
 func _ready() -> void:
@@ -37,6 +49,12 @@ func _ready() -> void:
 		push_warning("Mission flight opened without an active contract.")
 		_return_to_hq()
 		return
+
+	var world: Node2D = Node2D.new()
+	world.set_script(WORLD_SCRIPT)
+	add_child(world)
+	move_child(world, 0)
+	player_ship.global_position = Vector2(300.0, 0.0)
 
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
@@ -110,10 +128,10 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 	var asteroid_phase := MissionPhaseDefinition.new()
 	asteroid_phase.phase_id = &"asteroid_bounty"
 	asteroid_phase.title = "Asteroid Bounty"
-	asteroid_phase.briefing = "Break apart the bounty rocks. Each asteroid takes two hits and drops one credit."
+	asteroid_phase.briefing = "Break through the orbital asteroid belt. Destroy every blocking rock within 60 seconds."
 	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
 	asteroid_phase.duration_seconds = 60
-	asteroid_phase.target_count = 5
+	asteroid_phase.target_count = 12
 	phases.append(asteroid_phase)
 
 	var pirate_phase := MissionPhaseDefinition.new()
@@ -139,17 +157,39 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 func _process_current_phase(delta: float) -> void:
 	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
 		return
-	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
 	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
-	if is_instance_valid(route_label):
+	if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY and not asteroid_belt_detected:
+		var distance_to_belt: float = absf(ASTEROID_BELT_X - player_ship.global_position.x)
+		if distance_to_belt <= ASTEROID_DETECTION_DISTANCE:
+			_detect_asteroid_belt(phase)
+		elif is_instance_valid(route_label):
+			route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD  /  %.0f M" % distance_to_belt
+		return
+	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
+	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
 		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
 			MissionRunState.current_phase_index + 1,
 			runtime_phases.size(),
 			phase.title.to_upper(),
 			phase_time_remaining,
 		]
+	if phase.phase_type == MissionPhaseDefinition.PhaseType.DELIVERY:
+		if player_ship.global_position.distance_to(DESTINATION_POSITION) <= DESTINATION_ARRIVAL_DISTANCE:
+			if not is_instance_valid(destination_button):
+				_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+		elif is_instance_valid(destination_button):
+			destination_button.queue_free()
+			destination_button = null
+			resolution_pending = false
+			if is_instance_valid(abort_button):
+				abort_button.disabled = false
+		if is_instance_valid(route_label):
+			route_label.text = "DESTINATION  /  %.0f M  /  %.1f SEC" % [
+				player_ship.global_position.distance_to(DESTINATION_POSITION),
+				phase_time_remaining,
+			]
 	if phase_time_remaining <= 0.0:
-		_resolve_mission(false, "Phase timer expired: %s was not completed in time." % phase.title)
+		_resolve_mission(false, "60-second deadline expired: %s was not completed in time." % phase.title)
 
 
 func _start_current_phase() -> void:
@@ -176,19 +216,12 @@ func _start_current_phase() -> void:
 		]
 	match phase.phase_type:
 		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
-			phase_targets_remaining = phase.target_count
-			for index: int in range(phase.target_count):
-				var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
-				if asteroid == null:
-					continue
-				add_child(asteroid)
-				var angle: float = TAU * float(index) / float(maxi(1, phase.target_count))
-				var radius: float = 190.0 + float(index % 3) * 28.0
-				asteroid.global_position = player_ship.global_position + Vector2.RIGHT.rotated(angle) * radius
-				asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
-			if get_tree().get_nodes_in_group("mission_asteroid").is_empty():
-				_resolve_mission(false, "Asteroid bounty targets could not be created.")
+			asteroid_belt_detected = false
+			phase_time_remaining = float(phase.duration_seconds)
+			if is_instance_valid(route_label):
+				route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD"
 		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+			encounter_spawner.global_position = player_ship.global_position + Vector2(300.0, 0.0)
 			encounter_spawner.spawn_count = phase.target_count
 			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
 			phase_targets_remaining = hostiles.size()
@@ -197,7 +230,77 @@ func _start_current_phase() -> void:
 			if phase_targets_remaining <= 0:
 				_resolve_mission(false, "Pirate ambush could not be spawned.")
 		MissionPhaseDefinition.PhaseType.DELIVERY:
-			_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+			if is_instance_valid(route_label):
+				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
+
+
+func _detect_asteroid_belt(phase: MissionPhaseDefinition) -> void:
+	if asteroid_belt_detected or mission_resolved:
+		return
+	asteroid_belt_detected = true
+	phase_time_remaining = float(phase.duration_seconds)
+	_show_asteroid_warning()
+	_spawn_asteroid_belt(phase.target_count)
+
+
+func _show_asteroid_warning() -> void:
+	if not is_instance_valid(asteroid_warning_label):
+		return
+	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
+	asteroid_warning_label.visible = true
+	asteroid_warning_label.modulate = Color(1.0, 0.36, 0.22, 1.0)
+	var tween := create_tween()
+	tween.set_loops(5)
+	tween.tween_property(asteroid_warning_label, "modulate:a", 0.15, 0.28)
+	tween.tween_property(asteroid_warning_label, "modulate:a", 1.0, 0.28)
+	tween.tween_interval(0.08)
+	tween.finished.connect(func() -> void:
+		if is_instance_valid(asteroid_warning_label):
+			asteroid_warning_label.visible = false
+	)
+
+
+func _spawn_asteroid_belt(target_count: int) -> void:
+	phase_targets_remaining = 0
+	var wall := StaticBody2D.new()
+	wall.name = "AsteroidBeltBarrier"
+	wall.collision_layer = 1
+	wall.collision_mask = 1
+	var wall_shape := CollisionShape2D.new()
+	var wall_rectangle := RectangleShape2D.new()
+	wall_rectangle.size = Vector2(42.0, 5000.0)
+	wall_shape.shape = wall_rectangle
+	wall.add_child(wall_shape)
+	add_child(wall)
+	wall.global_position = Vector2(ASTEROID_BELT_X, 0.0)
+	asteroid_barrier = wall
+
+	var field := Node2D.new()
+	field.name = "AsteroidFieldMotion"
+	field.set_script(ASTEROID_FIELD_SCRIPT)
+	add_child(field)
+	asteroid_field_controller = field
+
+	var asteroid_count: int = maxi(target_count, 12)
+	var spawned: Array[Ship] = []
+	for index: int in range(asteroid_count):
+		var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
+		if asteroid == null:
+			continue
+		add_child(asteroid)
+		var column: int = index % 3
+		var row: int = index / 3
+		asteroid.global_position = Vector2(
+			ASTEROID_BELT_X - 105.0 + float(column) * 105.0,
+			-270.0 + float(row) * 180.0
+		)
+		asteroid.rotation = float(index) * 0.37
+		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
+		spawned.append(asteroid)
+	phase_targets_remaining = spawned.size()
+	field.call("configure", spawned)
+	if phase_targets_remaining == 0:
+		_resolve_mission(false, "Asteroid belt could not be generated.")
 
 
 func _on_phase_target_destroyed() -> void:
@@ -214,6 +317,13 @@ func _on_phase_target_destroyed() -> void:
 			phase_time_remaining,
 		]
 	if phase_targets_remaining <= 0:
+		if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
+			if is_instance_valid(asteroid_barrier):
+				asteroid_barrier.queue_free()
+				asteroid_barrier = null
+			if is_instance_valid(asteroid_field_controller):
+				asteroid_field_controller.queue_free()
+				asteroid_field_controller = null
 		_complete_current_phase()
 
 
@@ -236,6 +346,8 @@ func _on_phase_delivery_pressed() -> void:
 		return
 	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
 	if phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		return
+	if player_ship.global_position.distance_to(DESTINATION_POSITION) > DESTINATION_ARRIVAL_DISTANCE:
 		return
 	if cargo_integrity <= 0.0 or not CargoRules.can_deliver(mission, cargo_integrity):
 		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
@@ -421,6 +533,44 @@ func _build_flight_overlay() -> void:
 	route_label.add_theme_color_override("font_color", Color(0.72, 0.82, 0.9))
 	route_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(route_label)
+
+
+	var minimap_node := Control.new()
+	minimap_node.set_script(MINIMAP_SCRIPT)
+	minimap = minimap_node as MissionMinimap
+	minimap.name = "MissionMinimap"
+	minimap.anchor_left = 1.0
+	minimap.anchor_right = 1.0
+	minimap.offset_left = -274.0
+	minimap.offset_top = 94.0
+	minimap.offset_right = -20.0
+	minimap.offset_bottom = 274.0
+	minimap.player_ship = player_ship
+	minimap.destination_position = DESTINATION_POSITION
+	minimap.asteroid_belt_x = ASTEROID_BELT_X
+	layer.add_child(minimap)
+
+	asteroid_warning_label = Label.new()
+	asteroid_warning_label.name = "AsteroidFieldWarning"
+	asteroid_warning_label.anchor_left = 0.5
+	asteroid_warning_label.anchor_right = 0.5
+	asteroid_warning_label.anchor_top = 0.28
+	asteroid_warning_label.anchor_bottom = 0.28
+	asteroid_warning_label.offset_left = -330.0
+	asteroid_warning_label.offset_right = 330.0
+	asteroid_warning_label.offset_top = -30.0
+	asteroid_warning_label.offset_bottom = 30.0
+	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
+	asteroid_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	asteroid_warning_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	asteroid_warning_label.add_theme_font_size_override("font_size", 28)
+	asteroid_warning_label.add_theme_color_override("font_color", Color(1.0, 0.38, 0.22))
+	asteroid_warning_label.add_theme_color_override("font_shadow_color", Color(0.12, 0.015, 0.01, 1.0))
+	asteroid_warning_label.add_theme_constant_override("shadow_offset_x", 2)
+	asteroid_warning_label.add_theme_constant_override("shadow_offset_y", 2)
+	asteroid_warning_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	asteroid_warning_label.visible = false
+	layer.add_child(asteroid_warning_label)
 
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
