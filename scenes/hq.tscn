@@ -14,10 +14,10 @@ content_margin_top = 22.0
 content_margin_right = 34.0
 content_margin_bottom = 34.0
 texture = ExtResource("5_mission_screen")
-texture_margin_left = 28.0
-texture_margin_top = 48.0
-texture_margin_right = 28.0
-texture_margin_bottom = 28.0
+texture_margin_left = 30.0
+texture_margin_top = 60.0
+texture_margin_right = 30.0
+texture_margin_bottom = 60.0
 
 [sub_resource type="StyleBoxTexture" id="SkillScreenStyle"]
 content_margin_left = 34.0
@@ -25,10 +25,10 @@ content_margin_top = 22.0
 content_margin_right = 34.0
 content_margin_bottom = 34.0
 texture = ExtResource("6_skill_screen")
-texture_margin_left = 28.0
-texture_margin_top = 48.0
-texture_margin_right = 28.0
-texture_margin_bottom = 28.0
+texture_margin_left = 30.0
+texture_margin_top = 60.0
+texture_margin_right = 30.0
+texture_margin_bottom = 60.0
 
 [node name="HQ" type="Control" unique_id=1325618434]
 layout_mode = 3
