@@ -32,10 +32,10 @@ lane = 1
 script = ExtResource("3_phase")
 phase_id = &"asteroid_bounty"
 title = "Asteroid Bounty"
-briefing = "Break through the orbital asteroid belt. Destroy every blocking rock within 60 seconds; each takes two hits and drops one credit."
+briefing = "A dense, shifting asteroid wall blocks the outbound lane. Destroy all 36 blocking rocks within 60 seconds. Your starter weapons are badly underpowered for this field; expect to need better equipment and another attempt."
 phase_type = 0
 duration_seconds = 60
-target_count = 12
+target_count = 36
 bonus_credits = 20
 
 [sub_resource type="Resource" id="phase_pirate_ambush"]
@@ -52,7 +52,7 @@ bonus_credits = 35
 script = ExtResource("3_phase")
 phase_id = &"final_delivery"
 title = "Final Delivery"
-briefing = "Reach the destination and confirm delivery."
+briefing = "Travel the long outbound leg to Vesper Clinic Ring, line up with the orbital docking approach, and confirm the medical shipment delivery."
 phase_type = 2
 duration_seconds = 60
 target_count = 1
