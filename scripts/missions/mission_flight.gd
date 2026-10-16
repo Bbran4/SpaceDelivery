@@ -128,10 +128,10 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 	var asteroid_phase := MissionPhaseDefinition.new()
 	asteroid_phase.phase_id = &"asteroid_bounty"
 	asteroid_phase.title = "Asteroid Bounty"
-	asteroid_phase.briefing = "Break apart the bounty rocks. Each asteroid takes two hits and drops one credit."
+	asteroid_phase.briefing = "Break through the orbital asteroid belt. Destroy every blocking rock within 60 seconds."
 	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
 	asteroid_phase.duration_seconds = 60
-	asteroid_phase.target_count = 5
+	asteroid_phase.target_count = 12
 	phases.append(asteroid_phase)
 
 	var pirate_phase := MissionPhaseDefinition.new()
