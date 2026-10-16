@@ -9,6 +9,8 @@ var is_objective_target: bool = false
 var spin_rate: float = 0.0
 var contact_damage_cooldown: float = 0.0
 var size_factor: float = 1.0
+var ring_center: Vector2 = Vector2(120.0, 0.0)
+var ring_radius: float = 1680.0
 
 
 func _ready() -> void:
@@ -49,8 +51,13 @@ func _physics_process(delta: float) -> void:
 		return
 	contact_damage_cooldown = maxf(0.0, contact_damage_cooldown - delta)
 	rotation += spin_rate * delta
-	# A little orbital drift plus a large random velocity spread makes the ring
-	# feel alive rather than moving as one synchronized wall.
+	# Keep the debris in a broad annulus around the planet while allowing
+	# each rock to drift freely and collide instead of behaving like a wall.
+	var radial_offset: Vector2 = global_position - ring_center
+	var radial_distance: float = radial_offset.length()
+	if radial_distance > ring_radius + 170.0 or radial_distance < ring_radius - 170.0:
+		var radial_normal: Vector2 = radial_offset.normalized()
+		velocity = velocity.bounce(radial_normal) * 0.9
 	move_and_slide()
 	for collision_index: int in range(get_slide_collision_count()):
 		var collision := get_slide_collision(collision_index)
