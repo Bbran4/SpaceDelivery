@@ -11,7 +11,9 @@ const DELIVERY_BUTTON_WIDTH: float = 112.0
 const COLOR_NAME: Color = Color(0.88, 0.97, 1.0)
 const COLOR_DETAIL: Color = Color(0.6, 0.78, 0.88)
 const COLOR_TYPE: Color = Color(0.45, 0.85, 0.95)
-const COLOR_HAZARD: Color = Color(1.0, 0.72, 0.35)
+const COLOR_THREAT_STANDARD: Color = Color(0.42, 0.9, 0.62)
+const COLOR_THREAT_ELEVATED: Color = Color(1.0, 0.68, 0.25)
+const COLOR_THREAT_HIGH: Color = Color(1.0, 0.32, 0.32)
 const COLOR_FEE: Color = Color(1.0, 0.82, 0.3)
 
 ## Placeholder icon tint per cargo class, used until a mission has its own icon.
@@ -40,6 +42,7 @@ var available_missions: Array[MissionDefinition] = []
 
 ## Delivery button per mission, so gating can be refreshed without rebuilding the board.
 var _delivery_buttons: Dictionary = {}
+var _threat_labels: Dictionary = {}
 var _status_timer: Timer
 var _align_queued: bool = false
 
@@ -126,6 +129,7 @@ func _load_missions() -> void:
 func _build_mission_board() -> void:
 	_clear_children(mission_list)
 	_delivery_buttons.clear()
+	_threat_labels.clear()
 	if available_missions.is_empty():
 		var empty_label: Label = Label.new()
 		empty_label.text = "No contracts are currently available."
@@ -153,16 +157,21 @@ func _make_mission_row(mission: MissionDefinition) -> HBoxContainer:
 	return row
 
 
-## The card is a Button whose content is built from child controls: icon on the left at full
-## height, then name + fee, type, client, cargo and hazard. Every label clips, so nothing can
-## widen the panel.
-func _make_mission_card(mission: MissionDefinition) -> Button:
-	var card: Button = Button.new()
-	card.theme_type_variation = &"MissionCard"
+## Mission information is a passive panel. Only the separate objective button launches it.
+func _make_mission_card(mission: MissionDefinition) -> PanelContainer:
+	var card: PanelContainer = PanelContainer.new()
 	card.custom_minimum_size = Vector2(0, CARD_HEIGHT)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.clip_contents = true
-	card.pressed.connect(_start_mission.bind(mission))
+	var card_style: StyleBoxFlat = StyleBoxFlat.new()
+	card_style.bg_color = Color(0.025, 0.07, 0.11, 0.96)
+	card_style.border_color = Color(0.16, 0.38, 0.48, 1.0)
+	card_style.set_border_width_all(1)
+	card_style.set_corner_radius_all(6)
+	card.add_theme_stylebox_override("panel", card_style)
+	card.custom_minimum_size = Vector2(0, CARD_HEIGHT)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.clip_contents = true
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -200,7 +209,10 @@ func _make_mission_card(mission: MissionDefinition) -> Button:
 	text_column.add_child(_make_card_label(_mission_type_text(mission), 12, COLOR_TYPE))
 	text_column.add_child(_make_card_label("Client: %s" % mission.client_name, 12, COLOR_DETAIL))
 	text_column.add_child(_make_card_label("Cargo: %s" % mission.cargo_name, 12, COLOR_DETAIL))
-	text_column.add_child(_make_card_label("Hazard: %s" % mission.risk_label, 12, COLOR_HAZARD))
+	var threat_label: Label = _make_card_label("", 12, COLOR_THREAT_STANDARD)
+	text_column.add_child(threat_label)
+	_threat_labels[mission] = threat_label
+	_update_mission_threat(mission)
 	return card
 
 
@@ -296,8 +308,33 @@ func _mission_action_label(mission: MissionDefinition) -> String:
 
 ## Gating follows the build shown in the builder, since launching confirms it first.
 ## Reasons are written on the button itself, because panel tooltips are unreliable.
+func _update_mission_threat(mission: MissionDefinition) -> void:
+	var label: Label = _threat_labels.get(mission) as Label
+	if not is_instance_valid(label) or mission == null:
+		return
+	var player_power: int = ship_builder.get_power_rating()
+	var minimum_power: int = mission.recommended_power_min
+	var maximum_power: int = mission.recommended_power_max
+	var low_end_cutoff: int = minimum_power + roundi(float(maximum_power - minimum_power) * 0.35)
+	var threat: String
+	var color: Color
+	if player_power < minimum_power:
+		threat = "HIGH"
+		color = COLOR_THREAT_HIGH
+	elif player_power < low_end_cutoff:
+		threat = "ELEVATED"
+		color = COLOR_THREAT_ELEVATED
+	else:
+		threat = "STANDARD"
+		color = COLOR_THREAT_STANDARD
+	label.text = "Threat: %s  ·  Power %d-%d  /  Ship %d" % [threat, minimum_power, maximum_power, player_power]
+	label.add_theme_color_override("font_color", color)
+
+
 func _refresh_gates() -> void:
 	var has_weapon: bool = ship_builder.has_active_weapon()
+	for mission: MissionDefinition in _threat_labels:
+		_update_mission_threat(mission)
 	var capacity: int = ship_builder.get_cargo_capacity()
 	if is_instance_valid(test_flight_button):
 		test_flight_button.disabled = not has_weapon
