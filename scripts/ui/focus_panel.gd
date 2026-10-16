@@ -192,6 +192,21 @@ func _update_mesh() -> void:
 	_outline = PackedVector2Array([points[0], points[last], points[last + 1], points[1]])
 
 
+## Global Y of the top of the far (screen-centre) edge while docked. The lowest point of
+## the panel's top edge, so neighbouring UI can line up with it.
+func get_docked_inner_top() -> float:
+	var home_size: Vector2 = _home_size()
+	var home_position: Vector2 = _home_position_for(home_size)
+	return home_position.y + home_size.y * 0.5 * (1.0 - far_edge_height)
+
+
+## Global Y of the bottom of the far (screen-centre) edge while docked.
+func get_docked_inner_bottom() -> float:
+	var home_size: Vector2 = _home_size()
+	var home_position: Vector2 = _home_position_for(home_size)
+	return home_position.y + home_size.y - home_size.y * 0.5 * (1.0 - far_edge_height)
+
+
 ## Hit-testing follows the slanted shape while docked, so the empty corners are not clickable.
 func _has_point(point: Vector2) -> bool:
 	if is_focused or _outline.size() < 3:

@@ -119,10 +119,16 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="Center" type="VBoxContainer" parent="Layout/Column/Main" unique_id=1488060179]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.5
 theme_override_constants/separation = 8
+
+[node name="CenterTopSpacer" type="Control" parent="Layout/Column/Main/Center" unique_id=2130185037]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
 
 [node name="BuilderPanel" type="PanelContainer" parent="Layout/Column/Main/Center" unique_id=179662859]
 layout_mode = 2
@@ -158,6 +164,11 @@ custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "TEST FLIGHT"
+
+[node name="CenterBottomSpacer" type="Control" parent="Layout/Column/Main/Center" unique_id=1612503403]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
 
 [node name="SkillSlot" type="Control" parent="Layout/Column/Main" unique_id=1356852218]
 custom_minimum_size = Vector2(260, 0)
@@ -196,7 +207,8 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.008, 0.015, 0.028, 0.8)
 
-[node name="MissionDock" type="Control" parent="PanelLayer" unique_id=32119197 node_paths=PackedStringArray("slot", "dim")]
+[node name="MissionDock" type="Control" parent="PanelLayer" unique_id=1763924494 node_paths=PackedStringArray("slot", "dim")]
+unique_name_in_owner = true
 anchors_preset = 0
 offset_right = 260.0
 offset_bottom = 700.0
@@ -237,37 +249,19 @@ layout_mode = 2
 theme_type_variation = &"CloseButton"
 text = "✕"
 
-[node name="WelcomeContent" type="VBoxContainer" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox" unique_id=1385719534]
-unique_name_in_owner = true
+[node name="MissionScroll" type="ScrollContainer" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox" unique_id=1621949145]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+horizontal_scroll_mode = 0
 
-[node name="WelcomeText" type="Label" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox/WelcomeContent" unique_id=1878944878]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-text = "Browse available contracts."
-autowrap_mode = 3
-
-[node name="StatusPanel" type="PanelContainer" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox/WelcomeContent" unique_id=1470117015]
+[node name="MissionList" type="VBoxContainer" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox/MissionScroll" unique_id=861101798]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"InsetPanel"
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
 
-[node name="StatusLabel" type="Label" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox/WelcomeContent/StatusPanel" unique_id=1956381701]
+[node name="SkillDock" type="Control" parent="PanelLayer" unique_id=980859832 node_paths=PackedStringArray("slot", "dim")]
 unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.48, 0.83, 0.7, 1)
-text = "SELECT A CONTRACT"
-autowrap_mode = 3
-
-[node name="MissionActions" type="VBoxContainer" parent="PanelLayer/MissionDock/MissionPanel/MissionVBox" unique_id=1270269283]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="SkillDock" type="Control" parent="PanelLayer" unique_id=1771492583 node_paths=PackedStringArray("slot", "dim")]
 anchors_preset = 0
 offset_right = 260.0
 offset_bottom = 700.0

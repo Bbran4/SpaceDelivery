@@ -3,14 +3,18 @@ class_name ShipBuilder
 
 ## Ship builder console.
 ##
-## Top: the stage. It shows the selected hull (name below, arrows to cycle hulls)
-## or, while a slot is being filled, the modules that fit that slot.
-## Middle: stats and the module slots. Click a slot to open the picker, then drag
-## a module card onto a slot. Right-click a slot to clear it.
-## confirm_build() saves the build; HQ owns the Test Flight button.
+## Top half: a red warning when no weapon is fitted, the ship (arrows cycle hulls) and the
+## hull name. While a slot is being filled, the top half shows the modules that fit it.
+## Bottom half: the module slots in two rows.
+##   Top row:    weapons and shields (and any universal slot)
+##   Bottom row: engines, cargo and utility
+## Click a slot to open the picker, then drag a module card onto a slot. Right-click a slot
+## to clear it. confirm_build() saves the build; HQ owns the Test Flight button.
 
 signal builder_closed
 signal build_changed
+## Emitted whenever the editor's hull or modules change (confirmed or not).
+signal selection_changed
 
 const HULL_PATHS: Array[String] = [
 	"res://resources/hulls/starter_courier.tres",
@@ -38,6 +42,10 @@ const COLOR_OK: Color = Color(0.48, 0.83, 0.7)
 const COLOR_WARN: Color = Color(1.0, 0.78, 0.35)
 const COLOR_ERROR: Color = Color(1.0, 0.34, 0.34)
 
+## Slot categories placed in the top module row. Everything else goes in the bottom row.
+const TOP_ROW_CATEGORIES: Array = [ShipModule.Category.WEAPON, ShipModule.Category.DEFENSE, -1]
+const SLOT_SIZE: Vector2 = Vector2(158.0, 84.0)
+
 ## When true the builder is a permanent part of the HQ screen: it cannot be
 ## closed, so the Close button is hidden.
 @export var embedded: bool = false
@@ -58,13 +66,12 @@ var _preview_canvas: Control
 var _preview_ship: Polygon2D
 var _no_weapon_banner: Label
 var _hull_name_label: Label
-var _hull_info_label: Label
 var _left_arrow: Button
 var _right_arrow: Button
 var _picker_title: Label
 var _picker_cards: HFlowContainer
-var _stats_label: Label
-var _slot_flow: HFlowContainer
+var _top_row: HBoxContainer
+var _bottom_row: HBoxContainer
 var _status_label: Label
 
 
@@ -86,6 +93,17 @@ func has_active_weapon() -> bool:
 
 func has_unconfirmed_changes() -> bool:
 	return _has_unconfirmed_changes
+
+
+## Cargo capacity of the build currently shown in the editor (confirmed or not).
+func get_cargo_capacity() -> int:
+	if selected_hull == null:
+		return 0
+	var capacity: int = selected_hull.cargo_hold_capacity
+	for module: ShipModule in selected_modules:
+		if module != null:
+			capacity += module.cargo_capacity_bonus
+	return maxi(0, capacity)
 
 
 func show_builder() -> void:
@@ -117,7 +135,7 @@ func open_module_picker(slot_index: int) -> void:
 		return
 	selected_slot_index = slot_index
 	var category: int = selected_hull.slot_categories[slot_index]
-	_picker_title.text = "SLOT %d  /  %s MODULES" % [slot_index + 1, _category_label(category)]
+	_picker_title.text = "%s MODULES" % _category_label(category)
 	_rebuild_picker_cards(category)
 	_ship_view.visible = false
 	_picker_view.visible = true
@@ -144,10 +162,11 @@ func equip_module(slot_index: int, module_path: String) -> void:
 	_mark_changed()
 	close_module_picker()
 	_refresh_all()
+	var slot_name: String = _category_label(selected_hull.slot_categories[slot_index]).to_lower()
 	if module != null:
-		_set_status("Equipped %s in slot %d. Confirm Build to apply." % [module.display_name, slot_index + 1], COLOR_WARN)
+		_set_status("Equipped %s in the %s slot. Confirm Build to apply." % [module.display_name, slot_name], COLOR_WARN)
 	else:
-		_set_status("Slot %d cleared. Confirm Build to apply." % (slot_index + 1), COLOR_WARN)
+		_set_status("Cleared the %s slot. Confirm Build to apply." % slot_name, COLOR_WARN)
 
 
 # ------------------------------------------------------------------ building
@@ -178,48 +197,41 @@ func _build_ui() -> void:
 	add_child(margin)
 
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
+	column.add_theme_constant_override("separation", 10)
 	margin.add_child(column)
 
-	var header: HBoxContainer = HBoxContainer.new()
-	var title: Label = Label.new()
-	title.text = "SHIP BUILDER"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if embedded else HORIZONTAL_ALIGNMENT_LEFT
-	title.add_theme_font_size_override("font_size", 17)
-	title.add_theme_color_override("font_color", COLOR_TITLE)
-	header.add_child(title)
 	if not embedded:
+		var header: HBoxContainer = HBoxContainer.new()
+		var title: Label = Label.new()
+		title.text = "SHIP BUILDER"
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.add_theme_font_size_override("font_size", 20)
+		title.add_theme_color_override("font_color", COLOR_TITLE)
+		header.add_child(title)
 		var close_button: Button = Button.new()
 		close_button.text = "CLOSE"
 		close_button.pressed.connect(_on_back_pressed)
 		header.add_child(close_button)
-	column.add_child(header)
+		column.add_child(header)
 
+	# Equal stretch ratios split the console into a top half and a bottom half.
 	column.add_child(_build_stage())
-
-	_stats_label = Label.new()
-	_stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_stats_label.clip_text = true
-	_stats_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_stats_label.add_theme_font_size_override("font_size", 11)
-	_stats_label.add_theme_color_override("font_color", COLOR_MUTED)
-	column.add_child(_stats_label)
-
-	column.add_child(_build_slots_panel())
+	column.add_child(_build_module_grid())
 
 	_status_label = Label.new()
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.clip_text = true
 	_status_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_status_label.add_theme_font_size_override("font_size", 11)
+	_status_label.custom_minimum_size = Vector2(0, 22)
+	_status_label.add_theme_font_size_override("font_size", 13)
 	column.add_child(_status_label)
 
 
 func _build_stage() -> PanelContainer:
 	var stage: PanelContainer = PanelContainer.new()
 	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stage.custom_minimum_size = Vector2(0, 150)
+	stage.size_flags_stretch_ratio = 1.0
+	stage.custom_minimum_size = Vector2(0, 200)
 	stage.add_theme_stylebox_override("panel", _make_panel_style(Color(0.03, 0.07, 0.11), Color(0.2, 0.5, 0.62), 2))
 	# Both views fill the stage; only one is visible at a time.
 	_ship_view = _build_ship_view()
@@ -231,11 +243,11 @@ func _build_stage() -> PanelContainer:
 
 func _build_ship_view() -> VBoxContainer:
 	var view: VBoxContainer = VBoxContainer.new()
-	view.add_theme_constant_override("separation", 2)
+	view.add_theme_constant_override("separation", 4)
 
 	var row: HBoxContainer = HBoxContainer.new()
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_theme_constant_override("separation", 6)
+	row.add_theme_constant_override("separation", 8)
 	view.add_child(row)
 
 	_left_arrow = _make_arrow_button("decrement", "<", -1)
@@ -244,8 +256,10 @@ func _build_ship_view() -> VBoxContainer:
 	_preview_canvas = Control.new()
 	_preview_canvas.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_preview_canvas.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_preview_canvas.custom_minimum_size = Vector2(0, 70)
+	_preview_canvas.custom_minimum_size = Vector2(0, 110)
 	_preview_canvas.clip_contents = true
+	# No tooltip on the ship: the canvas ignores the mouse entirely.
+	_preview_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_canvas.resized.connect(_center_ship_preview)
 	row.add_child(_preview_canvas)
 
@@ -255,45 +269,38 @@ func _build_ship_view() -> VBoxContainer:
 	_no_weapon_banner = Label.new()
 	_no_weapon_banner.text = "NO ACTIVE WEAPON ON SHIP"
 	_no_weapon_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_no_weapon_banner.add_theme_font_size_override("font_size", 11)
+	_no_weapon_banner.add_theme_font_size_override("font_size", 16)
 	_no_weapon_banner.add_theme_color_override("font_color", COLOR_ERROR)
-	_no_weapon_banner.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 	_no_weapon_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_canvas.add_child(_no_weapon_banner)
+	_no_weapon_banner.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 
 	_right_arrow = _make_arrow_button("increment", ">", 1)
 	row.add_child(_right_arrow)
 
 	_hull_name_label = Label.new()
 	_hull_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hull_name_label.add_theme_font_size_override("font_size", 19)
+	_hull_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hull_name_label.add_theme_font_size_override("font_size", 26)
 	_hull_name_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
 	view.add_child(_hull_name_label)
-
-	_hull_info_label = Label.new()
-	_hull_info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hull_info_label.clip_text = true
-	_hull_info_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_hull_info_label.add_theme_font_size_override("font_size", 11)
-	_hull_info_label.add_theme_color_override("font_color", COLOR_MUTED)
-	view.add_child(_hull_info_label)
 	return view
 
 
 func _build_picker_view() -> VBoxContainer:
 	var view: VBoxContainer = VBoxContainer.new()
-	view.add_theme_constant_override("separation", 6)
+	view.add_theme_constant_override("separation", 8)
 	view.visible = false
 
 	var header: HBoxContainer = HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
+	header.add_theme_constant_override("separation", 8)
 	view.add_child(header)
 
 	_picker_title = Label.new()
 	_picker_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_picker_title.clip_text = true
 	_picker_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_picker_title.add_theme_font_size_override("font_size", 14)
+	_picker_title.add_theme_font_size_override("font_size", 17)
 	_picker_title.add_theme_color_override("font_color", COLOR_TITLE)
 	header.add_child(_picker_title)
 
@@ -315,37 +322,41 @@ func _build_picker_view() -> VBoxContainer:
 
 	_picker_cards = HFlowContainer.new()
 	_picker_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_picker_cards.add_theme_constant_override("h_separation", 8)
-	_picker_cards.add_theme_constant_override("v_separation", 8)
+	_picker_cards.add_theme_constant_override("h_separation", 10)
+	_picker_cards.add_theme_constant_override("v_separation", 10)
 	scroll.add_child(_picker_cards)
 	return view
 
 
-func _build_slots_panel() -> PanelContainer:
+func _build_module_grid() -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = 1.0
+	panel.custom_minimum_size = Vector2(0, 200)
 	panel.add_theme_stylebox_override("panel", _make_panel_style(Color(0.05, 0.09, 0.14), Color(0.2, 0.36, 0.48), 1))
-	var box: VBoxContainer = VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	panel.add_child(box)
 
-	var heading: Label = Label.new()
-	heading.text = "MODULES  /  CLICK A SLOT TO CHOOSE  /  RIGHT-CLICK TO CLEAR"
-	heading.clip_text = true
-	heading.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	heading.add_theme_font_size_override("font_size", 10)
-	heading.add_theme_color_override("font_color", COLOR_MUTED)
-	box.add_child(heading)
+	var rows: VBoxContainer = VBoxContainer.new()
+	rows.alignment = BoxContainer.ALIGNMENT_CENTER
+	rows.add_theme_constant_override("separation", 12)
+	panel.add_child(rows)
 
-	_slot_flow = HFlowContainer.new()
-	_slot_flow.add_theme_constant_override("h_separation", 6)
-	_slot_flow.add_theme_constant_override("v_separation", 6)
-	box.add_child(_slot_flow)
+	_top_row = _make_slot_row()
+	_bottom_row = _make_slot_row()
+	rows.add_child(_top_row)
+	rows.add_child(_bottom_row)
 	return panel
+
+
+func _make_slot_row() -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	return row
 
 
 func _make_arrow_button(icon_name: String, fallback_text: String, step: int) -> Button:
 	var button: Button = Button.new()
-	button.custom_minimum_size = Vector2(40, 56)
+	button.custom_minimum_size = Vector2(48, 72)
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	button.focus_mode = Control.FOCUS_NONE
 	var icon: Texture2D = get_theme_icon(icon_name, "TabBar")
@@ -438,7 +449,7 @@ func _refresh_all() -> void:
 		return
 	_update_hull_display()
 	_rebuild_slots()
-	_refresh_stats()
+	selection_changed.emit()
 
 
 func _update_hull_display() -> void:
@@ -446,13 +457,6 @@ func _update_hull_display() -> void:
 	_preview_ship.polygon = selected_hull.preview_polygon
 	_center_ship_preview()
 	_hull_name_label.text = selected_hull.display_name.to_upper()
-	_hull_info_label.text = "%s  /  %d SLOTS  /  HULL %d OF %d" % [
-		_rarity_name(selected_hull.rarity).to_upper(),
-		selected_hull.slot_categories.size(),
-		selected_hull_index + 1,
-		_hulls.size(),
-	]
-	_preview_canvas.tooltip_text = selected_hull.description
 	_left_arrow.disabled = _hulls.size() < 2
 	_right_arrow.disabled = _hulls.size() < 2
 	_no_weapon_banner.visible = not has_active_weapon()
@@ -470,64 +474,100 @@ func _center_ship_preview() -> void:
 		bounds = bounds.expand(point)
 	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 		return
-	var fit: float = minf(canvas_size.x * 0.8 / bounds.size.x, canvas_size.y * 0.8 / bounds.size.y)
-	var ship_scale: float = clampf(fit, 0.4, 3.0)
+	# Keep the top strip clear for the weapon warning.
+	var reserved_top: float = 30.0
+	var usable: Vector2 = Vector2(canvas_size.x, maxf(canvas_size.y - reserved_top, 1.0))
+	var fit: float = minf(usable.x * 0.8 / bounds.size.x, usable.y * 0.85 / bounds.size.y)
+	var ship_scale: float = clampf(fit, 0.4, 4.0)
 	_preview_ship.scale = Vector2.ONE * ship_scale
 	# Centre the polygon's bounds, not its origin, so the ship sits in the middle.
-	_preview_ship.position = canvas_size * 0.5 - bounds.get_center() * ship_scale
+	var centre: Vector2 = Vector2(canvas_size.x * 0.5, reserved_top + usable.y * 0.5)
+	_preview_ship.position = centre - bounds.get_center() * ship_scale
 
 
 func _rebuild_slots() -> void:
-	_clear_container(_slot_flow)
+	_clear_container(_top_row)
+	_clear_container(_bottom_row)
+	var top_indices: Array[int] = []
+	var bottom_indices: Array[int] = []
 	for slot_index: int in range(selected_hull.slot_categories.size()):
-		var category: int = selected_hull.slot_categories[slot_index]
-		var slot: ShipSlotDropTarget = ShipSlotDropTarget.new()
-		slot.custom_minimum_size = Vector2(98, 50)
-		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		slot.slot_index = slot_index
-		slot.accepted_category = category
-		slot.builder = self
-
-		var inner: VBoxContainer = VBoxContainer.new()
-		inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		inner.add_theme_constant_override("separation", 1)
-		var slot_label: Label = Label.new()
-		slot_label.add_theme_font_size_override("font_size", 9)
-		slot_label.add_theme_color_override("font_color", COLOR_MUTED)
-		slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot_label.clip_text = true
-		slot_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		var module_label: Label = Label.new()
-		module_label.add_theme_font_size_override("font_size", 11)
-		module_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		module_label.clip_text = true
-		module_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		inner.add_child(slot_label)
-		inner.add_child(module_label)
-		slot.add_child(inner)
-		slot.slot_title = slot_label
-		slot.module_title = module_label
-		slot.set_slot_content(
-			"%d  /  %s" % [slot_index + 1, _category_label(category)],
-			selected_modules[slot_index],
-			selected_module_paths[slot_index]
-		)
-		if selected_modules[slot_index] != null:
-			slot.tooltip_text = selected_modules[slot_index].description
-		_slot_flow.add_child(slot)
+		if TOP_ROW_CATEGORIES.has(selected_hull.slot_categories[slot_index]):
+			top_indices.append(slot_index)
+		else:
+			bottom_indices.append(slot_index)
+	top_indices.sort_custom(_slot_order)
+	bottom_indices.sort_custom(_slot_order)
+	for slot_index: int in top_indices:
+		_top_row.add_child(_make_slot(slot_index))
+	for slot_index: int in bottom_indices:
+		_bottom_row.add_child(_make_slot(slot_index))
+	_top_row.visible = not top_indices.is_empty()
+	_bottom_row.visible = not bottom_indices.is_empty()
 	_refresh_slot_styles()
 
 
+## Orders slots within a row by category (weapons before shields, engines before cargo...).
+func _slot_order(a: int, b: int) -> bool:
+	var category_a: int = selected_hull.slot_categories[a]
+	var category_b: int = selected_hull.slot_categories[b]
+	if category_a != category_b:
+		return category_a < category_b
+	return a < b
+
+
+func _make_slot(slot_index: int) -> ShipSlotDropTarget:
+	var category: int = selected_hull.slot_categories[slot_index]
+	var slot: ShipSlotDropTarget = ShipSlotDropTarget.new()
+	slot.custom_minimum_size = SLOT_SIZE
+	slot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	slot.slot_index = slot_index
+	slot.accepted_category = category
+	slot.builder = self
+
+	var inner: VBoxContainer = VBoxContainer.new()
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.alignment = BoxContainer.ALIGNMENT_CENTER
+	inner.add_theme_constant_override("separation", 3)
+	var slot_label: Label = Label.new()
+	slot_label.add_theme_font_size_override("font_size", 12)
+	slot_label.add_theme_color_override("font_color", COLOR_MUTED)
+	slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	slot_label.clip_text = true
+	slot_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	var module_label: Label = Label.new()
+	module_label.add_theme_font_size_override("font_size", 15)
+	module_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	module_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	module_label.clip_text = true
+	module_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	inner.add_child(slot_label)
+	inner.add_child(module_label)
+	slot.add_child(inner)
+	slot.slot_title = slot_label
+	slot.module_title = module_label
+	slot.set_slot_content(
+		_category_label(category),
+		selected_modules[slot_index],
+		selected_module_paths[slot_index]
+	)
+	if selected_modules[slot_index] != null:
+		slot.tooltip_text = selected_modules[slot_index].description
+	return slot
+
+
 func _refresh_slot_styles() -> void:
-	for child: Node in _slot_flow.get_children():
-		var slot: ShipSlotDropTarget = child as ShipSlotDropTarget
-		if slot == null or slot.is_queued_for_deletion():
-			continue
-		var is_open: bool = slot.slot_index == selected_slot_index
-		var filled: bool = slot.slot_index < selected_modules.size() and selected_modules[slot.slot_index] != null
-		var background: Color = Color(0.14, 0.22, 0.31) if filled else Color(0.08, 0.13, 0.19)
-		var border: Color = Color(0.45, 0.9, 1.0) if is_open else Color(0.24, 0.38, 0.49)
-		slot.add_theme_stylebox_override("panel", _make_panel_style(background, border, 2 if is_open else 1, 6.0, 4.0))
+	for row: HBoxContainer in [_top_row, _bottom_row]:
+		for child: Node in row.get_children():
+			var slot: ShipSlotDropTarget = child as ShipSlotDropTarget
+			if slot == null or slot.is_queued_for_deletion():
+				continue
+			var is_open: bool = slot.slot_index == selected_slot_index
+			var filled: bool = slot.slot_index < selected_modules.size() and selected_modules[slot.slot_index] != null
+			var background: Color = Color(0.14, 0.22, 0.31) if filled else Color(0.08, 0.13, 0.19)
+			var border: Color = Color(0.45, 0.9, 1.0) if is_open else Color(0.24, 0.38, 0.49)
+			slot.add_theme_stylebox_override("panel", _make_panel_style(background, border, 2 if is_open else 1, 8.0, 6.0))
 
 
 func _rebuild_picker_cards(slot_category: int) -> void:
@@ -538,29 +578,29 @@ func _rebuild_picker_cards(slot_category: int) -> void:
 		if module == null or not _category_fits(slot_category, module.category):
 			continue
 		var card: ModuleDragCard = ModuleDragCard.new()
-		card.custom_minimum_size = Vector2(122, 46)
+		card.custom_minimum_size = Vector2(176, 62)
 		card.mouse_default_cursor_shape = Control.CURSOR_DRAG
 		card.module_path = module_path
 		card.module_data = module
 		card.builder = self
 		card.tooltip_text = _module_tooltip(module)
-		card.add_theme_stylebox_override("panel", _make_panel_style(Color(0.10, 0.17, 0.25), Color(0.3, 0.5, 0.64), 1, 8.0, 5.0))
+		card.add_theme_stylebox_override("panel", _make_panel_style(Color(0.10, 0.17, 0.25), Color(0.3, 0.5, 0.64), 1, 10.0, 6.0))
 
 		var details: VBoxContainer = VBoxContainer.new()
 		details.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		details.add_theme_constant_override("separation", 1)
+		details.add_theme_constant_override("separation", 2)
 		var name_label: Label = Label.new()
 		name_label.text = module.display_name
 		name_label.clip_text = true
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		name_label.add_theme_font_size_override("font_size", 12)
+		name_label.add_theme_font_size_override("font_size", 15)
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var tag_label: Label = Label.new()
 		var equipped: bool = selected_slot_index >= 0 and selected_module_paths[selected_slot_index] == module_path
 		tag_label.text = "EQUIPPED" if equipped else "%s  /  DRAG" % _rarity_name(module.rarity).to_upper()
 		tag_label.clip_text = true
 		tag_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		tag_label.add_theme_font_size_override("font_size", 9)
+		tag_label.add_theme_font_size_override("font_size", 11)
 		tag_label.add_theme_color_override("font_color", COLOR_OK if equipped else COLOR_MUTED)
 		tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		details.add_child(name_label)
@@ -573,31 +613,6 @@ func _rebuild_picker_cards(slot_category: int) -> void:
 		empty.text = "No modules fit this slot."
 		empty.add_theme_color_override("font_color", COLOR_MUTED)
 		_picker_cards.add_child(empty)
-
-
-func _refresh_stats() -> void:
-	var max_hull: float = selected_hull.max_hull
-	var max_shield: float = selected_hull.max_shield
-	var speed: float = selected_hull.movement_speed
-	var cargo: int = selected_hull.cargo_hold_capacity
-	var salvage: int = selected_hull.salvage_hold_capacity
-	for module: ShipModule in selected_modules:
-		if module == null:
-			continue
-		for key: Variant in module.stat_modifiers.keys():
-			match str(key):
-				"max_hull":
-					max_hull += float(module.stat_modifiers[key])
-				"max_shield":
-					max_shield += float(module.stat_modifiers[key])
-				"movement_speed":
-					speed += float(module.stat_modifiers[key])
-		cargo += module.cargo_capacity_bonus
-		salvage += module.salvage_capacity_bonus
-	_stats_label.text = "HULL %d   SHIELD %d   SPEED %d   CARGO %d   SALVAGE %d" % [
-		int(max_hull), int(max_shield), int(speed), cargo, salvage
-	]
-	_no_weapon_banner.visible = not has_active_weapon()
 
 
 # ------------------------------------------------------------------- helpers
@@ -635,7 +650,7 @@ func _category_label(category: int) -> String:
 		ShipModule.Category.WEAPON:
 			return "WEAPON"
 		ShipModule.Category.DEFENSE:
-			return "DEFENSE"
+			return "SHIELD"
 		ShipModule.Category.ENGINE:
 			return "ENGINE"
 		ShipModule.Category.CARGO:

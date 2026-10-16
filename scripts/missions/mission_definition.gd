@@ -22,6 +22,14 @@ class_name MissionDefinition
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
 @export var risk_label: String = "Routine"
 
+@export_group("Mission Board")
+## Shown on the mission card, e.g. "Standard  ·  Mining Colony". When empty the card
+## falls back to the cargo class plus the destination name.
+@export var mission_type: String = ""
+## Card artwork. Square art works best. When empty the card draws a placeholder.
+@export var icon: Texture2D
+
+@export_group("Route and Objectives")
 ## Required and optional objectives. Empty preserves legacy delivery-only contracts.
 @export var objectives: Array[MissionObjectiveDefinition] = []
 

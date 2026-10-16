@@ -2,63 +2,108 @@ extends Control
 class_name HQScreen
 
 const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
-const CARD_TITLE_COLOR: Color = Color(0.85, 0.96, 1.0)
-const CARD_DETAIL_COLOR: Color = Color(0.55, 0.76, 0.86)
+const TEST_FLIGHT_SCENE: String = "res://scenes/tests/test_flight.tscn"
+
+const CARD_HEIGHT: float = 112.0
+const CARD_ICON_WIDTH: float = 92.0
+const DELIVERY_BUTTON_WIDTH: float = 112.0
+
+const COLOR_NAME: Color = Color(0.88, 0.97, 1.0)
+const COLOR_DETAIL: Color = Color(0.6, 0.78, 0.88)
+const COLOR_TYPE: Color = Color(0.45, 0.85, 0.95)
+const COLOR_HAZARD: Color = Color(1.0, 0.72, 0.35)
+const COLOR_FEE: Color = Color(1.0, 0.82, 0.3)
+
+## Placeholder icon tint per cargo class, used until a mission has its own icon.
+const VARIANT_COLORS: Dictionary = {
+	CargoRules.CargoVariant.STANDARD: Color(0.2, 0.42, 0.55),
+	CargoRules.CargoVariant.FRAGILE: Color(0.5, 0.3, 0.52),
+	CargoRules.CargoVariant.BULK: Color(0.5, 0.42, 0.22),
+	CargoRules.CargoVariant.VALUABLE: Color(0.58, 0.46, 0.14),
+}
 
 @onready var ship_builder: ShipBuilder = %ShipBuilder
-@onready var welcome_content: VBoxContainer = %WelcomeContent
-@onready var welcome_text: Label = %WelcomeText
-@onready var status_panel: PanelContainer = %StatusPanel
-@onready var status_label: Label = %StatusLabel
-@onready var mission_actions: VBoxContainer = %MissionActions
-@onready var center_actions: VBoxContainer = %CenterActions
+@onready var mission_list: VBoxContainer = %MissionList
 @onready var skill_tree: VBoxContainer = %SkillTree
 @onready var skill_credits_label: Label = %SkillCredits
 @onready var test_flight_button: Button = %TestFlightButton
 @onready var confirm_build_button: Button = %ConfirmBuildButton
 @onready var footer_label: Label = %FooterLabel
 @onready var account_balance_label: Label = %AccountBalance
+@onready var mission_dock: FocusPanel = %MissionDock
+@onready var skill_dock: FocusPanel = %SkillDock
+@onready var center_column: Control = %Center
+@onready var center_top_spacer: Control = %CenterTopSpacer
+@onready var center_bottom_spacer: Control = %CenterBottomSpacer
 
 var available_missions: Array[MissionDefinition] = []
-var selected_mission: MissionDefinition
-var mission_list: VBoxContainer
-var selected_details: VBoxContainer
-var deliver_button: Button
-var weapon_warning_label: Label
-var test_flight_warning_label: Label
-var cargo_capacity_warning_label: Label
 
-## Mission card buttons keyed by mission, so selection can be synced without rebuilding the list.
-var _mission_cards: Dictionary = {}
+## Delivery button per mission, so gating can be refreshed without rebuilding the board.
+var _delivery_buttons: Dictionary = {}
+var _status_timer: Timer
+var _align_queued: bool = false
 
 
 func _ready() -> void:
+	_status_timer = Timer.new()
+	_status_timer.one_shot = true
+	_status_timer.wait_time = 6.0
+	_status_timer.timeout.connect(_refresh_balance_labels)
+	add_child(_status_timer)
+
 	_load_missions()
 	_build_mission_board()
-	_build_deliver_button()
-	_build_weapon_warnings()
-	_refresh_campaign_status()
-	ship_builder.build_changed.connect(_refresh_weapon_gates)
-	confirm_build_button.pressed.connect(ship_builder.confirm_build)
-	_show_salvage_recovery()
-	_refresh_weapon_gates()
-	_build_skill_tree()
-
-
-func _refresh_campaign_status() -> void:
 	_refresh_balance_labels()
+	ship_builder.build_changed.connect(_refresh_gates)
+	ship_builder.selection_changed.connect(_refresh_gates)
+	confirm_build_button.pressed.connect(ship_builder.confirm_build)
+	center_column.resized.connect(_queue_align)
+	get_viewport().size_changed.connect(_queue_align)
+	_show_salvage_recovery()
+	_refresh_gates()
+	_build_skill_tree()
+	_announce_last_result()
+	_queue_align()
+
+
+# ------------------------------------------------------------ layout alignment
+
+func _queue_align() -> void:
+	if _align_queued:
+		return
+	_align_queued = true
+	_align_center_to_side_panels.call_deferred()
+
+
+## The centre console starts at the lowest point of the side panels' top edge (their inner,
+## shortened edge) and ends at the highest point of their bottom edge.
+func _align_center_to_side_panels() -> void:
+	_align_queued = false
+	var inner_top: float = maxf(mission_dock.get_docked_inner_top(), skill_dock.get_docked_inner_top())
+	var inner_bottom: float = minf(mission_dock.get_docked_inner_bottom(), skill_dock.get_docked_inner_bottom())
+	var column_top: float = center_column.global_position.y
+	var column_bottom: float = column_top + center_column.size.y
+	center_top_spacer.custom_minimum_size.y = maxf(0.0, inner_top - column_top)
+	center_bottom_spacer.custom_minimum_size.y = maxf(0.0, column_bottom - inner_bottom)
+
+
+# ------------------------------------------------------------------- status
+
+## Shows a message in the footer for a few seconds, then restores the balance line.
+func _flash_status(text: String) -> void:
+	footer_label.text = text
+	_status_timer.start()
+
+
+func _announce_last_result() -> void:
 	if MissionRunState.last_mission_result.is_empty():
 		return
-
 	var result: Dictionary = MissionRunState.last_mission_result
-	var success: bool = bool(result.get("success", false))
-	var mission_title: String = str(result.get("mission_title", "Last Contract"))
-	var payout: int = int(result.get("payout", 0))
-	status_label.text = "%s  /  %s  /  %s CR AWARDED" % [
-		"LAST DELIVERY COMPLETE" if success else "LAST MISSION FAILED",
-		mission_title.to_upper(),
-		payout,
-	]
+	_flash_status("%s  /  %s  /  %d CR AWARDED" % [
+		"LAST DELIVERY COMPLETE" if bool(result.get("success", false)) else "LAST MISSION FAILED",
+		str(result.get("mission_title", "Last Contract")).to_upper(),
+		int(result.get("payout", 0)),
+	])
 
 
 func _refresh_balance_labels() -> void:
@@ -72,123 +117,265 @@ func _format_credits(amount: int) -> String:
 	return "%s" % amount
 
 
+# ------------------------------------------------------------- mission board
+
 func _load_missions() -> void:
 	available_missions = MissionCatalog.load_available_missions()
 
 
 func _build_mission_board() -> void:
-	welcome_text.visible = false
-	status_panel.visible = true
-	status_label.text = "SELECT A CONTRACT TO REVIEW ITS DETAILS"
-
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.name = "MissionBoardScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 260)
-	# Without this the scroll area grows sideways to fit wide content instead of wrapping it.
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-
-	var board_content: VBoxContainer = VBoxContainer.new()
-	board_content.name = "MissionBoardContent"
-	board_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	board_content.add_theme_constant_override("separation", 12)
-	scroll.add_child(board_content)
-
-	var contracts_heading: Label = Label.new()
-	contracts_heading.text = "AVAILABLE CONTRACTS"
-	contracts_heading.add_theme_font_size_override("font_size", 13)
-	contracts_heading.add_theme_color_override("font_color", Color(0.45, 0.78, 0.92))
-	board_content.add_child(contracts_heading)
-
-	mission_list = VBoxContainer.new()
-	mission_list.name = "MissionList"
-	mission_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mission_list.add_theme_constant_override("separation", 6)
-	board_content.add_child(mission_list)
-
-	selected_details = VBoxContainer.new()
-	selected_details.name = "SelectedMissionDetails"
-	selected_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	selected_details.add_theme_constant_override("separation", 7)
-	board_content.add_child(selected_details)
-
-	welcome_content.add_child(scroll)
-	welcome_content.move_child(scroll, 1)
-	_refresh_mission_list()
-	_show_empty_selection()
+	_clear_children(mission_list)
+	_delivery_buttons.clear()
+	if available_missions.is_empty():
+		var empty_label: Label = Label.new()
+		empty_label.text = "No contracts are currently available."
+		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mission_list.add_child(empty_label)
+		return
+	for mission: MissionDefinition in available_missions:
+		mission_list.add_child(_make_mission_row(mission))
 
 
-func _build_deliver_button() -> void:
-	deliver_button = Button.new()
-	deliver_button.name = "DeliverButton"
-	deliver_button.text = "VIEW ROUTE  /  SELECT A CONTRACT"
-	deliver_button.custom_minimum_size = Vector2(0, 52)
-	deliver_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	# Long contract titles must be trimmed, not allowed to widen the whole panel.
-	deliver_button.clip_text = true
-	deliver_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	deliver_button.disabled = true
-	deliver_button.pressed.connect(_on_deliver_pressed)
-	mission_actions.add_child(deliver_button)
+func _make_mission_row(mission: MissionDefinition) -> HBoxContainer:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(_make_mission_card(mission))
+
+	var delivery: Button = Button.new()
+	delivery.text = _mission_action_label(mission)
+	delivery.custom_minimum_size = Vector2(DELIVERY_BUTTON_WIDTH, CARD_HEIGHT)
+	delivery.add_theme_font_size_override("font_size", 14)
+	delivery.clip_text = true
+	delivery.pressed.connect(_start_mission.bind(mission))
+	row.add_child(delivery)
+	_delivery_buttons[mission] = delivery
+	return row
 
 
-func _build_weapon_warnings() -> void:
-	cargo_capacity_warning_label = Label.new()
-	cargo_capacity_warning_label.text = "INSUFFICIENT CARGO CAPACITY FOR SELECTED CONTRACT"
-	cargo_capacity_warning_label.add_theme_color_override("font_color", Color(1.0, 0.62, 0.24))
-	cargo_capacity_warning_label.add_theme_font_size_override("font_size", 12)
-	cargo_capacity_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cargo_capacity_warning_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	mission_actions.add_child(cargo_capacity_warning_label)
-	cargo_capacity_warning_label.visible = false
-	mission_actions.move_child(cargo_capacity_warning_label, deliver_button.get_index())
-	weapon_warning_label = Label.new()
-	weapon_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
-	weapon_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
-	weapon_warning_label.add_theme_font_size_override("font_size", 12)
-	weapon_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mission_actions.add_child(weapon_warning_label)
-	mission_actions.move_child(weapon_warning_label, deliver_button.get_index())
-	test_flight_warning_label = Label.new()
-	test_flight_warning_label.text = "NO ACTIVE WEAPON ON SHIP"
-	test_flight_warning_label.add_theme_color_override("font_color", Color(1.0, 0.22, 0.22))
-	test_flight_warning_label.add_theme_font_size_override("font_size", 12)
-	test_flight_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center_actions.add_child(test_flight_warning_label)
-	center_actions.move_child(test_flight_warning_label, 0)
+## The card is a Button whose content is built from child controls: icon on the left at full
+## height, then name + fee, type, client, cargo and hazard. Every label clips, so nothing can
+## widen the panel.
+func _make_mission_card(mission: MissionDefinition) -> Button:
+	var card: Button = Button.new()
+	card.theme_type_variation = &"MissionCard"
+	card.custom_minimum_size = Vector2(0, CARD_HEIGHT)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.clip_contents = true
+	card.pressed.connect(_start_mission.bind(mission))
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	card.add_child(margin)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	var content: HBoxContainer = HBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_theme_constant_override("separation", 12)
+	margin.add_child(content)
+	content.add_child(_make_mission_icon(mission))
+
+	var text_column: VBoxContainer = VBoxContainer.new()
+	text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_column.add_theme_constant_override("separation", 1)
+	content.add_child(text_column)
+
+	var title_row: HBoxContainer = HBoxContainer.new()
+	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_row.add_theme_constant_override("separation", 8)
+	var name_label: Label = _make_card_label(mission.title, 15, COLOR_NAME)
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_row.add_child(name_label)
+	var fee_label: Label = _make_card_label("%d CR" % mission.base_reward_credits, 15, COLOR_FEE)
+	fee_label.clip_text = false
+	title_row.add_child(fee_label)
+	text_column.add_child(title_row)
+
+	text_column.add_child(_make_card_label(_mission_type_text(mission), 12, COLOR_TYPE))
+	text_column.add_child(_make_card_label("Client: %s" % mission.client_name, 12, COLOR_DETAIL))
+	text_column.add_child(_make_card_label("Cargo: %s" % mission.cargo_name, 12, COLOR_DETAIL))
+	text_column.add_child(_make_card_label("Hazard: %s" % mission.risk_label, 12, COLOR_HAZARD))
+	return card
 
 
-func _refresh_weapon_gates() -> void:
-	var active_build: Dictionary = ShipBuildStore.get_active_build()
-	var has_weapon: bool = not active_build.is_empty()
-	if active_build.is_empty():
-		has_weapon = ShipBuildStore.build_has_weapon("res://resources/hulls/starter_courier.tres", PackedStringArray(["res://resources/modules/basic_laser_module.tres"]))
-	var has_capacity: bool = selected_mission == null or _active_ship_cargo_capacity() >= CargoRules.get_required_capacity(selected_mission)
-	if is_instance_valid(deliver_button):
-		deliver_button.disabled = selected_mission == null or not has_weapon or not has_capacity
-	if is_instance_valid(cargo_capacity_warning_label):
-		cargo_capacity_warning_label.visible = selected_mission != null and has_weapon and not has_capacity
+func _make_card_label(text: String, font_size: int, color: Color) -> Label:
+	var label: Label = Label.new()
+	label.text = text
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	return label
+
+
+## Uses the mission's icon when it has one; otherwise draws a tinted placeholder.
+func _make_mission_icon(mission: MissionDefinition) -> Control:
+	if mission.icon != null:
+		var picture: TextureRect = TextureRect.new()
+		picture.texture = mission.icon
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		picture.clip_contents = true
+		picture.custom_minimum_size = Vector2(CARD_ICON_WIDTH, 0.0)
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return picture
+
+	var tint: Color = VARIANT_COLORS.get(mission.cargo_variant, VARIANT_COLORS[CargoRules.CargoVariant.STANDARD])
+	var placeholder: PanelContainer = PanelContainer.new()
+	placeholder.custom_minimum_size = Vector2(CARD_ICON_WIDTH, 0.0)
+	placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = tint
+	style.border_color = tint.lightened(0.35)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	placeholder.add_theme_stylebox_override("panel", style)
+	var letter: Label = Label.new()
+	letter.text = CargoRules.get_variant_name(mission.cargo_variant).substr(0, 1).to_upper()
+	letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	letter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	letter.add_theme_font_size_override("font_size", 42)
+	letter.add_theme_color_override("font_color", tint.lightened(0.6))
+	placeholder.add_child(letter)
+	return placeholder
+
+
+func _mission_type_text(mission: MissionDefinition) -> String:
+	if not mission.mission_type.strip_edges().is_empty():
+		return mission.mission_type
+	return "%s  ·  %s" % [CargoRules.get_variant_name(mission.cargo_variant), mission.destination_name]
+
+
+func _mission_action_label(mission: MissionDefinition) -> String:
+	if mission == null:
+		return "SELECT"
+	for objective: MissionObjectiveDefinition in mission.objectives:
+		if objective == null or not objective.required:
+			continue
+		match objective.objective_type:
+			MissionObjectiveDefinition.ObjectiveType.COLLECT:
+				return "COLLECT"
+			MissionObjectiveDefinition.ObjectiveType.RESCUE:
+				return "RESCUE"
+			MissionObjectiveDefinition.ObjectiveType.ESCORT:
+				return "ESCORT"
+			MissionObjectiveDefinition.ObjectiveType.INTERCEPT:
+				return "INTERCEPT"
+			MissionObjectiveDefinition.ObjectiveType.INVESTIGATE:
+				return "INVESTIGATE"
+			MissionObjectiveDefinition.ObjectiveType.ESCAPE:
+				return "ESCAPE"
+			MissionObjectiveDefinition.ObjectiveType.SURVIVE:
+				return "SURVIVE"
+			MissionObjectiveDefinition.ObjectiveType.DEFEND:
+				return "DEFEND"
+			MissionObjectiveDefinition.ObjectiveType.DISABLE:
+				return "DISABLE"
+			MissionObjectiveDefinition.ObjectiveType.DESTROY, MissionObjectiveDefinition.ObjectiveType.ELIMINATE_GROUP:
+				return "DESTROY"
+			MissionObjectiveDefinition.ObjectiveType.REACH:
+				return "REACH"
+			MissionObjectiveDefinition.ObjectiveType.INTERACT:
+				return "INTERACT"
+			MissionObjectiveDefinition.ObjectiveType.DELIVER_ALL, MissionObjectiveDefinition.ObjectiveType.DELIVER:
+				return "DELIVER"
+			MissionObjectiveDefinition.ObjectiveType.COMPLETE_SEQUENCE:
+				return "COMPLETE"
+	return "DELIVER"
+
+
+# --------------------------------------------------------------------- gating
+
+## Gating follows the build shown in the builder, since launching confirms it first.
+## Reasons are written on the button itself, because panel tooltips are unreliable.
+func _refresh_gates() -> void:
+	var has_weapon: bool = ship_builder.has_active_weapon()
+	var capacity: int = ship_builder.get_cargo_capacity()
 	if is_instance_valid(test_flight_button):
 		test_flight_button.disabled = not has_weapon
-	if is_instance_valid(weapon_warning_label):
-		weapon_warning_label.visible = not has_weapon
-	if is_instance_valid(test_flight_warning_label):
-		test_flight_warning_label.visible = not has_weapon
+	for mission: MissionDefinition in _delivery_buttons:
+		var button: Button = _delivery_buttons[mission] as Button
+		if not is_instance_valid(button):
+			continue
+		var required: int = CargoRules.get_required_capacity(mission)
+		if not has_weapon:
+			button.disabled = true
+			button.text = "NO\nWEAPON"
+			button.tooltip_text = "Install a weapon in the ship builder first."
+		elif capacity < required:
+			button.disabled = true
+			button.text = "NEEDS\n%d CARGO" % required
+			button.tooltip_text = "This contract needs %d cargo units; the current build has %d." % [required, capacity]
+		else:
+			button.disabled = false
+			button.text = _mission_action_label(mission)
+			button.tooltip_text = "Start this contract"
 
 
-func _active_ship_cargo_capacity() -> int:
-	var build: Dictionary = ShipBuildStore.get_active_build()
-	if not build.is_empty():
-		return ShipBuildStore.get_cargo_capacity(
-			str(build.get("hull_path", "")),
-			build.get("module_paths", PackedStringArray())
-		)
-	return ShipBuildStore.get_cargo_capacity(
-		"res://resources/hulls/starter_courier.tres",
-		PackedStringArray(["res://resources/modules/basic_laser_module.tres"])
-	)
+## Saves unconfirmed builder changes so the flight uses exactly what the player sees.
+func _ensure_build_confirmed() -> bool:
+	if not ship_builder.has_unconfirmed_changes():
+		return true
+	if ship_builder.confirm_build():
+		return true
+	_flash_status("BUILD COULD NOT BE CONFIRMED  /  CHECK THE SHIP BUILDER")
+	return false
 
+
+func _set_delivery_buttons_disabled(disabled: bool) -> void:
+	for button: Variant in _delivery_buttons.values():
+		if is_instance_valid(button):
+			(button as Button).disabled = disabled
+
+
+# ----------------------------------------------------------- launching flights
+
+func _start_mission(mission: MissionDefinition) -> void:
+	_refresh_gates()
+	var button: Button = _delivery_buttons.get(mission) as Button
+	if button == null or button.disabled:
+		return
+	if not _ensure_build_confirmed():
+		return
+
+	var contract_errors: PackedStringArray = mission.validate_contract()
+	if not contract_errors.is_empty():
+		_flash_status("CONTRACT INVALID  /  %s" % "; ".join(contract_errors))
+		return
+	if not ObjectiveTracker.begin_run(mission):
+		_flash_status("CONTRACT INVALID  /  %s" % ObjectiveTracker.last_error)
+		return
+	if not MissionRunState.begin_mission(mission):
+		_flash_status("ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
+		return
+	_set_delivery_buttons_disabled(true)
+	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
+	if change_error != OK:
+		MissionRunState.clear_mission()
+		_refresh_gates()
+		_flash_status("ROUTE GENERATION FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error)
+
+
+func _on_test_flight_pressed() -> void:
+	_refresh_gates()
+	if test_flight_button.disabled:
+		return
+	if not _ensure_build_confirmed():
+		return
+	var change_error: Error = get_tree().change_scene_to_file(TEST_FLIGHT_SCENE)
+	if change_error != OK:
+		_flash_status("COULD NOT OPEN TEST FLIGHT  /  ERROR %d" % change_error)
+
+
+# ------------------------------------------------------------------- popups
 
 func _show_salvage_recovery() -> void:
 	if not MissionRunState.salvage_recovery_pending:
@@ -259,241 +446,13 @@ func _show_salvage_recovery() -> void:
 	close.custom_minimum_size = Vector2(0, 48)
 	close.pressed.connect(layer.queue_free)
 	content.add_child(close)
-	# Updates the header, footer and skill-panel balances together.
 	_refresh_balance_labels()
-
-
-## Builds the contract list once. Selection is synced in place afterwards, so cards keep
-## their hover/focus state and nothing is freed from inside its own signal handler.
-func _refresh_mission_list() -> void:
-	_clear_children(mission_list)
-	_mission_cards.clear()
-	if available_missions.is_empty():
-		var empty_label: Label = Label.new()
-		empty_label.text = "No contracts are currently available."
-		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		mission_list.add_child(empty_label)
-		return
-
-	for mission: MissionDefinition in available_missions:
-		var mission_row: HBoxContainer = HBoxContainer.new()
-		mission_row.add_theme_constant_override("separation", 8)
-		mission_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-		var card: Button = _make_mission_card(mission)
-		mission_row.add_child(card)
-		_mission_cards[mission] = card
-
-		var action_button: Button = Button.new()
-		action_button.text = _mission_action_label(mission)
-		action_button.custom_minimum_size = Vector2(120, 68)
-		action_button.add_theme_font_size_override("font_size", 14)
-		action_button.clip_text = true
-		action_button.tooltip_text = "Select and start this contract"
-		action_button.pressed.connect(_on_mission_action_pressed.bind(mission))
-		mission_row.add_child(action_button)
-		mission_list.add_child(mission_row)
-	_sync_mission_cards()
-
-
-## A card is a toggle Button with its text as child Labels. Button text cannot be clipped
-## per line, and long text would otherwise force the whole panel wider than its slot.
-func _make_mission_card(mission: MissionDefinition) -> Button:
-	var card: Button = Button.new()
-	card.theme_type_variation = &"MissionCard"
-	card.toggle_mode = true
-	card.custom_minimum_size = Vector2(0, 68)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.clip_contents = true
-	card.pressed.connect(_on_mission_button_pressed.bind(mission))
-
-	var margin: MarginContainer = MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 26)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	card.add_child(margin)
-
-	var text_column: VBoxContainer = VBoxContainer.new()
-	text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	text_column.alignment = BoxContainer.ALIGNMENT_CENTER
-	text_column.add_theme_constant_override("separation", 2)
-	margin.add_child(text_column)
-
-	text_column.add_child(_make_card_label(mission.title, 15, CARD_TITLE_COLOR))
-	text_column.add_child(_make_card_label(
-		"%s  ·  %d CR" % [mission.client_name, mission.base_reward_credits], 12, CARD_DETAIL_COLOR
-	))
-	return card
-
-
-func _make_card_label(text: String, font_size: int, color: Color) -> Label:
-	var label: Label = Label.new()
-	label.text = text
-	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
-	return label
-
-
-func _sync_mission_cards() -> void:
-	for mission: MissionDefinition in _mission_cards:
-		var card: Button = _mission_cards[mission] as Button
-		if is_instance_valid(card):
-			card.set_pressed_no_signal(mission == selected_mission)
-
-
-func _mission_action_label(mission: MissionDefinition) -> String:
-	if mission == null:
-		return "SELECT"
-	for objective: MissionObjectiveDefinition in mission.objectives:
-		if objective == null or not objective.required:
-			continue
-		match objective.objective_type:
-			MissionObjectiveDefinition.ObjectiveType.COLLECT:
-				return "COLLECT"
-			MissionObjectiveDefinition.ObjectiveType.RESCUE:
-				return "RESCUE"
-			MissionObjectiveDefinition.ObjectiveType.ESCORT:
-				return "ESCORT"
-			MissionObjectiveDefinition.ObjectiveType.INTERCEPT:
-				return "INTERCEPT"
-			MissionObjectiveDefinition.ObjectiveType.INVESTIGATE:
-				return "INVESTIGATE"
-			MissionObjectiveDefinition.ObjectiveType.ESCAPE:
-				return "ESCAPE"
-			MissionObjectiveDefinition.ObjectiveType.SURVIVE:
-				return "SURVIVE"
-			MissionObjectiveDefinition.ObjectiveType.DEFEND:
-				return "DEFEND"
-			MissionObjectiveDefinition.ObjectiveType.DISABLE:
-				return "DISABLE"
-			MissionObjectiveDefinition.ObjectiveType.DESTROY, MissionObjectiveDefinition.ObjectiveType.ELIMINATE_GROUP:
-				return "DESTROY"
-			MissionObjectiveDefinition.ObjectiveType.REACH:
-				return "REACH"
-			MissionObjectiveDefinition.ObjectiveType.INTERACT:
-				return "INTERACT"
-			MissionObjectiveDefinition.ObjectiveType.DELIVER_ALL, MissionObjectiveDefinition.ObjectiveType.DELIVER:
-				return "DELIVER"
-			MissionObjectiveDefinition.ObjectiveType.COMPLETE_SEQUENCE:
-				return "COMPLETE"
-	return "DELIVER"
-
-
-func _on_mission_action_pressed(mission: MissionDefinition) -> void:
-	selected_mission = mission
-	_sync_mission_cards()
-	_refresh_selected_details()
-	_refresh_weapon_gates()
-	_on_deliver_pressed()
-
-
-func _on_mission_button_pressed(mission: MissionDefinition) -> void:
-	selected_mission = mission
-	deliver_button.disabled = false
-	deliver_button.text = "VIEW ROUTE  /  %s" % mission.title.to_upper()
-	_refresh_weapon_gates()
-	status_label.text = "CONTRACT SELECTED  /  VIEW ROUTE TO BEGIN"
-	# Re-pressing the selected card would otherwise toggle it off.
-	_sync_mission_cards()
-	_refresh_selected_details()
-
-
-func _show_empty_selection() -> void:
-	_clear_children(selected_details)
-	var prompt: Label = Label.new()
-	prompt.text = "Select a contract above to inspect its cargo, client, destination, and payout. Route intelligence is generated after selection."
-	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	prompt.add_theme_color_override("font_color", Color(0.64, 0.74, 0.84))
-	selected_details.add_child(prompt)
-
-
-func _refresh_selected_details() -> void:
-	_clear_children(selected_details)
-	if selected_mission == null:
-		return
-
-	var title_label: Label = Label.new()
-	title_label.text = selected_mission.title
-	title_label.add_theme_font_size_override("font_size", 17)
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_details.add_child(title_label)
-
-	var client_label: Label = Label.new()
-	client_label.text = "CLIENT  /  %s" % selected_mission.client_name
-	client_label.add_theme_color_override("font_color", Color(0.45, 0.78, 0.92))
-	client_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_details.add_child(client_label)
-
-	var cargo_label: Label = Label.new()
-	cargo_label.text = "CARGO  /  %s\nTYPE  /  %s  ·  CLASS / %s\nMANIFEST  /  %s\nDECLARED VALUE  /  %d CR\nDESTINATION  /  %s\nBASE PAYOUT  /  %d CR  ·  RISK  /  %s\nCARGO CAPACITY REQUIRED  /  %d UNITS\nMINIMUM DELIVERY INTEGRITY  /  %d%%\nFULL REWARD INTEGRITY  /  %d%%  ·  PENALTY IF BELOW  /  %d%%" % [
-		selected_mission.cargo_name,
-		selected_mission.cargo_type,
-		CargoRules.get_variant_name(selected_mission.cargo_variant).to_upper(),
-		selected_mission.cargo_description,
-		selected_mission.cargo_value_credits,
-		selected_mission.destination_name,
-		selected_mission.base_reward_credits,
-		selected_mission.risk_label,
-		CargoRules.get_required_capacity(selected_mission),
-		selected_mission.minimum_delivery_integrity_percent,
-		selected_mission.full_reward_integrity_percent,
-		selected_mission.damaged_cargo_payout_penalty_percent,
-	]
-	cargo_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	selected_details.add_child(cargo_label)
-
-	var briefing_label: Label = Label.new()
-	briefing_label.text = selected_mission.briefing
-	briefing_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	briefing_label.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	selected_details.add_child(briefing_label)
 
 
 func _clear_children(container: Node) -> void:
 	for child: Node in container.get_children():
 		container.remove_child(child)
 		child.queue_free()
-
-
-func _on_deliver_pressed() -> void:
-	_refresh_weapon_gates()
-	if selected_mission == null or deliver_button.disabled:
-		deliver_button.disabled = true
-		return
-
-	var contract_errors: PackedStringArray = selected_mission.validate_contract()
-	if not contract_errors.is_empty():
-		status_label.text = "CONTRACT INVALID  /  %s" % "; ".join(contract_errors)
-		deliver_button.disabled = true
-		return
-	if not ObjectiveTracker.begin_run(selected_mission):
-		status_label.text = "CONTRACT INVALID  /  %s" % ObjectiveTracker.last_error
-		deliver_button.disabled = true
-		return
-	if not MissionRunState.begin_mission(selected_mission):
-		status_label.text = "ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG"
-		deliver_button.disabled = false
-		return
-	deliver_button.disabled = true
-	status_label.text = "GENERATING ROUTE INTELLIGENCE  /  %s" % selected_mission.title.to_upper()
-	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
-	if change_error != OK:
-		MissionRunState.clear_mission()
-		deliver_button.disabled = false
-		status_label.text = "ROUTE GENERATION FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error
-
-
-func _on_test_flight_pressed() -> void:
-	_refresh_weapon_gates()
-	if test_flight_button.disabled:
-		return
-	get_tree().change_scene_to_file("res://scenes/tests/hud_test.tscn")
 
 
 func _build_skill_tree() -> void:
