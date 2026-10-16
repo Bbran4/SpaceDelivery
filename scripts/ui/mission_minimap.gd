@@ -3,8 +3,8 @@ class_name MissionMinimap
 
 var player_ship: Node2D
 var destination_position: Vector2 = Vector2(12500.0, 0.0)
-var world_min: Vector2 = Vector2(0.0, -1700.0)
-var world_size: Vector2 = Vector2(13200.0, 3400.0)
+var world_min: Vector2 = Vector2(0.0, -1850.0)
+var world_size: Vector2 = Vector2(13200.0, 3700.0)
 var asteroid_belt_x: float = 1800.0
 
 
