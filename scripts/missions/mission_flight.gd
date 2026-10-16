@@ -7,8 +7,8 @@ const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
 const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
 const ASTEROID_FIELD_SCRIPT: Script = preload("res://scripts/missions/mission_asteroid_field.gd")
 const DESTINATION_POSITION: Vector2 = Vector2(2200.0, 0.0)
-const ASTEROID_BELT_X: float = 1120.0
-const ASTEROID_DETECTION_DISTANCE: float = 390.0
+const ASTEROID_BELT_X: float = 660.0
+const ASTEROID_DETECTION_DISTANCE: float = 280.0
 const DESTINATION_ARRIVAL_DISTANCE: float = 145.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
