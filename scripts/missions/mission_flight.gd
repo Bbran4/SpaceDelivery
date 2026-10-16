@@ -237,6 +237,30 @@ func _start_current_phase() -> void:
 				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
 
+
+func _process_route_encounters() -> void:
+	if mission_resolved or not is_instance_valid(player_ship):
+		return
+	# Patrols arrive in later stretches of the route, never inside the asteroid belt.
+	var trigger_positions: Array[float] = [4700.0, 7200.0, 9700.0]
+	for index: int in range(trigger_positions.size()):
+		if route_encounter_spawned[index] or player_ship.global_position.x < trigger_positions[index]:
+			continue
+		route_encounter_spawned[index] = true
+		var viewport_size: Vector2 = get_viewport_rect().size
+		var offset_x: float = maxf(900.0, viewport_size.x * 0.9)
+		var offset_y: float = viewport_size.y * 0.5 + 180.0
+		var side: float = -1.0 if randf() < 0.5 else 1.0
+		encounter_spawner.global_position = Vector2(
+			maxf(player_ship.global_position.x + offset_x, ASTEROID_BELT_X + 1000.0),
+			player_ship.global_position.y + side * offset_y
+		)
+		encounter_spawner.spawn_count = 2 + (index % 2)
+		var patrol: Array[Ship] = encounter_spawner.spawn_encounter()
+		for hostile: Ship in patrol:
+			hostile.name = "RoutePatrol_%d_%s" % [index + 1, hostile.name]
+
+
 func _update_asteroid_warning() -> void:
 	if asteroid_belt_detected or mission_resolved or not is_instance_valid(player_ship):
 		return
