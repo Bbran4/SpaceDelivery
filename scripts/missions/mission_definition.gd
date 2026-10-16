@@ -21,6 +21,9 @@ class_name MissionDefinition
 @export_multiline var briefing: String = ""
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
 @export var risk_label: String = "Routine"
+@export_group("Recommended Power")
+@export_range(1, 10000, 1) var recommended_power_min: int = 70
+@export_range(1, 10000, 1) var recommended_power_max: int = 110
 
 @export_group("Mission Board")
 ## Shown on the mission card, e.g. "Standard  ·  Mining Colony". When empty the card
@@ -80,6 +83,8 @@ func validate_contract() -> PackedStringArray:
 		errors.append("Mission '%s' needs a destination." % mission_id)
 	if base_reward_credits < 0:
 		errors.append("Mission '%s' has a negative base reward." % mission_id)
+	if recommended_power_min < 1 or recommended_power_max < recommended_power_min:
+		errors.append("Mission '%s' has an invalid recommended power range." % mission_id)
 	if cargo_variant < CargoRules.CargoVariant.STANDARD or cargo_variant > CargoRules.CargoVariant.VALUABLE:
 		errors.append("Mission cargo variant is unsupported.")
 	if cargo_capacity_required < 1:
