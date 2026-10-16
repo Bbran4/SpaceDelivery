@@ -1,106 +1,149 @@
-[gd_resource type="Theme" format=3]
+[gd_resource type="Theme" format=3 uid="uid://cw6frmquxwine"]
 
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/panel_frame.svg" id="panel"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/card_frame.svg" id="card"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/button_normal.svg" id="normal"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/button_hover.svg" id="hover"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/button_pressed.svg" id="pressed"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/button_disabled.svg" id="disabled"]
-[ext_resource type="Texture2D" path="res://assets/ui/ninepatch/header_strip.svg" id="header"]
-
-[sub_resource type="StyleBoxTexture" id="PanelFrame"]
-texture = ExtResource("panel")
-texture_margin_left = 30.0
-texture_margin_top = 30.0
-texture_margin_right = 30.0
-texture_margin_bottom = 30.0
-content_margin_left = 22.0
-content_margin_top = 20.0
-content_margin_right = 22.0
-content_margin_bottom = 20.0
-
-[sub_resource type="StyleBoxTexture" id="CardFrame"]
-texture = ExtResource("card")
-texture_margin_left = 22.0
-texture_margin_top = 22.0
-texture_margin_right = 22.0
-texture_margin_bottom = 22.0
-content_margin_left = 12.0
-content_margin_top = 10.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
-
-[sub_resource type="StyleBoxTexture" id="ButtonNormal"]
-texture = ExtResource("normal")
-texture_margin_left = 18.0
-texture_margin_top = 14.0
-texture_margin_right = 18.0
-texture_margin_bottom = 14.0
-content_margin_left = 16.0
-content_margin_top = 9.0
-content_margin_right = 16.0
-content_margin_bottom = 9.0
-
-[sub_resource type="StyleBoxTexture" id="ButtonHover"]
-texture = ExtResource("hover")
-texture_margin_left = 18.0
-texture_margin_top = 14.0
-texture_margin_right = 18.0
-texture_margin_bottom = 14.0
-content_margin_left = 16.0
-content_margin_top = 9.0
-content_margin_right = 16.0
-content_margin_bottom = 9.0
-
-[sub_resource type="StyleBoxTexture" id="ButtonPressed"]
-texture = ExtResource("pressed")
-texture_margin_left = 18.0
-texture_margin_top = 14.0
-texture_margin_right = 18.0
-texture_margin_bottom = 14.0
-content_margin_left = 16.0
-content_margin_top = 9.0
-content_margin_right = 16.0
-content_margin_bottom = 9.0
+[ext_resource type="Texture2D" uid="uid://gtooe785fpw" path="res://assets/ui/ninepatch/card_frame.svg" id="card"]
+[ext_resource type="Texture2D" uid="uid://tnyhp0xumc1g" path="res://assets/ui/ninepatch/button_disabled.svg" id="disabled"]
+[ext_resource type="Texture2D" uid="uid://bc3t7nhs7dr4h" path="res://assets/ui/ninepatch/header_strip.svg" id="header"]
+[ext_resource type="Texture2D" uid="uid://c3th6nk8mqe6v" path="res://assets/ui/ninepatch/button_hover.svg" id="hover"]
+[ext_resource type="Texture2D" uid="uid://cvrf0hjggrs3w" path="res://assets/ui/ninepatch/button_normal.svg" id="normal"]
+[ext_resource type="Texture2D" uid="uid://b7pij0brnl38h" path="res://assets/ui/ninepatch/panel_frame.svg" id="panel"]
+[ext_resource type="Texture2D" uid="uid://bbswi6t6n08c4" path="res://assets/ui/ninepatch/button_pressed.svg" id="pressed"]
 
 [sub_resource type="StyleBoxTexture" id="ButtonDisabled"]
+content_margin_left = 18.0
+content_margin_top = 11.0
+content_margin_right = 18.0
+content_margin_bottom = 11.0
 texture = ExtResource("disabled")
 texture_margin_left = 18.0
-texture_margin_top = 14.0
+texture_margin_top = 20.0
 texture_margin_right = 18.0
-texture_margin_bottom = 14.0
-content_margin_left = 16.0
-content_margin_top = 9.0
-content_margin_right = 16.0
-content_margin_bottom = 9.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxFlat" id="FocusRing"]
+draw_center = false
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.9, 1, 0.85)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxTexture" id="ButtonHover"]
+content_margin_left = 18.0
+content_margin_top = 11.0
+content_margin_right = 18.0
+content_margin_bottom = 11.0
+texture = ExtResource("hover")
+texture_margin_left = 18.0
+texture_margin_top = 20.0
+texture_margin_right = 18.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="ButtonPressed"]
+content_margin_left = 18.0
+content_margin_top = 11.0
+content_margin_right = 18.0
+content_margin_bottom = 11.0
+texture = ExtResource("pressed")
+texture_margin_left = 18.0
+texture_margin_top = 20.0
+texture_margin_right = 18.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxTexture" id="ButtonNormal"]
+content_margin_left = 18.0
+content_margin_top = 11.0
+content_margin_right = 18.0
+content_margin_bottom = 11.0
+texture = ExtResource("normal")
+texture_margin_left = 18.0
+texture_margin_top = 20.0
+texture_margin_right = 18.0
+texture_margin_bottom = 20.0
+
+[sub_resource type="StyleBoxFlat" id="CloseHover"]
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
+bg_color = Color(0.2, 0.55, 0.68, 0.4)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxEmpty" id="CloseNormal"]
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
 
 [sub_resource type="StyleBoxTexture" id="HeaderStrip"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
 texture = ExtResource("header")
 texture_margin_left = 24.0
 texture_margin_top = 14.0
 texture_margin_right = 24.0
 texture_margin_bottom = 14.0
-content_margin_left = 18.0
-content_margin_top = 8.0
-content_margin_right = 18.0
-content_margin_bottom = 8.0
+
+[sub_resource type="StyleBoxTexture" id="CardFrame"]
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+texture = ExtResource("card")
+texture_margin_left = 22.0
+texture_margin_top = 22.0
+texture_margin_right = 22.0
+texture_margin_bottom = 22.0
+
+[sub_resource type="StyleBoxTexture" id="PanelFrame"]
+content_margin_left = 36.0
+content_margin_top = 34.0
+content_margin_right = 36.0
+content_margin_bottom = 34.0
+texture = ExtResource("panel")
+texture_margin_left = 34.0
+texture_margin_top = 34.0
+texture_margin_right = 34.0
+texture_margin_bottom = 34.0
 
 [resource]
 default_font_size = 16
-Panel/styles/panel = SubResource("PanelFrame")
 Button/colors/font_color = Color(0.78, 0.94, 1, 1)
-Button/colors/font_hover_color = Color(0.92, 0.99, 1, 1)
-Button/colors/font_pressed_color = Color(0.65, 0.95, 1, 1)
 Button/colors/font_disabled_color = Color(0.35, 0.49, 0.57, 1)
-Button/styles/normal = SubResource("ButtonNormal")
-Button/styles/hover = SubResource("ButtonHover")
-Button/styles/pressed = SubResource("ButtonPressed")
+Button/colors/font_hover_color = Color(0.92, 0.99, 1, 1)
+Button/colors/font_hover_pressed_color = Color(0.92, 0.99, 1, 1)
+Button/colors/font_pressed_color = Color(0.65, 0.95, 1, 1)
 Button/styles/disabled = SubResource("ButtonDisabled")
-MissionCard/base_type = "Button"
-MissionCard/styles/normal = SubResource("CardFrame")
-MissionCard/styles/hover = SubResource("ButtonHover")
-MissionCard/styles/pressed = SubResource("ButtonPressed")
-MissionCard/styles/disabled = SubResource("ButtonDisabled")
-HeaderPanel/base_type = "PanelContainer"
+Button/styles/focus = SubResource("FocusRing")
+Button/styles/hover = SubResource("ButtonHover")
+Button/styles/hover_pressed = SubResource("ButtonPressed")
+Button/styles/normal = SubResource("ButtonNormal")
+Button/styles/pressed = SubResource("ButtonPressed")
+CloseButton/base_type = &"Button"
+CloseButton/colors/font_color = Color(0.7, 0.9, 1, 1)
+CloseButton/font_sizes/font_size = 14
+CloseButton/styles/hover = SubResource("CloseHover")
+CloseButton/styles/hover_pressed = SubResource("CloseHover")
+CloseButton/styles/normal = SubResource("CloseNormal")
+CloseButton/styles/pressed = SubResource("CloseHover")
+HeaderPanel/base_type = &"PanelContainer"
 HeaderPanel/styles/panel = SubResource("HeaderStrip")
+InsetPanel/base_type = &"PanelContainer"
+InsetPanel/styles/panel = SubResource("CardFrame")
 Label/colors/font_color = Color(0.78, 0.88, 0.94, 1)
+MissionCard/base_type = &"Button"
+MissionCard/styles/disabled = SubResource("ButtonDisabled")
+MissionCard/styles/hover = SubResource("ButtonHover")
+MissionCard/styles/hover_pressed = SubResource("ButtonPressed")
+MissionCard/styles/normal = SubResource("CardFrame")
+MissionCard/styles/pressed = SubResource("ButtonPressed")
+Panel/styles/panel = SubResource("PanelFrame")
+PanelContainer/styles/panel = SubResource("PanelFrame")

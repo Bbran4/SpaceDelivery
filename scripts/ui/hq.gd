@@ -2,6 +2,8 @@ extends Control
 class_name HQScreen
 
 const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
+const CARD_TITLE_COLOR: Color = Color(0.85, 0.96, 1.0)
+const CARD_DETAIL_COLOR: Color = Color(0.55, 0.76, 0.86)
 
 @onready var ship_builder: ShipBuilder = %ShipBuilder
 @onready var welcome_content: VBoxContainer = %WelcomeContent
@@ -25,6 +27,9 @@ var deliver_button: Button
 var weapon_warning_label: Label
 var test_flight_warning_label: Label
 var cargo_capacity_warning_label: Label
+
+## Mission card buttons keyed by mission, so selection can be synced without rebuilding the list.
+var _mission_cards: Dictionary = {}
 
 
 func _ready() -> void:
@@ -81,6 +86,8 @@ func _build_mission_board() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 260)
+	# Without this the scroll area grows sideways to fit wide content instead of wrapping it.
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 
 	var board_content: VBoxContainer = VBoxContainer.new()
 	board_content.name = "MissionBoardContent"
@@ -96,11 +103,13 @@ func _build_mission_board() -> void:
 
 	mission_list = VBoxContainer.new()
 	mission_list.name = "MissionList"
+	mission_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mission_list.add_theme_constant_override("separation", 6)
 	board_content.add_child(mission_list)
 
 	selected_details = VBoxContainer.new()
 	selected_details.name = "SelectedMissionDetails"
+	selected_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	selected_details.add_theme_constant_override("separation", 7)
 	board_content.add_child(selected_details)
 
@@ -116,6 +125,9 @@ func _build_deliver_button() -> void:
 	deliver_button.text = "VIEW ROUTE  /  SELECT A CONTRACT"
 	deliver_button.custom_minimum_size = Vector2(0, 52)
 	deliver_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Long contract titles must be trimmed, not allowed to widen the whole panel.
+	deliver_button.clip_text = true
+	deliver_button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	deliver_button.disabled = true
 	deliver_button.pressed.connect(_on_deliver_pressed)
 	mission_actions.add_child(deliver_button)
@@ -194,14 +206,16 @@ func _show_salvage_recovery() -> void:
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	layer.add_child(shade)
 	var panel: PanelContainer = PanelContainer.new()
+	# CanvasLayers do not pass the HQ theme down, so apply it explicitly.
+	panel.theme = theme
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -300
-	panel.offset_top = -230
-	panel.offset_right = 300
-	panel.offset_bottom = 230
+	panel.offset_left = -320
+	panel.offset_top = -240
+	panel.offset_right = 320
+	panel.offset_bottom = 240
 	layer.add_child(panel)
 	var content: VBoxContainer = VBoxContainer.new()
 	content.add_theme_constant_override("separation", 10)
@@ -217,9 +231,13 @@ func _show_salvage_recovery() -> void:
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(subtitle)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	content.add_child(scroll)
 	var list: VBoxContainer = VBoxContainer.new()
-	list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	content.add_child(list)
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(list)
 	for entry: Dictionary in items:
 		var item_label: Label = Label.new()
 		item_label.text = "%s  ×%d   ·   %d CR each   ·   %d CR total" % [
@@ -238,43 +256,95 @@ func _show_salvage_recovery() -> void:
 	content.add_child(total_label)
 	var close: Button = Button.new()
 	close.text = "CONTINUE TO HQ"
-	close.custom_minimum_size = Vector2(0, 42)
+	close.custom_minimum_size = Vector2(0, 48)
 	close.pressed.connect(layer.queue_free)
 	content.add_child(close)
-	account_balance_label.text = "CREDITS  /  %s CR" % _format_credits(MissionRunState.total_credits)
-	footer_label.text = "HQ  /  CENTRAL DOCK  /  ACCOUNT BALANCE  /  %s CR" % _format_credits(MissionRunState.total_credits)
+	# Updates the header, footer and skill-panel balances together.
+	_refresh_balance_labels()
 
 
+## Builds the contract list once. Selection is synced in place afterwards, so cards keep
+## their hover/focus state and nothing is freed from inside its own signal handler.
 func _refresh_mission_list() -> void:
 	_clear_children(mission_list)
+	_mission_cards.clear()
+	if available_missions.is_empty():
+		var empty_label: Label = Label.new()
+		empty_label.text = "No contracts are currently available."
+		empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mission_list.add_child(empty_label)
+		return
+
 	for mission: MissionDefinition in available_missions:
 		var mission_row: HBoxContainer = HBoxContainer.new()
 		mission_row.add_theme_constant_override("separation", 8)
 		mission_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-		var mission_button: Button = Button.new()
-		mission_button.theme_type_variation = &"MissionCard"
-		mission_button.toggle_mode = true
-		mission_button.button_pressed = mission == selected_mission
-		mission_button.text = "%s\n%s  ·  %d CR" % [
-			mission.title,
-			mission.client_name,
-			mission.base_reward_credits,
-		]
-		mission_button.custom_minimum_size = Vector2(0, 62)
-		mission_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		mission_button.size_flags_stretch_ratio = 3.0
-		mission_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		mission_button.pressed.connect(_on_mission_button_pressed.bind(mission))
-		mission_row.add_child(mission_button)
+		var card: Button = _make_mission_card(mission)
+		mission_row.add_child(card)
+		_mission_cards[mission] = card
 
 		var action_button: Button = Button.new()
 		action_button.text = _mission_action_label(mission)
-		action_button.custom_minimum_size = Vector2(104, 62)
+		action_button.custom_minimum_size = Vector2(120, 68)
+		action_button.add_theme_font_size_override("font_size", 14)
+		action_button.clip_text = true
 		action_button.tooltip_text = "Select and start this contract"
 		action_button.pressed.connect(_on_mission_action_pressed.bind(mission))
 		mission_row.add_child(action_button)
 		mission_list.add_child(mission_row)
+	_sync_mission_cards()
+
+
+## A card is a toggle Button with its text as child Labels. Button text cannot be clipped
+## per line, and long text would otherwise force the whole panel wider than its slot.
+func _make_mission_card(mission: MissionDefinition) -> Button:
+	var card: Button = Button.new()
+	card.theme_type_variation = &"MissionCard"
+	card.toggle_mode = true
+	card.custom_minimum_size = Vector2(0, 68)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.clip_contents = true
+	card.pressed.connect(_on_mission_button_pressed.bind(mission))
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 26)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
+
+	var text_column: VBoxContainer = VBoxContainer.new()
+	text_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_column.alignment = BoxContainer.ALIGNMENT_CENTER
+	text_column.add_theme_constant_override("separation", 2)
+	margin.add_child(text_column)
+
+	text_column.add_child(_make_card_label(mission.title, 15, CARD_TITLE_COLOR))
+	text_column.add_child(_make_card_label(
+		"%s  ·  %d CR" % [mission.client_name, mission.base_reward_credits], 12, CARD_DETAIL_COLOR
+	))
+	return card
+
+
+func _make_card_label(text: String, font_size: int, color: Color) -> Label:
+	var label: Label = Label.new()
+	label.text = text
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	return label
+
+
+func _sync_mission_cards() -> void:
+	for mission: MissionDefinition in _mission_cards:
+		var card: Button = _mission_cards[mission] as Button
+		if is_instance_valid(card):
+			card.set_pressed_no_signal(mission == selected_mission)
 
 
 func _mission_action_label(mission: MissionDefinition) -> String:
@@ -317,7 +387,7 @@ func _mission_action_label(mission: MissionDefinition) -> String:
 
 func _on_mission_action_pressed(mission: MissionDefinition) -> void:
 	selected_mission = mission
-	_refresh_mission_list()
+	_sync_mission_cards()
 	_refresh_selected_details()
 	_refresh_weapon_gates()
 	_on_deliver_pressed()
@@ -329,7 +399,8 @@ func _on_mission_button_pressed(mission: MissionDefinition) -> void:
 	deliver_button.text = "VIEW ROUTE  /  %s" % mission.title.to_upper()
 	_refresh_weapon_gates()
 	status_label.text = "CONTRACT SELECTED  /  VIEW ROUTE TO BEGIN"
-	_refresh_mission_list()
+	# Re-pressing the selected card would otherwise toggle it off.
+	_sync_mission_cards()
 	_refresh_selected_details()
 
 
@@ -350,6 +421,7 @@ func _refresh_selected_details() -> void:
 	var title_label: Label = Label.new()
 	title_label.text = selected_mission.title
 	title_label.add_theme_font_size_override("font_size", 17)
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	selected_details.add_child(title_label)
 
 	var client_label: Label = Label.new()
@@ -424,14 +496,13 @@ func _on_test_flight_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/tests/hud_test.tscn")
 
 
-
-
 func _build_skill_tree() -> void:
 	for child in skill_tree.get_children():
 		child.queue_free()
 	var intro := Label.new()
 	intro.text = "PERMANENT ACCOUNT UPGRADES"
 	intro.add_theme_color_override("font_color", Color(0.65, 0.9, 0.67))
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	skill_tree.add_child(intro)
 	var note := Label.new()
 	note.text = "Upgrade purchasing is the next progression pass. This console is ready for real upgrade nodes."
