@@ -298,7 +298,7 @@ func _spawn_asteroid_belt(target_count: int) -> void:
 		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
 		spawned.append(asteroid)
 	phase_targets_remaining = spawned.size()
-	field.configure(spawned)
+	field.call("configure", spawned)
 	if phase_targets_remaining == 0:
 		_resolve_mission(false, "Asteroid belt could not be generated.")
 
