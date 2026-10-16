@@ -131,15 +131,6 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 				phases.append(authored_phase)
 		return phases
 
-	var asteroid_phase := MissionPhaseDefinition.new()
-	asteroid_phase.phase_id = &"asteroid_bounty"
-	asteroid_phase.title = "Asteroid Bounty"
-	asteroid_phase.briefing = "A dense, shifting asteroid wall blocks the outbound lane. Destroy every blocking rock within 60 seconds. Your starter weapons are badly underpowered for this field."
-	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
-	asteroid_phase.duration_seconds = 60
-	asteroid_phase.target_count = 36
-	phases.append(asteroid_phase)
-
 	var pirate_phase := MissionPhaseDefinition.new()
 	pirate_phase.phase_id = &"pirate_ambush"
 	pirate_phase.title = "Pirate Ambush"
@@ -216,7 +207,7 @@ func _start_current_phase() -> void:
 	match phase.phase_type:
 		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
 			# Asteroids are optional mining and salvage, never a mission gate.
-			call_deferred("_start_current_phase")
+			_complete_current_phase()
 		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
 			var spawn_offset_x: float = maxf(900.0, get_viewport_rect().size.x * 0.9)
 			var spawn_offset_y: float = get_viewport_rect().size.y * 0.5 + 180.0
