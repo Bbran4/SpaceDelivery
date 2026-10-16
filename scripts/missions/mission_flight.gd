@@ -254,7 +254,7 @@ func _show_asteroid_warning() -> void:
 	tween.tween_property(asteroid_warning_label, "modulate:a", 0.15, 0.28)
 	tween.tween_property(asteroid_warning_label, "modulate:a", 1.0, 0.28)
 	tween.tween_interval(0.08)
-	tween.tween_callback(func() -> void:
+	tween.finished.connect(func() -> void:
 		if is_instance_valid(asteroid_warning_label):
 			asteroid_warning_label.visible = false
 	)
