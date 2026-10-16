@@ -157,15 +157,7 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 func _process_current_phase(delta: float) -> void:
 	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
 		return
-	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
 	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
-	if is_instance_valid(route_label):
-		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
-			MissionRunState.current_phase_index + 1,
-			runtime_phases.size(),
-			phase.title.to_upper(),
-			phase_time_remaining,
-		]
 	if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY and not asteroid_belt_detected:
 		var distance_to_belt: float = absf(ASTEROID_BELT_X - player_ship.global_position.x)
 		if distance_to_belt <= ASTEROID_DETECTION_DISTANCE:
@@ -173,6 +165,14 @@ func _process_current_phase(delta: float) -> void:
 		elif is_instance_valid(route_label):
 			route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD  /  %.0f M" % distance_to_belt
 		return
+	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
+	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
+			MissionRunState.current_phase_index + 1,
+			runtime_phases.size(),
+			phase.title.to_upper(),
+			phase_time_remaining,
+		]
 	if phase.phase_type == MissionPhaseDefinition.PhaseType.DELIVERY:
 		if player_ship.global_position.distance_to(DESTINATION_POSITION) <= DESTINATION_ARRIVAL_DISTANCE:
 			if not is_instance_valid(destination_button):
