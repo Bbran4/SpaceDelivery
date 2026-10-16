@@ -134,8 +134,8 @@ func validate_contract() -> PackedStringArray:
 		if phase_ids.has(phase.phase_id):
 			errors.append("Mission '%s' has duplicate phase ID '%s'." % [mission_id, phase.phase_id])
 		phase_ids[phase.phase_id] = true
-	if not phases.is_empty() and phases[phases.size() - 1].phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
-		errors.append("Mission '%s' must end with a delivery phase.")
+	if not phases.is_empty() and phases[phases.size() - 1] != null and phases[phases.size() - 1].phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		errors.append("Mission '%s' must end with a delivery phase." % mission_id)
 	return errors
 
 
