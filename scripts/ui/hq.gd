@@ -388,7 +388,7 @@ func _start_mission(mission: MissionDefinition) -> void:
 		_flash_status("CONTRACT INVALID  /  %s" % ObjectiveTracker.last_error)
 		return
 	if not MissionRunState.begin_mission(mission):
-		_flash_status("ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
+		_flash_status("MISSION INITIALIZATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
 		return
 	_set_delivery_buttons_disabled(true)
 	# Mission cards are hosted in a SubViewport. Defer the scene switch until
