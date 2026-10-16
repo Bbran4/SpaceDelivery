@@ -357,6 +357,12 @@ func _start_mission(mission: MissionDefinition) -> void:
 		_flash_status("ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
 		return
 	_set_delivery_buttons_disabled(true)
+	# Mission cards are hosted in a SubViewport. Defer the scene switch until
+	# Godot has finished dispatching the click event to that viewport.
+	call_deferred("_change_to_route_map")
+
+
+func _change_to_route_map() -> void:
 	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
 	if change_error != OK:
 		MissionRunState.clear_mission()
