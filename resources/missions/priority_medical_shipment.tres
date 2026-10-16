@@ -1,7 +1,8 @@
-[gd_resource type="Resource" script_class="MissionDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="MissionDefinition" load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/missions/mission_definition.gd" id="1_mission"]
 [ext_resource type="Script" path="res://scripts/missions/mission_route_node.gd" id="2_node"]
+[ext_resource type="Script" path="res://scripts/missions/mission_phase_definition.gd" id="3_phase"]
 
 [sub_resource type="Resource" id="quiet_corridor"]
 script = ExtResource("2_node")
@@ -27,6 +28,36 @@ encounter_profile = 2
 depth = 1
 lane = 1
 
+[sub_resource type="Resource" id="phase_asteroid_bounty"]
+script = ExtResource("3_phase")
+phase_id = &"asteroid_bounty"
+title = "Asteroid Bounty"
+briefing = "Break apart five bounty rocks. Each asteroid takes two hits and drops one credit."
+phase_type = 0
+duration_seconds = 60
+target_count = 5
+bonus_credits = 20
+
+[sub_resource type="Resource" id="phase_pirate_ambush"]
+script = ExtResource("3_phase")
+phase_id = &"pirate_ambush"
+title = "Pirate Ambush"
+briefing = "Clear the pirate ambush with your equipped weapons."
+phase_type = 1
+duration_seconds = 60
+target_count = 4
+bonus_credits = 35
+
+[sub_resource type="Resource" id="phase_final_delivery"]
+script = ExtResource("3_phase")
+phase_id = &"final_delivery"
+title = "Final Delivery"
+briefing = "Reach the destination and confirm delivery."
+phase_type = 2
+duration_seconds = 60
+target_count = 1
+bonus_credits = 0
+
 [resource]
 script = ExtResource("1_mission")
 mission_id = &"medical_priority"
@@ -51,3 +82,4 @@ layer_node_counts = Array[int]([1, 2, 3, 2, 1])
 branch_chance = 0.55
 risk_bias = 0
 fixed_beats = Array[ExtResource("2_node")]([SubResource("quiet_corridor"), SubResource("salvage_lane")])
+phases = Array[ExtResource("3_phase")]([SubResource("phase_asteroid_bounty"), SubResource("phase_pirate_ambush"), SubResource("phase_final_delivery")])
