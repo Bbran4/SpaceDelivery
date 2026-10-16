@@ -9,8 +9,8 @@ const DESTINATION_POSITION: Vector2 = Vector2(12500.0, 0.0)
 const ASTEROID_BELT_X: float = 1800.0
 const ASTEROID_RING_CENTER: Vector2 = Vector2(120.0, 0.0)
 const ASTEROID_RING_RADIUS: float = 1680.0
-const ASTEROID_RING_COUNT: int = 300
-const ASTEROID_DETECTION_DISTANCE: float = 360.0
+const ASTEROID_RING_COUNT: int = 900
+const ASTEROID_DETECTION_DISTANCE: float = 1100.0
 const DESTINATION_ARRIVAL_DISTANCE: float = 240.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
@@ -43,6 +43,7 @@ var asteroid_objective_count: int = 0
 var asteroid_nodes: Array[Ship] = []
 var asteroid_warning_label: Label
 var minimap: MissionMinimap
+var route_encounter_spawned: Array[bool] = [false, false, false]
 
 
 func _ready() -> void:
@@ -88,6 +89,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if mission_resolved or not is_instance_valid(player_ship):
 		return
+	_update_asteroid_warning()
+	_process_route_encounters()
 	if phase_mode:
 		_process_current_phase(delta)
 		return
@@ -124,7 +127,7 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 	var phases: Array[MissionPhaseDefinition] = []
 	if contract != null and not contract.phases.is_empty():
 		for authored_phase: MissionPhaseDefinition in contract.phases:
-			if authored_phase != null:
+			if authored_phase != null and authored_phase.phase_type != MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
 				phases.append(authored_phase)
 		return phases
 
@@ -161,13 +164,6 @@ func _process_current_phase(delta: float) -> void:
 	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
 		return
 	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
-	if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY and not asteroid_belt_detected:
-		var distance_to_belt: float = absf(ASTEROID_BELT_X - player_ship.global_position.x)
-		if distance_to_belt <= ASTEROID_DETECTION_DISTANCE:
-			_detect_asteroid_belt(phase)
-		elif is_instance_valid(route_label):
-			route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD  /  %.0f M" % distance_to_belt
-		return
 	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
 	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
 		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
@@ -219,13 +215,16 @@ func _start_current_phase() -> void:
 		]
 	match phase.phase_type:
 		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
-			asteroid_belt_detected = false
-			phase_targets_remaining = asteroid_objective_count
-			phase_time_remaining = float(phase.duration_seconds)
-			if is_instance_valid(route_label):
-				route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD"
+			# Asteroids are optional mining and salvage, never a mission gate.
+			call_deferred("_start_current_phase")
 		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
-			encounter_spawner.global_position = player_ship.global_position + Vector2(300.0, 0.0)
+			var spawn_offset_x: float = maxf(900.0, get_viewport_rect().size.x * 0.9)
+			var spawn_offset_y: float = get_viewport_rect().size.y * 0.5 + 180.0
+			var spawn_side: float = -1.0 if randf() < 0.5 else 1.0
+			encounter_spawner.global_position = Vector2(
+				maxf(player_ship.global_position.x + spawn_offset_x, ASTEROID_BELT_X + 1000.0),
+				player_ship.global_position.y + spawn_side * spawn_offset_y
+			)
 			encounter_spawner.spawn_count = phase.target_count
 			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
 			phase_targets_remaining = hostiles.size()
@@ -238,12 +237,12 @@ func _start_current_phase() -> void:
 				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
 
-func _detect_asteroid_belt(phase: MissionPhaseDefinition) -> void:
-	if asteroid_belt_detected or mission_resolved:
+func _update_asteroid_warning() -> void:
+	if asteroid_belt_detected or mission_resolved or not is_instance_valid(player_ship):
 		return
-	asteroid_belt_detected = true
-	phase_time_remaining = float(phase.duration_seconds)
-	_show_asteroid_warning()
+	if absf(ASTEROID_BELT_X - player_ship.global_position.x) <= ASTEROID_DETECTION_DISTANCE:
+		asteroid_belt_detected = true
+		_show_asteroid_warning()
 
 
 func _show_asteroid_warning() -> void:
@@ -281,15 +280,9 @@ func _populate_asteroid_ring() -> void:
 		var radius: float = ASTEROID_RING_RADIUS + rng.randf_range(-115.0, 115.0)
 		asteroid.global_position = ASTEROID_RING_CENTER + Vector2.RIGHT.rotated(angle) * radius
 		asteroid.rotation = rng.randf_range(-PI, PI)
-		# The 36 rocks nearest the outbound arc are the timed clearance targets.
-		var is_objective: bool = index < 18 or index >= ASTEROID_RING_COUNT - 18
-		asteroid.set("is_objective_target", is_objective)
-		if is_objective:
-			asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
-			asteroid_objective_count += 1
+		# Every rock is optional salvage. None blocks mission progression.
+		asteroid.set("is_objective_target", false)
 		asteroid_nodes.append(asteroid)
-	if asteroid_objective_count == 0:
-		push_warning("Asteroid ring spawned without any objective rocks.")
 
 
 func _on_phase_target_destroyed() -> void:
