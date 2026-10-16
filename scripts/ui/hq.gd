@@ -1,7 +1,7 @@
 extends Control
 class_name HQScreen
 
-const ROUTE_MAP_SCENE: String = "res://scenes/route_map.tscn"
+const MISSION_FLIGHT_SCENE: String = "res://scenes/mission_flight.tscn"
 const TEST_FLIGHT_SCENE: String = "res://scenes/tests/test_flight.tscn"
 
 const CARD_HEIGHT: float = 112.0
@@ -388,20 +388,20 @@ func _start_mission(mission: MissionDefinition) -> void:
 		_flash_status("CONTRACT INVALID  /  %s" % ObjectiveTracker.last_error)
 		return
 	if not MissionRunState.begin_mission(mission):
-		_flash_status("ROUTE GENERATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
+		_flash_status("MISSION INITIALIZATION FAILED  /  CHECK CONTRACT VALIDATION LOG")
 		return
 	_set_delivery_buttons_disabled(true)
 	# Mission cards are hosted in a SubViewport. Defer the scene switch until
 	# Godot has finished dispatching the click event to that viewport.
-	call_deferred("_change_to_route_map")
+	call_deferred("_change_to_mission_flight")
 
 
-func _change_to_route_map() -> void:
-	var change_error: Error = get_tree().change_scene_to_file(ROUTE_MAP_SCENE)
+func _change_to_mission_flight() -> void:
+	var change_error: Error = get_tree().change_scene_to_file(MISSION_FLIGHT_SCENE)
 	if change_error != OK:
 		MissionRunState.clear_mission()
 		_refresh_gates()
-		_flash_status("ROUTE GENERATION FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error)
+		_flash_status("MISSION LAUNCH FAILED  /  ERROR %d  /  PLEASE RETRY" % change_error)
 
 
 func _on_test_flight_pressed() -> void:

@@ -2,6 +2,7 @@ extends Node2D
 
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
+const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -23,18 +24,17 @@ var destination_button: Button
 var stolen_cargo_drop_spawned: bool = false
 var objective_timers: Dictionary = {}
 var hazard_tick: float = 0.0
+var runtime_phases: Array[MissionPhaseDefinition] = []
+var phase_time_remaining: float = 60.0
+var phase_targets_remaining: int = 0
+var phase_bonus_credits: int = 0
+var phase_mode: bool = true
 
 
 func _ready() -> void:
 	mission = MissionRunState.active_mission
 	if mission == null:
 		push_warning("Mission flight opened without an active contract.")
-		_return_to_hq()
-		return
-
-	selected_branch = MissionRunState.get_route_node(MissionRunState.selected_branch_node_id)
-	if selected_branch == null:
-		push_warning("Selected mission branch is missing. Returning to HQ.")
 		_return_to_hq()
 		return
 
@@ -49,21 +49,28 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	contact_count = _get_contact_count(selected_branch)
-	encounter_spawner.spawn_count = contact_count
+	encounter_spawner.spawn_count = 4
 	encounter_spawner.spawn_on_ready = false
+	runtime_phases = _build_runtime_phases(mission)
+	if runtime_phases.is_empty():
+		push_warning("Mission has no usable phases. Returning to HQ.")
+		_return_to_hq()
+		return
+	MissionRunState.current_phase_index = clampi(MissionRunState.current_phase_index, 0, runtime_phases.size() - 1)
 	_build_flight_overlay()
-	if is_instance_valid(route_label):
-		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
 	call_deferred("_spawn_available_objectives")
 	if cargo_integrity <= 75.0:
 		call_deferred("_spawn_stolen_cargo_drop")
-	call_deferred("_start_selected_objective")
-	call_deferred("_start_timed_objectives")
+	call_deferred("_start_current_phase")
 
 
 func _process(delta: float) -> void:
-	if mission_resolved or selected_branch == null or not is_instance_valid(player_ship):
+	if mission_resolved or not is_instance_valid(player_ship):
+		return
+	if phase_mode:
+		_process_current_phase(delta)
+		return
+	if selected_branch == null:
 		return
 	for objective_id: Variant in objective_timers.keys():
 		var timer: Dictionary = objective_timers[objective_id]
@@ -90,6 +97,155 @@ func _process(delta: float) -> void:
 			player_ship.take_damage(2.0 + float(selected_branch.risk) * 0.8)
 			if is_instance_valid(route_label):
 				route_label.text = "ENVIRONMENTAL EXPOSURE  /  RISK %d" % selected_branch.risk
+
+
+func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDefinition]:
+	var phases: Array[MissionPhaseDefinition] = []
+	if contract != null and not contract.phases.is_empty():
+		for authored_phase: MissionPhaseDefinition in contract.phases:
+			if authored_phase != null:
+				phases.append(authored_phase)
+		return phases
+
+	var asteroid_phase := MissionPhaseDefinition.new()
+	asteroid_phase.phase_id = &"asteroid_bounty"
+	asteroid_phase.title = "Asteroid Bounty"
+	asteroid_phase.briefing = "Break apart the bounty rocks. Each asteroid takes two hits and drops one credit."
+	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
+	asteroid_phase.duration_seconds = 60
+	asteroid_phase.target_count = 5
+	phases.append(asteroid_phase)
+
+	var pirate_phase := MissionPhaseDefinition.new()
+	pirate_phase.phase_id = &"pirate_ambush"
+	pirate_phase.title = "Pirate Ambush"
+	pirate_phase.briefing = "Hostiles inbound. Clear the ambush using your equipped weapons."
+	pirate_phase.phase_type = MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH
+	pirate_phase.duration_seconds = 60
+	pirate_phase.target_count = 4
+	phases.append(pirate_phase)
+
+	var delivery_phase := MissionPhaseDefinition.new()
+	delivery_phase.phase_id = &"final_delivery"
+	delivery_phase.title = "Final Delivery"
+	delivery_phase.briefing = "The route is clear. Complete delivery before the phase timer expires."
+	delivery_phase.phase_type = MissionPhaseDefinition.PhaseType.DELIVERY
+	delivery_phase.duration_seconds = 60
+	delivery_phase.target_count = 1
+	phases.append(delivery_phase)
+	return phases
+
+
+func _process_current_phase(delta: float) -> void:
+	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
+		return
+	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	if is_instance_valid(route_label):
+		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
+			MissionRunState.current_phase_index + 1,
+			runtime_phases.size(),
+			phase.title.to_upper(),
+			phase_time_remaining,
+		]
+	if phase_time_remaining <= 0.0:
+		_resolve_mission(false, "Phase timer expired: %s was not completed in time." % phase.title)
+
+
+func _start_current_phase() -> void:
+	if mission_resolved or runtime_phases.is_empty():
+		return
+	if MissionRunState.current_phase_index >= runtime_phases.size():
+		_resolve_mission(true, "All mission phases completed. Delivery confirmed.")
+		return
+	resolution_pending = false
+	if is_instance_valid(destination_button):
+		destination_button.queue_free()
+		destination_button = null
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	phase_time_remaining = float(phase.duration_seconds)
+	phase_targets_remaining = 0
+	if is_instance_valid(abort_button):
+		abort_button.disabled = false
+	if is_instance_valid(route_label):
+		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
+			MissionRunState.current_phase_index + 1,
+			runtime_phases.size(),
+			phase.title.to_upper(),
+			phase_time_remaining,
+		]
+	match phase.phase_type:
+		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
+			phase_targets_remaining = phase.target_count
+			for index: int in range(phase.target_count):
+				var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
+				if asteroid == null:
+					continue
+				add_child(asteroid)
+				var angle: float = TAU * float(index) / float(maxi(1, phase.target_count))
+				var radius: float = 190.0 + float(index % 3) * 28.0
+				asteroid.global_position = player_ship.global_position + Vector2.RIGHT.rotated(angle) * radius
+				asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
+			if get_tree().get_nodes_in_group("mission_asteroid").is_empty():
+				_resolve_mission(false, "Asteroid bounty targets could not be created.")
+		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+			encounter_spawner.spawn_count = phase.target_count
+			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
+			phase_targets_remaining = hostiles.size()
+			for hostile: Ship in hostiles:
+				hostile.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
+			if phase_targets_remaining <= 0:
+				_resolve_mission(false, "Pirate ambush could not be spawned.")
+		MissionPhaseDefinition.PhaseType.DELIVERY:
+			_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+
+
+func _on_phase_target_destroyed() -> void:
+	if mission_resolved or runtime_phases.is_empty():
+		return
+	phase_targets_remaining = maxi(0, phase_targets_remaining - 1)
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	if phase.phase_type == MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+		ObjectiveTracker.report_enemy_destroyed(mission, phase_targets_remaining)
+	if is_instance_valid(route_label):
+		route_label.text = "%s  /  %d TARGETS REMAINING  /  %.1f SEC" % [
+			phase.title.to_upper(),
+			phase_targets_remaining,
+			phase_time_remaining,
+		]
+	if phase_targets_remaining <= 0:
+		_complete_current_phase()
+
+
+func _complete_current_phase() -> void:
+	if mission_resolved or runtime_phases.is_empty():
+		return
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	if not MissionRunState.completed_phase_ids.has(phase.phase_id):
+		MissionRunState.completed_phase_ids.append(phase.phase_id)
+	phase_bonus_credits += maxi(0, phase.bonus_credits)
+	MissionRunState.current_phase_index += 1
+	if is_instance_valid(destination_button):
+		destination_button.queue_free()
+		destination_button = null
+	call_deferred("_start_current_phase")
+
+
+func _on_phase_delivery_pressed() -> void:
+	if mission_resolved or runtime_phases.is_empty():
+		return
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	if phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		return
+	if cargo_integrity <= 0.0 or not CargoRules.can_deliver(mission, cargo_integrity):
+		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
+		return
+	MissionRunState.validate_returned_objectives(mission)
+	if not ObjectiveTracker.can_deliver(mission):
+		_resolve_mission(false, "Delivery failed: required recovered cargo or rescue objectives were not returned to %s." % mission.destination_name)
+		return
+	_complete_current_phase()
+	_resolve_mission(true, "Delivery confirmed at %s." % mission.destination_name)
 
 
 func _start_timed_objectives() -> void:
@@ -383,7 +539,7 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
-	var route_bonus: int = selected_branch.bonus_credits if selected_branch != null else 0
+	var route_bonus: int = phase_bonus_credits + (selected_branch.bonus_credits if selected_branch != null else 0)
 	var credits_collected: int = MissionRunState.credits_collected_this_mission
 	if is_instance_valid(player_ship):
 		credits_collected += maxi(0, player_ship.credits - credits_at_encounter_start)
@@ -436,7 +592,10 @@ func _show_destination_button(button_text: String = "RETURN TO ROUTE MAP  /  NOD
 	destination_button.offset_right = 190.0
 	destination_button.offset_bottom = -18.0
 	destination_button.custom_minimum_size = Vector2(380, 44)
-	destination_button.pressed.connect(_on_node_completed)
+	if phase_mode:
+		destination_button.pressed.connect(_on_phase_delivery_pressed)
+	else:
+		destination_button.pressed.connect(_on_node_completed)
 	overlay.add_child(destination_button)
 
 
@@ -499,6 +658,14 @@ func _show_result_screen(result: Dictionary) -> void:
 	balance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	balance.add_theme_font_size_override("font_size", 16)
 	layout.add_child(balance)
+	if not success:
+		var retry_button := Button.new()
+		retry_button.text = "RETRY MISSION"
+		retry_button.custom_minimum_size = Vector2(0, 40)
+		retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		retry_button.pressed.connect(_retry_mission)
+		layout.add_child(retry_button)
+
 	var return_button := Button.new()
 	return_button.text = "RETURN TO HQ"
 	return_button.custom_minimum_size = Vector2(0, 44)
@@ -506,6 +673,22 @@ func _show_result_screen(result: Dictionary) -> void:
 	return_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	return_button.pressed.connect(_return_to_hq)
 	layout.add_child(return_button)
+
+
+func _retry_mission() -> void:
+	if mission == null:
+		_return_to_hq()
+		return
+	var retry_mission: MissionDefinition = mission
+	if not ObjectiveTracker.begin_run(retry_mission):
+		_return_to_hq()
+		return
+	if not MissionRunState.begin_mission(retry_mission):
+		_return_to_hq()
+		return
+	var change_error: Error = get_tree().change_scene_to_file("res://scenes/mission_flight.tscn")
+	if change_error != OK:
+		_return_to_hq()
 
 
 func _return_to_hq() -> void:
