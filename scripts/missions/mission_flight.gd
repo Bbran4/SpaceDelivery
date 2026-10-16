@@ -3,6 +3,13 @@ extends Node2D
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
 const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
+const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
+const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
+const ASTEROID_FIELD_SCRIPT: Script = preload("res://scripts/missions/mission_asteroid_field.gd")
+const DESTINATION_POSITION: Vector2 = Vector2(2200.0, 0.0)
+const ASTEROID_BELT_X: float = 1120.0
+const ASTEROID_DETECTION_DISTANCE: float = 390.0
+const DESTINATION_ARRIVAL_DISTANCE: float = 145.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -29,6 +36,11 @@ var phase_time_remaining: float = 60.0
 var phase_targets_remaining: int = 0
 var phase_bonus_credits: int = 0
 var phase_mode: bool = true
+var asteroid_belt_detected: bool = false
+var asteroid_barrier: StaticBody2D
+var asteroid_field_controller: Node2D
+var asteroid_warning_label: Label
+var minimap: MissionMinimap
 
 
 func _ready() -> void:
@@ -37,6 +49,12 @@ func _ready() -> void:
 		push_warning("Mission flight opened without an active contract.")
 		_return_to_hq()
 		return
+
+	var world: Node2D = Node2D.new()
+	world.set_script(WORLD_SCRIPT)
+	add_child(world)
+	move_child(world, 0)
+	player_ship.global_position = Vector2(300.0, 0.0)
 
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
