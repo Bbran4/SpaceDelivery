@@ -2,10 +2,10 @@ extends Control
 class_name MissionMinimap
 
 var player_ship: Node2D
-var destination_position: Vector2 = Vector2(2200.0, 0.0)
-var world_min: Vector2 = Vector2(0.0, -520.0)
-var world_size: Vector2 = Vector2(2400.0, 1040.0)
-var asteroid_belt_x: float = 660.0
+var destination_position: Vector2 = Vector2(12500.0, 0.0)
+var world_min: Vector2 = Vector2(0.0, -1700.0)
+var world_size: Vector2 = Vector2(13200.0, 3400.0)
+var asteroid_belt_x: float = 1800.0
 
 
 func _ready() -> void:
@@ -25,15 +25,17 @@ func _draw() -> void:
 	if inner.size.x <= 0.0 or inner.size.y <= 0.0:
 		return
 	draw_string(ThemeDB.fallback_font, Vector2(12.0, 16.0), "NAVIGATION", HORIZONTAL_ALIGNMENT_LEFT, -1.0, 11, Color(0.65, 0.88, 1.0))
-	var planet := _map_position(Vector2(190.0, 0.0), inner)
+	var planet := _map_position(Vector2(120.0, 0.0), inner)
 	var belt := _map_position(Vector2(asteroid_belt_x, 0.0), inner)
 	var destination := _map_position(destination_position, inner)
 	draw_line(Vector2(inner.position.x, belt.y), Vector2(inner.end.x, belt.y), Color(0.16, 0.26, 0.36, 0.3), 1.0)
 	draw_line(Vector2(belt.x, inner.position.y), Vector2(belt.x, inner.end.y), Color(1.0, 0.56, 0.23, 0.7), 2.0)
 	draw_circle(planet, 5.0, Color(0.23, 0.63, 0.98))
 	draw_circle(planet + Vector2(5.0, -5.0), 2.0, Color(0.74, 0.88, 1.0))
-	draw_circle(destination, 4.0, Color(0.35, 1.0, 0.65))
-	draw_arc(destination, 8.0, 0.0, TAU, 24, Color(0.35, 1.0, 0.65, 0.75), 1.2)
+	# Station footprint and docking cross distinguish the destination from a pin.
+	draw_arc(destination, 7.0, 0.0, TAU, 24, Color(0.35, 1.0, 0.65, 0.75), 1.2)
+	draw_line(destination + Vector2(-6.0, 0.0), destination + Vector2(6.0, 0.0), Color(0.35, 1.0, 0.65), 2.0)
+	draw_line(destination + Vector2(0.0, -6.0), destination + Vector2(0.0, 6.0), Color(0.35, 1.0, 0.65), 2.0)
 	if is_instance_valid(player_ship):
 		var player_point := _map_position(player_ship.global_position, inner)
 		draw_line(player_point, destination, Color(0.35, 1.0, 0.65, 0.3), 1.0)
