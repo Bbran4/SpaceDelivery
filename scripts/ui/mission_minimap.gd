@@ -28,8 +28,18 @@ func _draw() -> void:
 	var planet := _map_position(Vector2(120.0, 0.0), inner)
 	var belt := _map_position(Vector2(asteroid_belt_x, 0.0), inner)
 	var destination := _map_position(destination_position, inner)
-	draw_line(Vector2(inner.position.x, belt.y), Vector2(inner.end.x, belt.y), Color(0.16, 0.26, 0.36, 0.3), 1.0)
-	draw_line(Vector2(belt.x, inner.position.y), Vector2(belt.x, inner.end.y), Color(1.0, 0.56, 0.23, 0.7), 2.0)
+	# Show the full orbital debris ring around the departure planet, not only a
+	# single vertical marker at the outbound crossing.
+	var previous_ring_point := _map_position(Vector2(120.0 + 1680.0, 0.0), inner)
+	for ring_step: int in range(1, 81):
+		var ring_angle: float = TAU * float(ring_step) / 80.0
+		var ring_world_point := Vector2(120.0, 0.0) + Vector2.RIGHT.rotated(ring_angle) * 1680.0
+		var ring_point := _map_position(ring_world_point, inner)
+		draw_line(previous_ring_point, ring_point, Color(1.0, 0.56, 0.23, 0.65), 1.5)
+		previous_ring_point = ring_point
+	var belt_y_top := _map_position(Vector2(asteroid_belt_x, -760.0), inner).y
+	var belt_y_bottom := _map_position(Vector2(asteroid_belt_x, 760.0), inner).y
+	draw_line(Vector2(belt.x, belt_y_top), Vector2(belt.x, belt_y_bottom), Color(1.0, 0.56, 0.23, 0.35), 1.0)
 	draw_circle(planet, 5.0, Color(0.23, 0.63, 0.98))
 	draw_circle(planet + Vector2(5.0, -5.0), 2.0, Color(0.74, 0.88, 1.0))
 	# Station footprint and docking cross distinguish the destination from a pin.
