@@ -1,5 +1,7 @@
 extends Node2D
 
+const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definition.gd")
+
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
 const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
@@ -33,7 +35,7 @@ var destination_button: Button
 var stolen_cargo_drop_spawned: bool = false
 var objective_timers: Dictionary = {}
 var hazard_tick: float = 0.0
-var runtime_phases: Array[MissionPhaseDefinition] = []
+var runtime_phases: Array[MissionPhaseScript] = []
 var phase_time_remaining: float = 60.0
 var phase_targets_remaining: int = 0
 var phase_bonus_credits: int = 0
@@ -123,28 +125,28 @@ func _process(delta: float) -> void:
 				route_label.text = "ENVIRONMENTAL EXPOSURE  /  RISK %d" % selected_branch.risk
 
 
-func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDefinition]:
-	var phases: Array[MissionPhaseDefinition] = []
+func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseScript]:
+	var phases: Array[MissionPhaseScript] = []
 	if contract != null and not contract.phases.is_empty():
-		for authored_phase: MissionPhaseDefinition in contract.phases:
-			if authored_phase != null and authored_phase.phase_type != MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
+		for authored_phase: MissionPhaseScript in contract.phases:
+			if authored_phase != null and authored_phase.phase_type != MissionPhaseScript.PhaseType.ASTEROID_BOUNTY:
 				phases.append(authored_phase)
 		return phases
 
-	var pirate_phase := MissionPhaseDefinition.new()
+	var pirate_phase := MissionPhaseScript.new()
 	pirate_phase.phase_id = &"pirate_ambush"
 	pirate_phase.title = "Pirate Ambush"
 	pirate_phase.briefing = "Hostiles inbound. Clear the ambush using your equipped weapons."
-	pirate_phase.phase_type = MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH
+	pirate_phase.phase_type = MissionPhaseScript.PhaseType.PIRATE_AMBUSH
 	pirate_phase.duration_seconds = 60
 	pirate_phase.target_count = 4
 	phases.append(pirate_phase)
 
-	var delivery_phase := MissionPhaseDefinition.new()
+	var delivery_phase := MissionPhaseScript.new()
 	delivery_phase.phase_id = &"final_delivery"
 	delivery_phase.title = "Final Delivery"
 	delivery_phase.briefing = "The route is clear. Complete delivery before the phase timer expires."
-	delivery_phase.phase_type = MissionPhaseDefinition.PhaseType.DELIVERY
+	delivery_phase.phase_type = MissionPhaseScript.PhaseType.DELIVERY
 	delivery_phase.duration_seconds = 60
 	delivery_phase.target_count = 1
 	phases.append(delivery_phase)
@@ -154,16 +156,16 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 func _process_current_phase(delta: float) -> void:
 	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
 		return
-	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
 	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
-	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseScript.PhaseType.DELIVERY:
 		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
 			MissionRunState.current_phase_index + 1,
 			runtime_phases.size(),
 			phase.title.to_upper(),
 			phase_time_remaining,
 		]
-	if phase.phase_type == MissionPhaseDefinition.PhaseType.DELIVERY:
+	if phase.phase_type == MissionPhaseScript.PhaseType.DELIVERY:
 		if player_ship.global_position.distance_to(DESTINATION_POSITION) <= DESTINATION_ARRIVAL_DISTANCE:
 			if not is_instance_valid(destination_button):
 				_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
@@ -192,7 +194,7 @@ func _start_current_phase() -> void:
 	if is_instance_valid(destination_button):
 		destination_button.queue_free()
 		destination_button = null
-	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
 	phase_time_remaining = float(phase.duration_seconds)
 	phase_targets_remaining = 0
 	if is_instance_valid(abort_button):
@@ -205,10 +207,10 @@ func _start_current_phase() -> void:
 			phase_time_remaining,
 		]
 	match phase.phase_type:
-		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
+		MissionPhaseScript.PhaseType.ASTEROID_BOUNTY:
 			# Asteroids are optional mining and salvage, never a mission gate.
 			_complete_current_phase()
-		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+		MissionPhaseScript.PhaseType.PIRATE_AMBUSH:
 			var spawn_offset_x: float = maxf(900.0, get_viewport_rect().size.x * 0.9)
 			var spawn_offset_y: float = get_viewport_rect().size.y * 0.5 + 180.0
 			var spawn_side: float = -1.0 if randf() < 0.5 else 1.0
@@ -224,7 +226,7 @@ func _start_current_phase() -> void:
 				hostile.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
 			if phase_targets_remaining <= 0:
 				_resolve_mission(false, "Pirate ambush could not be spawned.")
-		MissionPhaseDefinition.PhaseType.DELIVERY:
+		MissionPhaseScript.PhaseType.DELIVERY:
 			if is_instance_valid(route_label):
 				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
@@ -317,8 +319,8 @@ func _on_phase_target_destroyed() -> void:
 	if mission_resolved or runtime_phases.is_empty():
 		return
 	phase_targets_remaining = maxi(0, phase_targets_remaining - 1)
-	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
-	if phase.phase_type == MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
+	if phase.phase_type == MissionPhaseScript.PhaseType.PIRATE_AMBUSH:
 		ObjectiveTracker.report_enemy_destroyed(mission, phase_targets_remaining)
 	if is_instance_valid(route_label):
 		route_label.text = "%s  /  %d TARGETS REMAINING  /  %.1f SEC" % [
@@ -333,7 +335,7 @@ func _on_phase_target_destroyed() -> void:
 func _complete_current_phase() -> void:
 	if mission_resolved or runtime_phases.is_empty():
 		return
-	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
 	if not MissionRunState.completed_phase_ids.has(phase.phase_id):
 		MissionRunState.completed_phase_ids.append(phase.phase_id)
 	phase_bonus_credits += maxi(0, phase.bonus_credits)
@@ -347,8 +349,8 @@ func _complete_current_phase() -> void:
 func _on_phase_delivery_pressed() -> void:
 	if mission_resolved or runtime_phases.is_empty():
 		return
-	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
-	if phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
+	if phase.phase_type != MissionPhaseScript.PhaseType.DELIVERY:
 		return
 	if player_ship.global_position.distance_to(DESTINATION_POSITION) > DESTINATION_ARRIVAL_DISTANCE:
 		return

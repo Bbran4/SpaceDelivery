@@ -1,6 +1,8 @@
 extends Resource
 class_name MissionDefinition
 
+const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definition.gd")
+
 ## Authored delivery contract and parameters for procedural route generation.
 ## Treat this resource as immutable during play; per-attempt progress belongs to MissionRunState.
 
@@ -34,7 +36,7 @@ class_name MissionDefinition
 
 @export_group("Phased Mission")
 ## Ordered gameplay phases. Empty uses the standard asteroid, pirate, delivery sequence.
-@export var phases: Array[MissionPhaseDefinition] = []
+@export var phases: Array[MissionPhaseScript] = []
 
 @export_group("Legacy Objectives")
 ## Optional objective tracker support retained for salvage and contract side objectives.
@@ -125,7 +127,7 @@ func validate_contract() -> PackedStringArray:
 		errors.append("Mission '%s' objective prerequisites contain a cycle." % mission_id)
 
 	var phase_ids: Dictionary = {}
-	for phase: MissionPhaseDefinition in phases:
+	for phase: MissionPhaseScript in phases:
 		if phase == null:
 			errors.append("Mission '%s' contains an empty phase." % mission_id)
 			continue
@@ -134,7 +136,7 @@ func validate_contract() -> PackedStringArray:
 		if phase_ids.has(phase.phase_id):
 			errors.append("Mission '%s' has duplicate phase ID '%s'." % [mission_id, phase.phase_id])
 		phase_ids[phase.phase_id] = true
-	if not phases.is_empty() and phases[phases.size() - 1] != null and phases[phases.size() - 1].phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+	if not phases.is_empty() and phases[phases.size() - 1] != null and phases[phases.size() - 1].phase_type != MissionPhaseScript.PhaseType.DELIVERY:
 		errors.append("Mission '%s' must end with a delivery phase." % mission_id)
 	return errors
 
