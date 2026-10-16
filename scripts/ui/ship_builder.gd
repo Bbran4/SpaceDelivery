@@ -91,6 +91,11 @@ func has_active_weapon() -> bool:
 	return false
 
 
+## Power estimate for the exact hull and modules currently shown in the builder.
+func get_power_rating() -> int:
+	return ShipBuildStore.calculate_build_power(selected_hull, selected_modules)
+
+
 func has_unconfirmed_changes() -> bool:
 	return _has_unconfirmed_changes
 

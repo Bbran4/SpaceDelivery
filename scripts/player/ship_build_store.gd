@@ -90,6 +90,69 @@ static func get_cargo_capacity(hull_path: String, module_paths: Variant) -> int:
 	return maxi(0, capacity)
 
 
+## Returns a relative power score where the starter courier and basic laser equal 100.
+## Hull durability, shields, mobility, cargo capacity, slots, equipped module roles and
+## stat modifiers all contribute, so changing the build updates mission threat estimates.
+static func calculate_build_power(hull: ShipHull, modules: Array[ShipModule]) -> int:
+	if hull == null:
+		return 0
+	var baseline_hull: ShipHull = load("res://resources/hulls/starter_courier.tres") as ShipHull
+	var baseline_module: ShipModule = load("res://resources/modules/basic_laser_module.tres") as ShipModule
+	var baseline_modules: Array[ShipModule] = []
+	if baseline_module != null:
+		baseline_modules.append(baseline_module)
+	var baseline_score: float = _raw_build_power(baseline_hull, baseline_modules)
+	if baseline_score <= 0.0:
+		return 100
+	return maxi(1, roundi(_raw_build_power(hull, modules) / baseline_score * 100.0))
+
+
+static func _raw_build_power(hull: ShipHull, modules: Array[ShipModule]) -> float:
+	if hull == null:
+		return 0.0
+	var score: float = hull.max_hull * 0.45
+	score += hull.max_shield * 0.35
+	score += hull.shield_recharge_rate * 2.0
+	score += hull.movement_speed * 0.12
+	score += hull.acceleration * 0.015
+	score += float(hull.cargo_hold_capacity) * 0.8
+	score += float(hull.slot_categories.size()) * 5.0
+	for module: ShipModule in modules:
+		if module == null:
+			continue
+		match module.category:
+			ShipModule.Category.WEAPON:
+				score += 25.0
+			ShipModule.Category.DEFENSE:
+				score += 12.0
+			ShipModule.Category.ENGINE:
+				score += 10.0
+			ShipModule.Category.CARGO:
+				score += 8.0
+			ShipModule.Category.UTILITY:
+				score += 7.0
+		score += float(module.cargo_capacity_bonus) * 0.8
+		score += float(module.salvage_capacity_bonus) * 0.35
+		for stat_name: Variant in module.stat_modifiers.keys():
+			var value: float = float(module.stat_modifiers[stat_name])
+			match str(stat_name):
+				"max_hull":
+					score += value * 0.45
+				"max_shield":
+					score += value * 0.35
+				"shield_recharge_rate":
+					score += value * 2.0
+				"movement_speed":
+					score += value * 0.12
+				"acceleration":
+					score += value * 0.015
+				"damage":
+					score += value * 2.5
+				"attack_speed":
+					score += value * 8.0
+	return maxf(1.0, score)
+
+
 static func get_active_build() -> Dictionary:
 	var config: ConfigFile = ConfigFile.new()
 	if config.load(SAVE_PATH) != OK:
