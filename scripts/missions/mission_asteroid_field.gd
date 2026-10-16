@@ -8,7 +8,7 @@ extends Node2D
 var asteroid_nodes: Array[Ship] = []
 var drift_directions: Array[Vector2] = []
 var is_cleared: bool = false
-var belt_center_x: float = 1120.0
+var belt_center_x: float = 660.0
 
 
 func configure(asteroids: Array[Ship]) -> void:
