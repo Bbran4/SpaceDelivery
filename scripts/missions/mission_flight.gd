@@ -592,7 +592,10 @@ func _show_destination_button(button_text: String = "RETURN TO ROUTE MAP  /  NOD
 	destination_button.offset_right = 190.0
 	destination_button.offset_bottom = -18.0
 	destination_button.custom_minimum_size = Vector2(380, 44)
-	destination_button.pressed.connect(_on_phase_delivery_pressed if phase_mode else _on_node_completed)
+	if phase_mode:
+		destination_button.pressed.connect(_on_phase_delivery_pressed)
+	else:
+		destination_button.pressed.connect(_on_node_completed)
 	overlay.add_child(destination_button)
 
 
