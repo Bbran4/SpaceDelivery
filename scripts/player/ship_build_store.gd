@@ -122,7 +122,7 @@ static func _raw_build_power(hull: ShipHull, modules: Array[ShipModule]) -> floa
 			continue
 		match module.category:
 			ShipModule.Category.WEAPON:
-				score += 25.0
+				score += _weapon_power_score(module)
 			ShipModule.Category.DEFENSE:
 				score += 12.0
 			ShipModule.Category.ENGINE:
@@ -151,6 +151,38 @@ static func _raw_build_power(hull: ShipHull, modules: Array[ShipModule]) -> floa
 				"attack_speed":
 					score += value * 8.0
 	return maxf(1.0, score)
+
+
+## Weapon strength uses the same WeaponData that combat uses, so damage, cadence,
+## range and area impact all influence the rating. Basic Laser is worth 25 score points.
+static func _weapon_power_score(module: ShipModule) -> float:
+	if module == null or module.weapon_scene == null:
+		return 0.0
+	var weapon_node: Node = module.weapon_scene.instantiate()
+	if weapon_node == null:
+		return 0.0
+	var weapon_data: WeaponData = weapon_node.get("weapon_data") as WeaponData
+	weapon_node.free()
+	if weapon_data == null:
+		return 0.0
+	var baseline_scene: PackedScene = load("res://scenes/weapons/basic_weapon.tscn") as PackedScene
+	if baseline_scene == null:
+		return 25.0
+	var baseline_node: Node = baseline_scene.instantiate()
+	if baseline_node == null:
+		return 25.0
+	var baseline_data: WeaponData = baseline_node.get("weapon_data") as WeaponData
+	baseline_node.free()
+	if baseline_data == null:
+		return 25.0
+	var weapon_dps: float = weapon_data.projectile_damage * weapon_data.fire_rate
+	var baseline_dps: float = baseline_data.projectile_damage * baseline_data.fire_rate
+	if baseline_dps <= 0.0:
+		return 25.0
+	var dps_factor: float = pow(maxf(0.1, weapon_dps / baseline_dps), 0.65)
+	var range_factor: float = pow(maxf(0.1, weapon_data.range / maxf(1.0, baseline_data.range)), 0.15)
+	var splash_factor: float = 1.0 + minf(0.35, weapon_data.impact_radius / 125.0)
+	return 25.0 * dps_factor * range_factor * splash_factor
 
 
 static func get_active_build() -> Dictionary:
