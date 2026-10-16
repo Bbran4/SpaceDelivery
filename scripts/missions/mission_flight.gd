@@ -5,9 +5,11 @@ const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_o
 const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
 const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
 const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
-const ASTEROID_FIELD_SCRIPT: Script = preload("res://scripts/missions/mission_asteroid_field.gd")
 const DESTINATION_POSITION: Vector2 = Vector2(12500.0, 0.0)
 const ASTEROID_BELT_X: float = 1800.0
+const ASTEROID_RING_CENTER: Vector2 = Vector2(120.0, 0.0)
+const ASTEROID_RING_RADIUS: float = 1680.0
+const ASTEROID_RING_COUNT: int = 300
 const ASTEROID_DETECTION_DISTANCE: float = 360.0
 const DESTINATION_ARRIVAL_DISTANCE: float = 240.0
 
@@ -37,8 +39,8 @@ var phase_targets_remaining: int = 0
 var phase_bonus_credits: int = 0
 var phase_mode: bool = true
 var asteroid_belt_detected: bool = false
-var asteroid_barrier: StaticBody2D
-var asteroid_field_controller: Node2D
+var asteroid_objective_count: int = 0
+var asteroid_nodes: Array[Ship] = []
 var asteroid_warning_label: Label
 var minimap: MissionMinimap
 
@@ -74,6 +76,7 @@ func _ready() -> void:
 		push_warning("Mission has no usable phases. Returning to HQ.")
 		_return_to_hq()
 		return
+	_populate_asteroid_ring()
 	MissionRunState.current_phase_index = clampi(MissionRunState.current_phase_index, 0, runtime_phases.size() - 1)
 	_build_flight_overlay()
 	call_deferred("_spawn_available_objectives")
@@ -217,6 +220,7 @@ func _start_current_phase() -> void:
 	match phase.phase_type:
 		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
 			asteroid_belt_detected = false
+			phase_targets_remaining = asteroid_objective_count
 			phase_time_remaining = float(phase.duration_seconds)
 			if is_instance_valid(route_label):
 				route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD"
@@ -240,7 +244,6 @@ func _detect_asteroid_belt(phase: MissionPhaseDefinition) -> void:
 	asteroid_belt_detected = true
 	phase_time_remaining = float(phase.duration_seconds)
 	_show_asteroid_warning()
-	_spawn_asteroid_belt(phase.target_count)
 
 
 func _show_asteroid_warning() -> void:
@@ -260,50 +263,33 @@ func _show_asteroid_warning() -> void:
 	)
 
 
-func _spawn_asteroid_belt(target_count: int) -> void:
-	phase_targets_remaining = 0
-	var wall := StaticBody2D.new()
-	wall.name = "AsteroidBeltBarrier"
-	wall.collision_layer = 1
-	wall.collision_mask = 1
-	var wall_shape := CollisionShape2D.new()
-	var wall_rectangle := RectangleShape2D.new()
-	wall_rectangle.size = Vector2(70.0, 6000.0)
-	wall_shape.shape = wall_rectangle
-	wall.add_child(wall_shape)
-	add_child(wall)
-	wall.global_position = Vector2(ASTEROID_BELT_X, 0.0)
-	asteroid_barrier = wall
-
-	var field := Node2D.new()
-	field.name = "AsteroidFieldMotion"
-	field.set_script(ASTEROID_FIELD_SCRIPT)
-	add_child(field)
-	asteroid_field_controller = field
-
-	var asteroid_count: int = maxi(target_count, 36)
-	var spawned: Array[Ship] = []
-	for index: int in range(asteroid_count):
+func _populate_asteroid_ring() -> void:
+	# Populate the full orbital debris ring during mission setup. These rocks
+	# are visible and collidable long before the player reaches warning range.
+	asteroid_nodes.clear()
+	asteroid_objective_count = 0
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for index: int in range(ASTEROID_RING_COUNT):
 		var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
 		if asteroid == null:
 			continue
+		asteroid.name = "OrbitalAsteroid_%03d" % index
 		add_child(asteroid)
-		# Six columns and six staggered rows make this a broad, layered wall,
-		# not the small handful of rocks a starter ship can casually clear.
-		var column: int = index % 6
-		var row: int = index / 6
-		var row_offset: float = 55.0 if row % 2 == 0 else -55.0
-		asteroid.global_position = Vector2(
-			ASTEROID_BELT_X - 300.0 + float(column) * 120.0,
-			-625.0 + float(row) * 250.0 + row_offset
-		)
-		asteroid.rotation = float(index) * 0.37
-		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
-		spawned.append(asteroid)
-	phase_targets_remaining = spawned.size()
-	field.call("configure", spawned)
-	if phase_targets_remaining == 0:
-		_resolve_mission(false, "Asteroid belt could not be generated.")
+		var base_angle: float = TAU * float(index) / float(ASTEROID_RING_COUNT)
+		var angle: float = base_angle + rng.randf_range(-0.012, 0.012)
+		var radius: float = ASTEROID_RING_RADIUS + rng.randf_range(-115.0, 115.0)
+		asteroid.global_position = ASTEROID_RING_CENTER + Vector2.RIGHT.rotated(angle) * radius
+		asteroid.rotation = rng.randf_range(-PI, PI)
+		# The 36 rocks nearest the outbound arc are the timed clearance targets.
+		var is_objective: bool = index < 18 or index >= ASTEROID_RING_COUNT - 18
+		asteroid.set("is_objective_target", is_objective)
+		if is_objective:
+			asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
+			asteroid_objective_count += 1
+		asteroid_nodes.append(asteroid)
+	if asteroid_objective_count == 0:
+		push_warning("Asteroid ring spawned without any objective rocks.")
 
 
 func _on_phase_target_destroyed() -> void:
