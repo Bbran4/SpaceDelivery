@@ -6,10 +6,10 @@ const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn"
 const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
 const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
 const ASTEROID_FIELD_SCRIPT: Script = preload("res://scripts/missions/mission_asteroid_field.gd")
-const DESTINATION_POSITION: Vector2 = Vector2(2200.0, 0.0)
-const ASTEROID_BELT_X: float = 660.0
-const ASTEROID_DETECTION_DISTANCE: float = 280.0
-const DESTINATION_ARRIVAL_DISTANCE: float = 145.0
+const DESTINATION_POSITION: Vector2 = Vector2(12500.0, 0.0)
+const ASTEROID_BELT_X: float = 1800.0
+const ASTEROID_DETECTION_DISTANCE: float = 360.0
+const DESTINATION_ARRIVAL_DISTANCE: float = 240.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -54,7 +54,7 @@ func _ready() -> void:
 	world.set_script(WORLD_SCRIPT)
 	add_child(world)
 	move_child(world, 0)
-	player_ship.global_position = Vector2(300.0, 0.0)
+	player_ship.global_position = Vector2(350.0, 0.0)
 
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
 	# Carry the campaign wallet into the newly instantiated player ship.
@@ -128,10 +128,10 @@ func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDef
 	var asteroid_phase := MissionPhaseDefinition.new()
 	asteroid_phase.phase_id = &"asteroid_bounty"
 	asteroid_phase.title = "Asteroid Bounty"
-	asteroid_phase.briefing = "Break through the orbital asteroid belt. Destroy every blocking rock within 60 seconds."
+	asteroid_phase.briefing = "A dense, shifting asteroid wall blocks the outbound lane. Destroy every blocking rock within 60 seconds. Your starter weapons are badly underpowered for this field."
 	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
 	asteroid_phase.duration_seconds = 60
-	asteroid_phase.target_count = 12
+	asteroid_phase.target_count = 36
 	phases.append(asteroid_phase)
 
 	var pirate_phase := MissionPhaseDefinition.new()
@@ -268,7 +268,7 @@ func _spawn_asteroid_belt(target_count: int) -> void:
 	wall.collision_mask = 1
 	var wall_shape := CollisionShape2D.new()
 	var wall_rectangle := RectangleShape2D.new()
-	wall_rectangle.size = Vector2(42.0, 5000.0)
+	wall_rectangle.size = Vector2(70.0, 6000.0)
 	wall_shape.shape = wall_rectangle
 	wall.add_child(wall_shape)
 	add_child(wall)
@@ -281,18 +281,21 @@ func _spawn_asteroid_belt(target_count: int) -> void:
 	add_child(field)
 	asteroid_field_controller = field
 
-	var asteroid_count: int = maxi(target_count, 12)
+	var asteroid_count: int = maxi(target_count, 36)
 	var spawned: Array[Ship] = []
 	for index: int in range(asteroid_count):
 		var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
 		if asteroid == null:
 			continue
 		add_child(asteroid)
-		var column: int = index % 3
-		var row: int = index / 3
+		# Six columns and six staggered rows make this a broad, layered wall,
+		# not the small handful of rocks a starter ship can casually clear.
+		var column: int = index % 6
+		var row: int = index / 6
+		var row_offset: float = 55.0 if row % 2 == 0 else -55.0
 		asteroid.global_position = Vector2(
-			ASTEROID_BELT_X - 105.0 + float(column) * 105.0,
-			-270.0 + float(row) * 180.0
+			ASTEROID_BELT_X - 300.0 + float(column) * 120.0,
+			-625.0 + float(row) * 250.0 + row_offset
 		)
 		asteroid.rotation = float(index) * 0.37
 		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
