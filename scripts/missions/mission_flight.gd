@@ -180,6 +180,9 @@ func _process_current_phase(delta: float) -> void:
 		elif is_instance_valid(destination_button):
 			destination_button.queue_free()
 			destination_button = null
+			resolution_pending = false
+			if is_instance_valid(abort_button):
+				abort_button.disabled = false
 		if is_instance_valid(route_label):
 			route_label.text = "DESTINATION  /  %.0f M  /  %.1f SEC" % [
 				player_ship.global_position.distance_to(DESTINATION_POSITION),
@@ -532,8 +535,9 @@ func _build_flight_overlay() -> void:
 	layer.add_child(route_label)
 
 
-	minimap = Control.new() as MissionMinimap
-	minimap.set_script(MINIMAP_SCRIPT)
+	var minimap_node := Control.new()
+	minimap_node.set_script(MINIMAP_SCRIPT)
+	minimap = minimap_node as MissionMinimap
 	minimap.name = "MissionMinimap"
 	minimap.anchor_left = 1.0
 	minimap.anchor_right = 1.0
