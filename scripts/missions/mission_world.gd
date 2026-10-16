@@ -11,7 +11,7 @@ func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 48291
 	for _index: int in range(150):
-		stars.append(Vector2(rng.randf_range(-200.0, 2500.0), rng.randf_range(-620.0, 620.0)))
+		stars.append(Vector2(rng.randf_range(-300.0, 14000.0), rng.randf_range(-1650.0, 1650.0)))
 
 
 func _process(delta: float) -> void:
@@ -46,8 +46,26 @@ func _draw() -> void:
 	draw_circle(moon_center, 25.0, Color(0.43, 0.54, 0.62))
 	draw_circle(moon_center + Vector2(-5.0, -7.0), 8.0, Color(0.56, 0.65, 0.71, 0.7))
 	draw_circle(moon_center + Vector2(8.0, 6.0), 5.0, Color(0.29, 0.39, 0.48, 0.8))
-	var destination := Vector2(2200.0, 0.0)
-	draw_line(Vector2(330.0, 0.0), destination, Color(0.2, 0.65, 0.86, 0.12), 1.0)
-	draw_circle(destination, 28.0, Color(0.15, 0.8, 0.52, 0.08))
-	draw_arc(destination, 28.0, 0.0, TAU, 48, Color(0.27, 1.0, 0.65, 0.8), 2.0)
-	draw_circle(destination, 5.0, Color(0.35, 1.0, 0.65))
+	var destination := Vector2(12500.0, 0.0)
+	draw_line(Vector2(330.0, 0.0), destination, Color(0.2, 0.65, 0.86, 0.12), 2.0)
+	# Vesper Clinic Ring is a physical orbital facility, with a docking ring,
+	# central habitat, cargo arms, solar arrays and a visible approach beacon.
+	draw_arc(destination, 185.0, 0.0, TAU, 96, Color(0.24, 0.77, 0.88, 0.88), 8.0)
+	draw_arc(destination, 162.0, 0.0, TAU, 96, Color(0.42, 0.89, 0.94, 0.45), 2.0)
+	draw_line(destination + Vector2(-240.0, 0.0), destination + Vector2(240.0, 0.0), Color(0.5, 0.76, 0.86, 0.9), 8.0)
+	draw_line(destination + Vector2(0.0, -240.0), destination + Vector2(0.0, 240.0), Color(0.5, 0.76, 0.86, 0.9), 8.0)
+	draw_rect(Rect2(destination + Vector2(-58.0, -34.0), Vector2(116.0, 68.0)), Color(0.11, 0.27, 0.39))
+	draw_rect(Rect2(destination + Vector2(-44.0, -23.0), Vector2(88.0, 46.0)), Color(0.25, 0.56, 0.68))
+	draw_rect(Rect2(destination + Vector2(-340.0, -92.0), Vector2(125.0, 42.0)), Color(0.1, 0.24, 0.39))
+	draw_rect(Rect2(destination + Vector2(215.0, -92.0), Vector2(125.0, 42.0)), Color(0.1, 0.24, 0.39))
+	draw_rect(Rect2(destination + Vector2(-340.0, 50.0), Vector2(125.0, 42.0)), Color(0.1, 0.24, 0.39))
+	draw_rect(Rect2(destination + Vector2(215.0, 50.0), Vector2(125.0, 42.0)), Color(0.1, 0.24, 0.39))
+	draw_line(destination + Vector2(-278.0, -71.0), destination + Vector2(-195.0, -120.0), Color(0.48, 0.71, 0.82, 0.9), 4.0)
+	draw_line(destination + Vector2(278.0, -71.0), destination + Vector2(195.0, -120.0), Color(0.48, 0.71, 0.82, 0.9), 4.0)
+	draw_line(destination + Vector2(-278.0, 71.0), destination + Vector2(-195.0, 120.0), Color(0.48, 0.71, 0.82, 0.9), 4.0)
+	draw_line(destination + Vector2(278.0, 71.0), destination + Vector2(195.0, 120.0), Color(0.48, 0.71, 0.82, 0.9), 4.0)
+	draw_circle(destination, 24.0, Color(0.19, 0.65, 0.78))
+	draw_circle(destination, 8.0, Color(0.7, 1.0, 0.88))
+	draw_circle(destination + Vector2(0.0, -245.0), 12.0, Color(0.35, 1.0, 0.65))
+	draw_arc(destination + Vector2(0.0, -245.0), 26.0, 0.0, TAU, 32, Color(0.27, 1.0, 0.65, 0.8), 2.0)
+	draw_string(ThemeDB.fallback_font, destination + Vector2(-160.0, 285.0), "VESPER CLINIC RING  /  DOCKING APPROACH", HORIZONTAL_ALIGNMENT_LEFT, 420.0, 20, Color(0.52, 0.96, 0.9))
