@@ -314,6 +314,13 @@ func _on_phase_target_destroyed() -> void:
 			phase_time_remaining,
 		]
 	if phase_targets_remaining <= 0:
+		if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
+			if is_instance_valid(asteroid_barrier):
+				asteroid_barrier.queue_free()
+				asteroid_barrier = null
+			if is_instance_valid(asteroid_field_controller):
+				asteroid_field_controller.queue_free()
+				asteroid_field_controller = null
 		_complete_current_phase()
 
 
@@ -336,6 +343,8 @@ func _on_phase_delivery_pressed() -> void:
 		return
 	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
 	if phase.phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		return
+	if player_ship.global_position.distance_to(DESTINATION_POSITION) > DESTINATION_ARRIVAL_DISTANCE:
 		return
 	if cargo_integrity <= 0.0 or not CargoRules.can_deliver(mission, cargo_integrity):
 		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
