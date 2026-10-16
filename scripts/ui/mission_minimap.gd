@@ -5,7 +5,7 @@ var player_ship: Node2D
 var destination_position: Vector2 = Vector2(2200.0, 0.0)
 var world_min: Vector2 = Vector2(0.0, -520.0)
 var world_size: Vector2 = Vector2(2400.0, 1040.0)
-var asteroid_belt_x: float = 1120.0
+var asteroid_belt_x: float = 660.0
 
 
 func _ready() -> void:
