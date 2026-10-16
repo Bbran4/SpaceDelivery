@@ -231,6 +231,75 @@ func _start_current_phase() -> void:
 				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
 
+func _detect_asteroid_belt(phase: MissionPhaseDefinition) -> void:
+	if asteroid_belt_detected or mission_resolved:
+		return
+	asteroid_belt_detected = true
+	phase_time_remaining = float(phase.duration_seconds)
+	_show_asteroid_warning()
+	_spawn_asteroid_belt(phase.target_count)
+
+
+func _show_asteroid_warning() -> void:
+	if not is_instance_valid(asteroid_warning_label):
+		return
+	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
+	asteroid_warning_label.visible = true
+	asteroid_warning_label.modulate = Color(1.0, 0.36, 0.22, 1.0)
+	var tween := create_tween()
+	tween.set_loops(5)
+	tween.tween_property(asteroid_warning_label, "modulate:a", 0.15, 0.28)
+	tween.tween_property(asteroid_warning_label, "modulate:a", 1.0, 0.28)
+	tween.tween_interval(0.08)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(asteroid_warning_label):
+			asteroid_warning_label.visible = false
+	)
+
+
+func _spawn_asteroid_belt(target_count: int) -> void:
+	phase_targets_remaining = 0
+	var wall := StaticBody2D.new()
+	wall.name = "AsteroidBeltBarrier"
+	wall.collision_layer = 1
+	wall.collision_mask = 1
+	var wall_shape := CollisionShape2D.new()
+	var wall_rectangle := RectangleShape2D.new()
+	wall_rectangle.size = Vector2(42.0, 5000.0)
+	wall_shape.shape = wall_rectangle
+	wall.add_child(wall_shape)
+	add_child(wall)
+	wall.global_position = Vector2(ASTEROID_BELT_X, 0.0)
+	asteroid_barrier = wall
+
+	var field := Node2D.new()
+	field.name = "AsteroidFieldMotion"
+	field.set_script(ASTEROID_FIELD_SCRIPT)
+	add_child(field)
+	asteroid_field_controller = field
+
+	var asteroid_count: int = maxi(target_count, 12)
+	var spawned: Array[Ship] = []
+	for index: int in range(asteroid_count):
+		var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
+		if asteroid == null:
+			continue
+		add_child(asteroid)
+		var column: int = index % 3
+		var row: int = index / 3
+		asteroid.global_position = Vector2(
+			ASTEROID_BELT_X - 105.0 + float(column) * 105.0,
+			-360.0 + float(row) * 180.0
+		)
+		asteroid.rotation = float(index) * 0.37
+		asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
+		spawned.append(asteroid)
+	phase_targets_remaining = spawned.size()
+	field.configure(spawned)
+	if phase_targets_remaining == 0:
+		_resolve_mission(false, "Asteroid belt could not be generated.")
+
+
 func _on_phase_target_destroyed() -> void:
 	if mission_resolved or runtime_phases.is_empty():
 		return
