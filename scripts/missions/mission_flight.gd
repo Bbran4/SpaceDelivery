@@ -1,51 +1,39 @@
 extends Node2D
 
-const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definition.gd")
+## Gauntlet flight: a long seeded route split by must-destroy gates, under a run clock.
+## RunDirector owns the pressure (comets, rocks, police, enemies, gates);
+## AsteroidField owns the chunked rocks. This script wires them to the HUD,
+## cargo integrity, delivery and the result screen.
 
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
-const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
 const MINIMAP_SCRIPT: Script = preload("res://scripts/ui/mission_minimap.gd")
 const WORLD_SCRIPT: Script = preload("res://scripts/missions/mission_world.gd")
-const DESTINATION_POSITION: Vector2 = Vector2(12500.0, 0.0)
-const ASTEROID_BELT_X: float = 1800.0
-const ASTEROID_RING_CENTER: Vector2 = Vector2(120.0, 0.0)
-const ASTEROID_RING_RADIUS: float = 1680.0
-const ASTEROID_RING_COUNT: int = 900
-const ASTEROID_DETECTION_DISTANCE: float = 1100.0
-const DESTINATION_ARRIVAL_DISTANCE: float = 240.0
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
 
 var mission: MissionDefinition
-var selected_branch: MissionRouteNode
-var contact_count: int = 0
-var remaining_enemies: int = 0
+var profile: RunProfile
+var layout: Dictionary = {}
+var field: AsteroidField
+var director: RunDirector
+var minimap: MissionMinimap
+
 var mission_resolved: bool = false
-var mission_label: Label
-var abort_button: Button
-var cargo_status_label: Label
+var resolution_pending: bool = false
 var cargo_integrity: float = 100.0
 var cargo_condition: String = "INTACT"
-var resolution_pending: bool = false
 var credits_at_encounter_start: int = 0
-var route_label: Label
-var destination_button: Button
 var stolen_cargo_drop_spawned: bool = false
-var objective_timers: Dictionary = {}
-var hazard_tick: float = 0.0
-var runtime_phases: Array[MissionPhaseScript] = []
-var phase_time_remaining: float = 60.0
-var phase_targets_remaining: int = 0
-var phase_bonus_credits: int = 0
-var phase_mode: bool = true
-var asteroid_belt_detected: bool = false
-var asteroid_objective_count: int = 0
-var asteroid_nodes: Array[Ship] = []
-var asteroid_warning_label: Label
-var minimap: MissionMinimap
-var route_encounter_spawned: Array[bool] = [false, false, false]
+
+var abort_button: Button
+var cargo_status_label: Label
+var route_label: Label
+var banner_label: Label
+var destination_button: Button
+var _banner_tween: Tween
+var _hud_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -55,14 +43,24 @@ func _ready() -> void:
 		_return_to_hq()
 		return
 
+	var custom_profile: Variant = mission.get("run_profile")
+	profile = custom_profile as RunProfile if custom_profile != null else RunProfile.new()
+	# The map depends on the mission and (unless locked) the run seed.
+	var layout_seed: int = 0 if profile.lock_layout_to_mission else MissionRunState.route_seed
+	layout_seed = layout_seed ^ hash(String(mission.mission_id))
+	layout = profile.generate_layout(layout_seed)
+
 	var world: Node2D = Node2D.new()
 	world.set_script(WORLD_SCRIPT)
+	world.set("follow_target", player_ship)
+	world.set("planet_center", profile.planet_center)
+	world.set("destination", layout["destination"])
+	world.set("station_name", mission.destination_name.to_upper())
 	add_child(world)
 	move_child(world, 0)
-	player_ship.global_position = Vector2(350.0, 0.0)
+	player_ship.global_position = profile.start_position
 
 	# The ship builder's saved hull and modules are loaded by Ship._ready().
-	# Carry the campaign wallet into the newly instantiated player ship.
 	MissionRunState.restore_ship_condition(player_ship)
 	MissionRunState.restore_ship_salvage(player_ship)
 	cargo_integrity = MissionRunState.cargo_integrity_percent
@@ -72,337 +70,49 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	encounter_spawner.spawn_count = 4
-	encounter_spawner.spawn_on_ready = false
-	runtime_phases = _build_runtime_phases(mission)
-	if runtime_phases.is_empty():
-		push_warning("Mission has no usable phases. Returning to HQ.")
-		_return_to_hq()
-		return
-	_populate_asteroid_ring()
-	MissionRunState.current_phase_index = clampi(MissionRunState.current_phase_index, 0, runtime_phases.size() - 1)
+	field = AsteroidField.new()
+	field.name = "AsteroidField"
+	field.player = player_ship
+	field.field_seed = layout_seed
+	add_child(field)
+
+	director = RunDirector.new()
+	director.name = "RunDirector"
+	add_child(director)
+	director.setup(player_ship, profile, layout, MissionRunState.route_seed, field, encounter_spawner.enemy_scenes)
+	director.banner.connect(_show_banner)
+	director.clock_expired.connect(_on_clock_expired)
+
 	_build_flight_overlay()
 	call_deferred("_spawn_available_objectives")
 	if cargo_integrity <= 75.0:
 		call_deferred("_spawn_stolen_cargo_drop")
-	call_deferred("_start_current_phase")
+	_show_banner("DEPARTURE CLEARED. THE RING IS NOT.")
 
 
 func _process(delta: float) -> void:
-	if mission_resolved or not is_instance_valid(player_ship):
+	if mission_resolved or not is_instance_valid(player_ship) or director == null:
 		return
-	_update_asteroid_warning()
-	_process_route_encounters()
-	if phase_mode:
-		_process_current_phase(delta)
-		return
-	if selected_branch == null:
-		return
-	for objective_id: Variant in objective_timers.keys():
-		var timer: Dictionary = objective_timers[objective_id]
-		timer["remaining"] = float(timer.get("remaining", 0.0)) - delta
-		objective_timers[objective_id] = timer
-		var remaining: float = maxf(0.0, float(timer["remaining"]))
-		if is_instance_valid(route_label):
-			route_label.text = "%s  /  %.1f SEC" % [str(timer.get("title", "OBJECTIVE")).to_upper(), remaining]
-		if remaining > 0.0:
-			continue
-		if int(timer.get("type", -1)) == MissionObjectiveDefinition.ObjectiveType.SURVIVE:
-			ObjectiveTracker.add_progress(mission, objective_id, 1)
-			objective_timers.erase(objective_id)
-		else:
-			ObjectiveTracker.fail_objective(mission, objective_id)
-			objective_timers.erase(objective_id)
-			_resolve_mission(false, "Deadline missed: %s was not completed in time." % str(timer.get("title", "Objective")))
-			return
-	if selected_branch.node_kind == MissionRouteNode.NodeKind.ENCOUNTER and selected_branch.risk >= 3:
-		hazard_tick += delta
-		var interval: float = 4.0 if selected_branch.risk < 5 else 2.8
-		if hazard_tick >= interval:
-			hazard_tick = 0.0
-			player_ship.take_damage(2.0 + float(selected_branch.risk) * 0.8)
-			if is_instance_valid(route_label):
-				route_label.text = "ENVIRONMENTAL EXPOSURE  /  RISK %d" % selected_branch.risk
+	_hud_timer -= delta
+	if _hud_timer <= 0.0:
+		_hud_timer = 0.15
+		route_label.text = director.get_status_text()
+	_update_arrival()
 
 
-func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseScript]:
-	var phases: Array[MissionPhaseScript] = []
-	if contract != null and not contract.phases.is_empty():
-		for authored_phase: MissionPhaseScript in contract.phases:
-			if authored_phase != null and authored_phase.phase_type != MissionPhaseScript.PhaseType.ASTEROID_BOUNTY:
-				phases.append(authored_phase)
-		return phases
-
-	var pirate_phase := MissionPhaseScript.new()
-	pirate_phase.phase_id = &"pirate_ambush"
-	pirate_phase.title = "Pirate Ambush"
-	pirate_phase.briefing = "Hostiles inbound. Clear the ambush using your equipped weapons."
-	pirate_phase.phase_type = MissionPhaseScript.PhaseType.PIRATE_AMBUSH
-	pirate_phase.duration_seconds = 60
-	pirate_phase.target_count = 4
-	phases.append(pirate_phase)
-
-	var delivery_phase := MissionPhaseScript.new()
-	delivery_phase.phase_id = &"final_delivery"
-	delivery_phase.title = "Final Delivery"
-	delivery_phase.briefing = "The route is clear. Complete delivery before the phase timer expires."
-	delivery_phase.phase_type = MissionPhaseScript.PhaseType.DELIVERY
-	delivery_phase.duration_seconds = 60
-	delivery_phase.target_count = 1
-	phases.append(delivery_phase)
-	return phases
-
-
-func _process_current_phase(delta: float) -> void:
-	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
-		return
-	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
-	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
-	if is_instance_valid(route_label) and phase.phase_type != MissionPhaseScript.PhaseType.DELIVERY:
-		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
-			MissionRunState.current_phase_index + 1,
-			runtime_phases.size(),
-			phase.title.to_upper(),
-			phase_time_remaining,
-		]
-	if phase.phase_type == MissionPhaseScript.PhaseType.DELIVERY:
-		if player_ship.global_position.distance_to(DESTINATION_POSITION) <= DESTINATION_ARRIVAL_DISTANCE:
-			if not is_instance_valid(destination_button):
-				_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
-		elif is_instance_valid(destination_button):
-			destination_button.queue_free()
-			destination_button = null
-			resolution_pending = false
-			if is_instance_valid(abort_button):
-				abort_button.disabled = false
-		if is_instance_valid(route_label):
-			route_label.text = "DESTINATION  /  %.0f M  /  %.1f SEC" % [
-				player_ship.global_position.distance_to(DESTINATION_POSITION),
-				phase_time_remaining,
-			]
-	if phase_time_remaining <= 0.0:
-		_resolve_mission(false, "60-second deadline expired: %s was not completed in time." % phase.title)
-
-
-func _start_current_phase() -> void:
-	if mission_resolved or runtime_phases.is_empty():
-		return
-	if MissionRunState.current_phase_index >= runtime_phases.size():
-		_resolve_mission(true, "All mission phases completed. Delivery confirmed.")
-		return
-	resolution_pending = false
-	if is_instance_valid(destination_button):
+func _update_arrival() -> void:
+	if director.arrival_ready():
+		if not is_instance_valid(destination_button):
+			_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+	elif is_instance_valid(destination_button):
 		destination_button.queue_free()
 		destination_button = null
-	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
-	phase_time_remaining = float(phase.duration_seconds)
-	phase_targets_remaining = 0
-	if is_instance_valid(abort_button):
-		abort_button.disabled = false
-	if is_instance_valid(route_label):
-		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
-			MissionRunState.current_phase_index + 1,
-			runtime_phases.size(),
-			phase.title.to_upper(),
-			phase_time_remaining,
-		]
-	match phase.phase_type:
-		MissionPhaseScript.PhaseType.ASTEROID_BOUNTY:
-			# Asteroids are optional mining and salvage, never a mission gate.
-			_complete_current_phase()
-		MissionPhaseScript.PhaseType.PIRATE_AMBUSH:
-			var spawn_offset_x: float = maxf(900.0, get_viewport_rect().size.x * 0.9)
-			var spawn_offset_y: float = get_viewport_rect().size.y * 0.5 + 180.0
-			var spawn_side: float = -1.0 if randf() < 0.5 else 1.0
-			encounter_spawner.global_position = Vector2(
-				maxf(player_ship.global_position.x + spawn_offset_x, ASTEROID_BELT_X + 1000.0),
-				player_ship.global_position.y + spawn_side * spawn_offset_y
-			)
-			encounter_spawner.spawn_count = phase.target_count
-			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
-			phase_targets_remaining = hostiles.size()
-			for hostile: Ship in hostiles:
-				_set_enemy_pursuit_activation(hostile)
-				hostile.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
-			if phase_targets_remaining <= 0:
-				_resolve_mission(false, "Pirate ambush could not be spawned.")
-		MissionPhaseScript.PhaseType.DELIVERY:
-			if is_instance_valid(route_label):
-				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
+		resolution_pending = false
+		if is_instance_valid(abort_button):
+			abort_button.disabled = false
 
 
-
-
-func _set_enemy_pursuit_activation(hostile: Ship) -> void:
-	if hostile == null:
-		return
-	var controller: EnemyController = hostile.get_node_or_null("EnemyController") as EnemyController
-	if controller != null:
-		# The asteroid ring ends near x=1800. Give the player a little breathing
-		# room beyond it before any route enemy starts pursuing.
-		controller.pursuit_activation_x = ASTEROID_BELT_X + 500.0
-
-
-func _process_route_encounters() -> void:
-	if mission_resolved or not is_instance_valid(player_ship):
-		return
-	# Patrols arrive in later stretches of the route, never inside the asteroid belt.
-	var trigger_positions: Array[float] = [4700.0, 7200.0, 9700.0]
-	for index: int in range(trigger_positions.size()):
-		if route_encounter_spawned[index] or player_ship.global_position.x < trigger_positions[index]:
-			continue
-		route_encounter_spawned[index] = true
-		var viewport_size: Vector2 = get_viewport_rect().size
-		var offset_x: float = maxf(900.0, viewport_size.x * 0.9)
-		var offset_y: float = viewport_size.y * 0.5 + 180.0
-		var side: float = -1.0 if randf() < 0.5 else 1.0
-		encounter_spawner.global_position = Vector2(
-			maxf(player_ship.global_position.x + offset_x, ASTEROID_BELT_X + 1000.0),
-			player_ship.global_position.y + side * offset_y
-		)
-		encounter_spawner.spawn_count = 2 + (index % 2)
-		var patrol: Array[Ship] = encounter_spawner.spawn_encounter()
-		for hostile: Ship in patrol:
-			_set_enemy_pursuit_activation(hostile)
-			hostile.name = "RoutePatrol_%d_%s" % [index + 1, hostile.name]
-
-
-func _update_asteroid_warning() -> void:
-	if asteroid_belt_detected or mission_resolved or not is_instance_valid(player_ship):
-		return
-	if absf(ASTEROID_BELT_X - player_ship.global_position.x) <= ASTEROID_DETECTION_DISTANCE:
-		asteroid_belt_detected = true
-		_show_asteroid_warning()
-
-
-func _show_asteroid_warning() -> void:
-	if not is_instance_valid(asteroid_warning_label):
-		return
-	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
-	asteroid_warning_label.visible = true
-	asteroid_warning_label.modulate = Color(1.0, 0.36, 0.22, 1.0)
-	var tween := create_tween()
-	tween.set_loops(5)
-	tween.tween_property(asteroid_warning_label, "modulate:a", 0.15, 0.28)
-	tween.tween_property(asteroid_warning_label, "modulate:a", 1.0, 0.28)
-	tween.tween_interval(0.08)
-	tween.finished.connect(func() -> void:
-		if is_instance_valid(asteroid_warning_label):
-			asteroid_warning_label.visible = false
-	)
-
-
-func _populate_asteroid_ring() -> void:
-	# Populate the full orbital debris ring during mission setup. These rocks
-	# are visible and collidable long before the player reaches warning range.
-	asteroid_nodes.clear()
-	asteroid_objective_count = 0
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	for index: int in range(ASTEROID_RING_COUNT):
-		var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
-		if asteroid == null:
-			continue
-		asteroid.name = "OrbitalAsteroid_%03d" % index
-		add_child(asteroid)
-		var base_angle: float = TAU * float(index) / float(ASTEROID_RING_COUNT)
-		var angle: float = base_angle + rng.randf_range(-0.012, 0.012)
-		var radius: float = ASTEROID_RING_RADIUS + rng.randf_range(-115.0, 115.0)
-		asteroid.global_position = ASTEROID_RING_CENTER + Vector2.RIGHT.rotated(angle) * radius
-		asteroid.rotation = rng.randf_range(-PI, PI)
-		# Every rock is optional salvage. None blocks mission progression.
-		asteroid.set("is_objective_target", false)
-		asteroid_nodes.append(asteroid)
-
-
-func _on_phase_target_destroyed() -> void:
-	if mission_resolved or runtime_phases.is_empty():
-		return
-	phase_targets_remaining = maxi(0, phase_targets_remaining - 1)
-	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
-	if phase.phase_type == MissionPhaseScript.PhaseType.PIRATE_AMBUSH:
-		ObjectiveTracker.report_enemy_destroyed(mission, phase_targets_remaining)
-	if is_instance_valid(route_label):
-		route_label.text = "%s  /  %d TARGETS REMAINING  /  %.1f SEC" % [
-			phase.title.to_upper(),
-			phase_targets_remaining,
-			phase_time_remaining,
-		]
-	if phase_targets_remaining <= 0:
-		_complete_current_phase()
-
-
-func _complete_current_phase() -> void:
-	if mission_resolved or runtime_phases.is_empty():
-		return
-	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
-	if not MissionRunState.completed_phase_ids.has(phase.phase_id):
-		MissionRunState.completed_phase_ids.append(phase.phase_id)
-	phase_bonus_credits += maxi(0, phase.bonus_credits)
-	MissionRunState.current_phase_index += 1
-	if is_instance_valid(destination_button):
-		destination_button.queue_free()
-		destination_button = null
-	call_deferred("_start_current_phase")
-
-
-func _on_phase_delivery_pressed() -> void:
-	if mission_resolved or runtime_phases.is_empty():
-		return
-	var phase: MissionPhaseScript = runtime_phases[MissionRunState.current_phase_index]
-	if phase.phase_type != MissionPhaseScript.PhaseType.DELIVERY:
-		return
-	if player_ship.global_position.distance_to(DESTINATION_POSITION) > DESTINATION_ARRIVAL_DISTANCE:
-		return
-	if cargo_integrity <= 0.0 or not CargoRules.can_deliver(mission, cargo_integrity):
-		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
-		return
-	MissionRunState.validate_returned_objectives(mission)
-	if not ObjectiveTracker.can_deliver(mission):
-		_resolve_mission(false, "Delivery failed: required recovered cargo or rescue objectives were not returned to %s." % mission.destination_name)
-		return
-	_complete_current_phase()
-	_resolve_mission(true, "Delivery confirmed at %s." % mission.destination_name)
-
-
-func _start_timed_objectives() -> void:
-	if mission == null:
-		return
-	for objective: MissionObjectiveDefinition in mission.objectives:
-		if objective == null or not objective.required:
-			continue
-		if objective.objective_type not in [MissionObjectiveDefinition.ObjectiveType.SURVIVE, MissionObjectiveDefinition.ObjectiveType.ESCAPE, MissionObjectiveDefinition.ObjectiveType.INTERCEPT]:
-			continue
-		if not ObjectiveTracker.activate_objective(mission, objective.objective_id):
-			continue
-		var duration: float = float(objective.deadline_seconds)
-		if duration <= 0.0:
-			duration = 10.0 if objective.objective_type == MissionObjectiveDefinition.ObjectiveType.SURVIVE else 20.0
-		objective_timers[objective.objective_id] = {"remaining": duration, "type": objective.objective_type, "title": objective.title}
-
-
-func _start_selected_objective() -> void:
-	if mission_resolved or selected_branch == null:
-		return
-	# Preserve legacy service nodes while new authored nodes use explicit objectives.
-	if selected_branch.node_kind == MissionRouteNode.NodeKind.SERVICE:
-		_start_service_node()
-		return
-	match selected_branch.objective_type:
-		MissionRouteNode.ObjectiveType.COMBAT:
-			_start_encounter()
-		MissionRouteNode.ObjectiveType.SERVICE:
-			_start_service_node()
-		MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY, MissionRouteNode.ObjectiveType.RESCUE:
-			if selected_branch.objective_type == MissionRouteNode.ObjectiveType.SALVAGE_RECOVERY:
-				_show_destination_button("RETURN RECOVERED CARGO  /  CONTINUE")
-			else:
-				_show_destination_button("RETURN RESCUEES  /  CONTINUE")
-		_:
-			push_warning("Objective '%s' is not implemented yet." % MissionRouteNode.ObjectiveType.keys()[selected_branch.objective_type])
-			_resolve_mission(false, "Dispatch failed: this route objective is not available in the current build.")
-
-
+# ----------------------------------------------------------- objectives
 
 func _spawn_available_objectives() -> void:
 	if mission == null:
@@ -449,41 +159,7 @@ func _spawn_stolen_cargo_drop() -> void:
 		return
 
 
-func _get_contact_count(node: MissionRouteNode) -> int:
-	if node.encounter_profile == MissionRouteNode.EncounterProfile.QUIET:
-		return clampi(node.risk, 1, 2)
-	if node.encounter_profile == MissionRouteNode.EncounterProfile.SALVAGE:
-		return clampi(1 + node.risk, 2, 4)
-	return clampi(1 + node.risk, 2, 4)
-
-
-func _start_service_node() -> void:
-	if mission_resolved:
-		return
-	if is_instance_valid(player_ship):
-		player_ship.current_hull = minf(player_ship.max_hull, player_ship.current_hull + player_ship.max_hull * 0.35)
-		player_ship.current_shield = player_ship.max_shield
-		player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
-		player_ship.shield_changed.emit(player_ship.current_shield, player_ship.max_shield)
-		MissionRunState.save_ship_condition(player_ship)
-	if is_instance_valid(route_label):
-		route_label.text = "SERVICE STOP  /  HULL REPAIRED 35%  /  SHIELDS RESTORED"
-	if is_instance_valid(abort_button):
-		abort_button.disabled = true
-	_show_destination_button("COMPLETE SERVICE STOP  /  RETURN TO ROUTE MAP")
-
-
-func _start_encounter() -> void:
-	if mission_resolved:
-		return
-	var spawned_enemies: Array[Ship] = encounter_spawner.spawn_encounter(selected_branch.encounter_profile)
-	remaining_enemies = spawned_enemies.size()
-	for enemy: Ship in spawned_enemies:
-		enemy.destroyed.connect(_on_enemy_destroyed, CONNECT_ONE_SHOT)
-
-	if remaining_enemies <= 0:
-		_resolve_mission(false, "Dispatch failed: no hostiles could be registered for this flight.")
-
+# ------------------------------------------------------------------ HUD
 
 func _build_flight_overlay() -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -491,8 +167,7 @@ func _build_flight_overlay() -> void:
 	layer.layer = 10
 	add_child(layer)
 
-	mission_label = Label.new()
-	mission_label.name = "ActiveMissionLabel"
+	var mission_label: Label = Label.new()
 	mission_label.anchor_left = 1.0
 	mission_label.anchor_right = 1.0
 	mission_label.offset_left = -460.0
@@ -504,14 +179,10 @@ func _build_flight_overlay() -> void:
 	mission_label.text = "MISSION  /  %s" % mission.title.to_upper()
 	mission_label.add_theme_font_size_override("font_size", 14)
 	mission_label.add_theme_color_override("font_color", Color(0.78, 0.9, 0.98))
-	mission_label.add_theme_color_override("font_shadow_color", Color(0.02, 0.04, 0.08, 0.9))
-	mission_label.add_theme_constant_override("shadow_offset_x", 1)
-	mission_label.add_theme_constant_override("shadow_offset_y", 1)
 	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(mission_label)
 
 	cargo_status_label = Label.new()
-	cargo_status_label.name = "CargoStatusLabel"
 	cargo_status_label.anchor_left = 1.0
 	cargo_status_label.anchor_right = 1.0
 	cargo_status_label.offset_left = -460.0
@@ -521,26 +192,22 @@ func _build_flight_overlay() -> void:
 	cargo_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	cargo_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cargo_status_label.add_theme_font_size_override("font_size", 12)
-	cargo_status_label.add_theme_color_override("font_color", Color(0.72, 0.86, 0.92))
 	cargo_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(cargo_status_label)
 	_update_cargo_status()
 
 	route_label = Label.new()
-	route_label.name = "ExecutedRouteLabel"
-	route_label.anchor_left = 0.0
 	route_label.anchor_right = 1.0
 	route_label.offset_left = 24.0
 	route_label.offset_top = 82.0
-	route_label.offset_right = -24.0
+	route_label.offset_right = -300.0
 	route_label.offset_bottom = 108.0
-	route_label.add_theme_font_size_override("font_size", 12)
+	route_label.add_theme_font_size_override("font_size", 13)
 	route_label.add_theme_color_override("font_color", Color(0.72, 0.82, 0.9))
 	route_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(route_label)
 
-
-	var minimap_node := Control.new()
+	var minimap_node: Control = Control.new()
 	minimap_node.set_script(MINIMAP_SCRIPT)
 	minimap = minimap_node as MissionMinimap
 	minimap.name = "MissionMinimap"
@@ -549,33 +216,30 @@ func _build_flight_overlay() -> void:
 	minimap.offset_left = -274.0
 	minimap.offset_top = 94.0
 	minimap.offset_right = -20.0
-	minimap.offset_bottom = 274.0
+	minimap.offset_bottom = 330.0
 	minimap.player_ship = player_ship
-	minimap.destination_position = DESTINATION_POSITION
-	minimap.asteroid_belt_x = ASTEROID_BELT_X
+	minimap.director = director
 	layer.add_child(minimap)
 
-	asteroid_warning_label = Label.new()
-	asteroid_warning_label.name = "AsteroidFieldWarning"
-	asteroid_warning_label.anchor_left = 0.5
-	asteroid_warning_label.anchor_right = 0.5
-	asteroid_warning_label.anchor_top = 0.28
-	asteroid_warning_label.anchor_bottom = 0.28
-	asteroid_warning_label.offset_left = -330.0
-	asteroid_warning_label.offset_right = 330.0
-	asteroid_warning_label.offset_top = -30.0
-	asteroid_warning_label.offset_bottom = 30.0
-	asteroid_warning_label.text = "ASTEROID FIELD DETECTED"
-	asteroid_warning_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	asteroid_warning_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	asteroid_warning_label.add_theme_font_size_override("font_size", 28)
-	asteroid_warning_label.add_theme_color_override("font_color", Color(1.0, 0.38, 0.22))
-	asteroid_warning_label.add_theme_color_override("font_shadow_color", Color(0.12, 0.015, 0.01, 1.0))
-	asteroid_warning_label.add_theme_constant_override("shadow_offset_x", 2)
-	asteroid_warning_label.add_theme_constant_override("shadow_offset_y", 2)
-	asteroid_warning_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	asteroid_warning_label.visible = false
-	layer.add_child(asteroid_warning_label)
+	banner_label = Label.new()
+	banner_label.anchor_left = 0.5
+	banner_label.anchor_right = 0.5
+	banner_label.anchor_top = 0.24
+	banner_label.anchor_bottom = 0.24
+	banner_label.offset_left = -520.0
+	banner_label.offset_right = 520.0
+	banner_label.offset_top = -30.0
+	banner_label.offset_bottom = 30.0
+	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	banner_label.add_theme_font_size_override("font_size", 24)
+	banner_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.3))
+	banner_label.add_theme_color_override("font_shadow_color", Color(0.12, 0.05, 0.01, 1.0))
+	banner_label.add_theme_constant_override("shadow_offset_x", 2)
+	banner_label.add_theme_constant_override("shadow_offset_y", 2)
+	banner_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	banner_label.visible = false
+	layer.add_child(banner_label)
 
 	abort_button = Button.new()
 	abort_button.name = "AbortMissionButton"
@@ -590,6 +254,50 @@ func _build_flight_overlay() -> void:
 	abort_button.pressed.connect(_on_abort_pressed)
 	layer.add_child(abort_button)
 
+
+func _show_banner(text: String) -> void:
+	if not is_instance_valid(banner_label):
+		return
+	banner_label.text = text
+	banner_label.visible = true
+	banner_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	if _banner_tween != null:
+		_banner_tween.kill()
+	_banner_tween = create_tween()
+	_banner_tween.tween_interval(2.2)
+	_banner_tween.tween_property(banner_label, "modulate:a", 0.0, 0.8)
+	_banner_tween.tween_callback(func() -> void:
+		if is_instance_valid(banner_label):
+			banner_label.visible = false
+	)
+
+
+func _show_destination_button(button_text: String) -> void:
+	if resolution_pending or mission_resolved:
+		return
+	resolution_pending = true
+	if is_instance_valid(abort_button):
+		abort_button.disabled = true
+	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
+	if overlay == null:
+		return
+	destination_button = Button.new()
+	destination_button.name = "CompleteDeliveryButton"
+	destination_button.text = button_text
+	destination_button.anchor_left = 0.5
+	destination_button.anchor_right = 0.5
+	destination_button.anchor_top = 1.0
+	destination_button.anchor_bottom = 1.0
+	destination_button.offset_left = -190.0
+	destination_button.offset_top = -66.0
+	destination_button.offset_right = 190.0
+	destination_button.offset_bottom = -18.0
+	destination_button.custom_minimum_size = Vector2(380, 44)
+	destination_button.pressed.connect(_on_delivery_pressed)
+	overlay.add_child(destination_button)
+
+
+# -------------------------------------------------------- cargo and state
 
 func _on_player_damaged(_amount: float, hull_damage: float, _shield_damage: float) -> void:
 	if mission_resolved or mission == null:
@@ -612,7 +320,9 @@ func _update_cargo_status() -> void:
 	if not is_instance_valid(cargo_status_label) or mission == null:
 		return
 	cargo_condition = CargoRules.get_condition(mission, cargo_integrity)
-	cargo_status_label.text = "%s  /  %s  /  VALUE %d CR  /  INTEGRITY %d%%" % [mission.cargo_name.to_upper(), cargo_condition, mission.cargo_value_credits, roundi(cargo_integrity)]
+	cargo_status_label.text = "%s  /  %s  /  VALUE %d CR  /  INTEGRITY %d%%" % [
+		mission.cargo_name.to_upper(), cargo_condition, mission.cargo_value_credits, roundi(cargo_integrity)
+	]
 	if cargo_condition == "INTACT":
 		cargo_status_label.add_theme_color_override("font_color", Color(0.55, 0.9, 0.72))
 	elif cargo_condition == "DAMAGED":
@@ -621,70 +331,47 @@ func _update_cargo_status() -> void:
 		cargo_status_label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.42))
 
 
-func _on_enemy_destroyed() -> void:
-	if mission_resolved:
-		return
-	remaining_enemies = maxi(remaining_enemies - 1, 0)
-	ObjectiveTracker.report_enemy_destroyed(mission, remaining_enemies)
-	if remaining_enemies == 0:
-		for objective: MissionObjectiveDefinition in mission.objectives:
-			if objective != null and objective.objective_type == MissionObjectiveDefinition.ObjectiveType.INTERCEPT:
-				ObjectiveTracker.add_progress(mission, objective.objective_id, 1)
-				objective_timers.erase(objective.objective_id)
-		# Leave flight and loot pickups active until the pilot chooses to proceed.
-		_show_destination_button()
-
-
 func _on_player_destroyed() -> void:
 	_resolve_mission(false, "Delivery failed: your ship was destroyed before the contract could be completed.")
+
+
+func _on_clock_expired() -> void:
+	_resolve_mission(false, "Run clock expired. The client has reassigned the shipment.")
 
 
 func _on_abort_pressed() -> void:
 	_resolve_mission(false, "Mission aborted by the pilot. Contract payment was forfeited.")
 
 
-func _on_node_completed() -> void:
-	if mission_resolved or mission == null or selected_branch == null:
+func _on_delivery_pressed() -> void:
+	if mission_resolved or not director.arrival_ready():
 		return
-	if cargo_integrity <= 0.0:
+	if cargo_integrity <= 0.0 or not CargoRules.can_deliver(mission, cargo_integrity):
 		_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
 		return
-	for objective: MissionObjectiveDefinition in mission.objectives:
-		if objective != null and objective.objective_type == MissionObjectiveDefinition.ObjectiveType.ESCAPE:
-			ObjectiveTracker.add_progress(mission, objective.objective_id, 1)
-			objective_timers.erase(objective.objective_id)
-	if selected_branch.node_kind == MissionRouteNode.NodeKind.DESTINATION:
-		MissionRunState.validate_returned_objectives(mission)
-		if not ObjectiveTracker.can_deliver(mission):
-			_resolve_mission(false, "Delivery failed: required recovered cargo or rescue objectives were not returned to %s." % mission.destination_name)
-			return
-		if not CargoRules.can_deliver(mission, cargo_integrity):
-			_resolve_mission(false, CargoRules.get_delivery_failure_reason(mission, cargo_integrity))
-			return
-	if is_instance_valid(player_ship):
-		var credits_after_node: int = player_ship.credits
-		var credits_before_node: int = MissionRunState.total_credits
-		MissionRunState.total_credits = credits_after_node
-		MissionRunState.add_node_rewards(selected_branch, credits_before_node, credits_after_node)
-		MissionRunState.save_ship_condition(player_ship)
-		MissionRunState.save_ship_salvage(player_ship)
-	MissionRunState.cargo_integrity_percent = cargo_integrity
-	MissionRunState.complete_route_node(selected_branch.node_id)
-	var change_error: Error = get_tree().change_scene_to_file("res://scenes/route_map.tscn")
-	if change_error != OK:
-		_resolve_mission(false, "Navigation failure: the route map could not be restored after this node.")
+	MissionRunState.validate_returned_objectives(mission)
+	if not ObjectiveTracker.can_deliver(mission):
+		_resolve_mission(false, "Delivery failed: required recovered cargo or rescue objectives were not returned to %s." % mission.destination_name)
+		return
+	_resolve_mission(true, "Delivery confirmed at %s." % mission.destination_name)
 
 
 func _resolve_mission(success: bool, result_message: String) -> void:
 	if mission_resolved:
 		return
 	mission_resolved = true
-
+	var progress_note: String = ""
+	if director != null:
+		director.active = false
+		var is_best: bool = RunRecords.record(mission.mission_id, director.best_x, director.gates_cleared)
+		progress_note = "  Reached %d M, gates cleared %d/%d.%s" % [
+			roundi(director.best_x), director.gates_cleared, profile.gate_count, "  NEW BEST." if is_best else ""
+		]
 	if is_instance_valid(abort_button):
 		abort_button.disabled = true
 
 	if is_instance_valid(player_ship):
-		# Returning to HQ always restores hull and shields, whether the mission succeeded or was aborted/failed.
+		# Returning to HQ always restores hull and shields.
 		player_ship.current_hull = player_ship.max_hull
 		player_ship.current_shield = player_ship.max_shield
 		player_ship.hull_changed.emit(player_ship.current_hull, player_ship.max_hull)
@@ -694,28 +381,23 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	MissionRunState.cargo_integrity_percent = cargo_integrity
 
 	var base_reward: int = mission.base_reward_credits if mission != null else 0
-	var route_bonus: int = phase_bonus_credits + (selected_branch.bonus_credits if selected_branch != null else 0)
 	var credits_collected: int = MissionRunState.credits_collected_this_mission
 	if is_instance_valid(player_ship):
 		credits_collected += maxi(0, player_ship.credits - credits_at_encounter_start)
-
-	# Salvage-profile routes include a recoverable cache, paid only when the delivery succeeds.
-	var salvage_recovered: int = MissionRunState.accumulated_salvage_cache
 	var credits_before_payout: int = MissionRunState.total_credits
 	if is_instance_valid(player_ship):
 		credits_before_payout = player_ship.credits
 
-	var cargo_penalty_percent: int = CargoRules.get_payout_penalty_percent(mission, cargo_integrity)
 	var result: Dictionary = MissionRunState.finish_mission(
 		success,
 		credits_before_payout,
 		base_reward,
-		route_bonus,
-		result_message,
+		0,
+		result_message + progress_note,
 		cargo_condition,
-		cargo_penalty_percent,
+		CargoRules.get_payout_penalty_percent(mission, cargo_integrity),
 		credits_collected,
-		salvage_recovered
+		MissionRunState.accumulated_salvage_cache
 	)
 
 	if is_instance_valid(player_ship):
@@ -726,108 +408,87 @@ func _resolve_mission(success: bool, result_message: String) -> void:
 	_show_result_screen(result)
 
 
-func _show_destination_button(button_text: String = "RETURN TO ROUTE MAP  /  NODE COMPLETE") -> void:
-	if resolution_pending or mission_resolved:
-		return
-	resolution_pending = true
-	if is_instance_valid(abort_button):
-		abort_button.disabled = true
-	var overlay: CanvasLayer = get_node_or_null("MissionOverlay") as CanvasLayer
-	if overlay == null:
-		return
-	destination_button = Button.new()
-	destination_button.name = "CompleteDeliveryButton"
-	destination_button.text = button_text
-	destination_button.anchor_left = 0.5
-	destination_button.anchor_right = 0.5
-	destination_button.anchor_top = 1.0
-	destination_button.anchor_bottom = 1.0
-	destination_button.offset_left = -190.0
-	destination_button.offset_top = -66.0
-	destination_button.offset_right = 190.0
-	destination_button.offset_bottom = -18.0
-	destination_button.custom_minimum_size = Vector2(380, 44)
-	if phase_mode:
-		destination_button.pressed.connect(_on_phase_delivery_pressed)
-	else:
-		destination_button.pressed.connect(_on_node_completed)
-	overlay.add_child(destination_button)
-
+# ---------------------------------------------------------------- result
 
 func _show_result_screen(result: Dictionary) -> void:
-	var layer := CanvasLayer.new()
+	var layer: CanvasLayer = CanvasLayer.new()
 	layer.name = "MissionResultLayer"
 	layer.layer = 20
 	add_child(layer)
-	var shade := ColorRect.new()
+	var shade: ColorRect = ColorRect.new()
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.008, 0.015, 0.028, 0.82)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	layer.add_child(shade)
-	var panel := PanelContainer.new()
+	var panel: PanelContainer = PanelContainer.new()
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
 	panel.offset_left = -270.0
-	panel.offset_top = -205.0
+	panel.offset_top = -230.0
 	panel.offset_right = 270.0
-	panel.offset_bottom = 205.0
+	panel.offset_bottom = 230.0
 	layer.add_child(panel)
-	var layout := VBoxContainer.new()
-	layout.add_theme_constant_override("separation", 8)
-	panel.add_child(layout)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	panel.add_child(content)
+
 	var success: bool = bool(result.get("success", false))
-	var heading := Label.new()
-	heading.text = "DELIVERY COMPLETE" if success else "MISSION FAILED"
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.add_theme_font_size_override("font_size", 24)
-	heading.add_theme_color_override("font_color", Color(0.42, 0.9, 0.68) if success else Color(1.0, 0.42, 0.42))
-	layout.add_child(heading)
-	var contract := Label.new()
-	contract.text = "%s  /  %s" % [str(result.get("mission_title", "Unknown Contract")), str(result.get("destination_name", "Unknown Destination"))]
-	contract.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	contract.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	layout.add_child(contract)
-	var cargo := Label.new()
-	cargo.text = "%s  /  %s  /  INTEGRITY %d%%" % [str(result.get("cargo_name", "Cargo")), str(result.get("cargo_condition", "UNKNOWN")), roundi(float(result.get("cargo_integrity_percent", 0.0)))]
-	cargo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cargo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	layout.add_child(cargo)
+	content.add_child(_make_result_label(
+		"DELIVERY COMPLETE" if success else "MISSION FAILED", 24,
+		Color(0.42, 0.9, 0.68) if success else Color(1.0, 0.42, 0.42)
+	))
+	content.add_child(_make_result_label(str(result.get("message", "")), 13, Color(0.78, 0.88, 0.94)))
+	content.add_child(_make_result_label("%s  /  %s" % [
+		str(result.get("mission_title", "Unknown Contract")), str(result.get("destination_name", "Unknown Destination"))
+	], 14, Color(0.85, 0.92, 0.96)))
+	content.add_child(_make_result_label("%s  /  %s  /  INTEGRITY %d%%" % [
+		str(result.get("cargo_name", "Cargo")), str(result.get("cargo_condition", "UNKNOWN")),
+		roundi(float(result.get("cargo_integrity_percent", 0.0)))
+	], 14, Color(0.85, 0.92, 0.96)))
+
 	var objective_lines: PackedStringArray = []
 	for entry: Dictionary in result.get("objective_snapshot", []):
-		objective_lines.append("%s: %s (%d/%d)" % [str(entry.get("title", entry.get("id", "Objective"))), str(entry.get("state", "UNKNOWN")), int(entry.get("progress", 0)), int(entry.get("required_quantity", 1))])
-	var objectives := Label.new()
-	objectives.text = "\n".join(objective_lines) if not objective_lines.is_empty() else "No additional objectives."
-	objectives.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	objectives.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	objectives.add_theme_color_override("font_color", Color(0.69, 0.78, 0.87))
-	layout.add_child(objectives)
-	var payout := Label.new()
-	payout.text = "SIDE EARNINGS +%d CR    CONTRACT %d CR\nBONUS %d CR    PENALTY -%d CR\nTOTAL PAYOUT %d CR" % [int(result.get("credits_collected", 0)) + int(result.get("salvage_recovered", 0)), int(result.get("base_reward", 0)), int(result.get("route_bonus", 0)), int(result.get("cargo_penalty", 0)), int(result.get("payout", 0))]
-	payout.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	payout.add_theme_color_override("font_color", Color(1.0, 0.82, 0.3))
-	layout.add_child(payout)
-	var balance := Label.new()
-	balance.text = "ACCOUNT BALANCE / %d CR" % int(result.get("total_credits", 0))
-	balance.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	balance.add_theme_font_size_override("font_size", 16)
-	layout.add_child(balance)
+		objective_lines.append("%s: %s (%d/%d)" % [
+			str(entry.get("title", entry.get("id", "Objective"))), str(entry.get("state", "UNKNOWN")),
+			int(entry.get("progress", 0)), int(entry.get("required_quantity", 1))
+		])
+	content.add_child(_make_result_label(
+		"\n".join(objective_lines) if not objective_lines.is_empty() else "No additional objectives.", 14, Color(0.69, 0.78, 0.87)
+	))
+	content.add_child(_make_result_label(
+		"SIDE EARNINGS +%d CR    CONTRACT %d CR\nBONUS %d CR    PENALTY -%d CR\nTOTAL PAYOUT %d CR" % [
+			int(result.get("credits_collected", 0)) + int(result.get("salvage_recovered", 0)),
+			int(result.get("base_reward", 0)), int(result.get("route_bonus", 0)),
+			int(result.get("cargo_penalty", 0)), int(result.get("payout", 0))
+		], 14, Color(1.0, 0.82, 0.3)
+	))
+	content.add_child(_make_result_label("ACCOUNT BALANCE / %d CR" % int(result.get("total_credits", 0)), 16, Color(0.85, 0.92, 0.96)))
+
 	if not success:
-		var retry_button := Button.new()
+		var retry_button: Button = Button.new()
 		retry_button.text = "RETRY MISSION"
 		retry_button.custom_minimum_size = Vector2(0, 40)
 		retry_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		retry_button.pressed.connect(_retry_mission)
-		layout.add_child(retry_button)
-
-	var return_button := Button.new()
+		content.add_child(retry_button)
+	var return_button: Button = Button.new()
 	return_button.text = "RETURN TO HQ"
 	return_button.custom_minimum_size = Vector2(0, 44)
 	return_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	return_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	return_button.pressed.connect(_return_to_hq)
-	layout.add_child(return_button)
+	content.add_child(return_button)
+
+
+func _make_result_label(text: String, font_size: int, color: Color) -> Label:
+	var label: Label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	return label
 
 
 func _retry_mission() -> void:
@@ -841,8 +502,7 @@ func _retry_mission() -> void:
 	if not MissionRunState.begin_mission(retry_mission):
 		_return_to_hq()
 		return
-	var change_error: Error = get_tree().change_scene_to_file("res://scenes/mission_flight.tscn")
-	if change_error != OK:
+	if get_tree().change_scene_to_file("res://scenes/mission_flight.tscn") != OK:
 		_return_to_hq()
 
 

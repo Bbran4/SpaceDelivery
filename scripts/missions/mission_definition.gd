@@ -26,6 +26,7 @@ const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definit
 @export_group("Recommended Power")
 @export_range(1, 10000, 1) var recommended_power_min: int = 70
 @export_range(1, 10000, 1) var recommended_power_max: int = 110
+@export var run_profile: RunProfile
 
 @export_group("Mission Board")
 ## Shown on the mission card, e.g. "Standard  ·  Mining Colony". When empty the card
@@ -50,7 +51,6 @@ const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definit
 @export_range(-2, 2, 1) var risk_bias: int = 0
 ## Optional encounter templates placed at their authored depth/lane. Connections are generated.
 @export var fixed_beats: Array[MissionRouteNode] = []
-
 
 ## Returns validation errors for generator settings. Empty means settings are usable.
 func validate_generator_settings() -> PackedStringArray:
