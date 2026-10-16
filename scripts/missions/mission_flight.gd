@@ -2,6 +2,7 @@ extends Node2D
 
 const HQ_SCENE_PATH: String = "res://scenes/hq.tscn"
 const OBJECTIVE_PICKUP_SCENE: PackedScene = preload("res://scenes/loot/mission_objective_pickup.tscn")
+const ASTEROID_SCENE: PackedScene = preload("res://scenes/mission_asteroid.tscn")
 
 @onready var encounter_spawner: EncounterSpawner = $EncounterSpawner
 @onready var player_ship: Ship = $PlayerShip
@@ -23,18 +24,17 @@ var destination_button: Button
 var stolen_cargo_drop_spawned: bool = false
 var objective_timers: Dictionary = {}
 var hazard_tick: float = 0.0
+var runtime_phases: Array[MissionPhaseDefinition] = []
+var phase_time_remaining: float = 60.0
+var phase_targets_remaining: int = 0
+var phase_bonus_credits: int = 0
+var phase_mode: bool = true
 
 
 func _ready() -> void:
 	mission = MissionRunState.active_mission
 	if mission == null:
 		push_warning("Mission flight opened without an active contract.")
-		_return_to_hq()
-		return
-
-	selected_branch = MissionRunState.get_route_node(MissionRunState.selected_branch_node_id)
-	if selected_branch == null:
-		push_warning("Selected mission branch is missing. Returning to HQ.")
 		_return_to_hq()
 		return
 
@@ -49,21 +49,28 @@ func _ready() -> void:
 	player_ship.destroyed.connect(_on_player_destroyed, CONNECT_ONE_SHOT)
 	player_ship.damaged.connect(_on_player_damaged)
 
-	contact_count = _get_contact_count(selected_branch)
-	encounter_spawner.spawn_count = contact_count
+	encounter_spawner.spawn_count = 4
 	encounter_spawner.spawn_on_ready = false
+	runtime_phases = _build_runtime_phases(mission)
+	if runtime_phases.is_empty():
+		push_warning("Mission has no usable phases. Returning to HQ.")
+		_return_to_hq()
+		return
+	MissionRunState.current_phase_index = clampi(MissionRunState.current_phase_index, 0, runtime_phases.size() - 1)
 	_build_flight_overlay()
-	if is_instance_valid(route_label):
-		route_label.text = "CURRENT NODE  /  %s  /  RISK %d" % [selected_branch.title, selected_branch.risk]
 	call_deferred("_spawn_available_objectives")
 	if cargo_integrity <= 75.0:
 		call_deferred("_spawn_stolen_cargo_drop")
-	call_deferred("_start_selected_objective")
-	call_deferred("_start_timed_objectives")
+	call_deferred("_start_current_phase")
 
 
 func _process(delta: float) -> void:
-	if mission_resolved or selected_branch == null or not is_instance_valid(player_ship):
+	if mission_resolved or not is_instance_valid(player_ship):
+		return
+	if phase_mode:
+		_process_current_phase(delta)
+		return
+	if selected_branch == null:
 		return
 	for objective_id: Variant in objective_timers.keys():
 		var timer: Dictionary = objective_timers[objective_id]
@@ -90,6 +97,59 @@ func _process(delta: float) -> void:
 			player_ship.take_damage(2.0 + float(selected_branch.risk) * 0.8)
 			if is_instance_valid(route_label):
 				route_label.text = "ENVIRONMENTAL EXPOSURE  /  RISK %d" % selected_branch.risk
+
+
+func _build_runtime_phases(contract: MissionDefinition) -> Array[MissionPhaseDefinition]:
+	var phases: Array[MissionPhaseDefinition] = []
+	if contract != null and not contract.phases.is_empty():
+		for authored_phase: MissionPhaseDefinition in contract.phases:
+			if authored_phase != null:
+				phases.append(authored_phase)
+		return phases
+
+	var asteroid_phase := MissionPhaseDefinition.new()
+	asteroid_phase.phase_id = &"asteroid_bounty"
+	asteroid_phase.title = "Asteroid Bounty"
+	asteroid_phase.briefing = "Break apart the bounty rocks. Each asteroid takes two hits and drops one credit."
+	asteroid_phase.phase_type = MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY
+	asteroid_phase.duration_seconds = 60
+	asteroid_phase.target_count = 5
+	phases.append(asteroid_phase)
+
+	var pirate_phase := MissionPhaseDefinition.new()
+	pirate_phase.phase_id = &"pirate_ambush"
+	pirate_phase.title = "Pirate Ambush"
+	pirate_phase.briefing = "Hostiles inbound. Clear the ambush using your equipped weapons."
+	pirate_phase.phase_type = MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH
+	pirate_phase.duration_seconds = 60
+	pirate_phase.target_count = 4
+	phases.append(pirate_phase)
+
+	var delivery_phase := MissionPhaseDefinition.new()
+	delivery_phase.phase_id = &"final_delivery"
+	delivery_phase.title = "Final Delivery"
+	delivery_phase.briefing = "The route is clear. Complete delivery before the phase timer expires."
+	delivery_phase.phase_type = MissionPhaseDefinition.PhaseType.DELIVERY
+	delivery_phase.duration_seconds = 60
+	delivery_phase.target_count = 1
+	phases.append(delivery_phase)
+	return phases
+
+
+func _process_current_phase(delta: float) -> void:
+	if runtime_phases.is_empty() or MissionRunState.current_phase_index >= runtime_phases.size():
+		return
+	phase_time_remaining = maxf(0.0, phase_time_remaining - delta)
+	var phase: MissionPhaseDefinition = runtime_phases[MissionRunState.current_phase_index]
+	if is_instance_valid(route_label):
+		route_label.text = "PHASE %d/%d  /  %s  /  %.1f SEC" % [
+			MissionRunState.current_phase_index + 1,
+			runtime_phases.size(),
+			phase.title.to_upper(),
+			phase_time_remaining,
+		]
+	if phase_time_remaining <= 0.0:
+		_resolve_mission(false, "Phase timer expired: %s was not completed in time." % phase.title)
 
 
 func _start_timed_objectives() -> void:
