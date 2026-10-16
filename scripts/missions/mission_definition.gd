@@ -32,8 +32,12 @@ class_name MissionDefinition
 ## Card artwork. Square art works best. When empty the card draws a placeholder.
 @export var icon: Texture2D
 
-@export_group("Route and Objectives")
-## Required and optional objectives. Empty preserves legacy delivery-only contracts.
+@export_group("Phased Mission")
+## Ordered gameplay phases. Empty uses the standard asteroid, pirate, delivery sequence.
+@export var phases: Array[MissionPhaseDefinition] = []
+
+@export_group("Legacy Objectives")
+## Optional objective tracker support retained for salvage and contract side objectives.
 @export var objectives: Array[MissionObjectiveDefinition] = []
 
 ## Number of nodes in each route layer, including the start and destination.
@@ -119,6 +123,19 @@ func validate_contract() -> PackedStringArray:
 
 	if not _objectives_have_acyclic_prerequisites(objective_ids):
 		errors.append("Mission '%s' objective prerequisites contain a cycle." % mission_id)
+
+	var phase_ids: Dictionary = {}
+	for phase: MissionPhaseDefinition in phases:
+		if phase == null:
+			errors.append("Mission '%s' contains an empty phase." % mission_id)
+			continue
+		for phase_error: String in phase.validate_definition():
+			errors.append("Mission '%s': %s" % [mission_id, phase_error])
+		if phase_ids.has(phase.phase_id):
+			errors.append("Mission '%s' has duplicate phase ID '%s'." % [mission_id, phase.phase_id])
+		phase_ids[phase.phase_id] = true
+	if not phases.is_empty() and phases[phases.size() - 1].phase_type != MissionPhaseDefinition.PhaseType.DELIVERY:
+		errors.append("Mission '%s' must end with a delivery phase.")
 	return errors
 
 
