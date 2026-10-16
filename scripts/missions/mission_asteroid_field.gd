@@ -8,6 +8,7 @@ extends Node2D
 var asteroid_nodes: Array[Ship] = []
 var drift_directions: Array[Vector2] = []
 var is_cleared: bool = false
+var belt_center_x: float = 1120.0
 
 
 func configure(asteroids: Array[Ship]) -> void:
@@ -28,4 +29,9 @@ func _process(delta: float) -> void:
 			continue
 		var direction: Vector2 = drift_directions[index]
 		asteroid.global_position += direction * drift_speed * delta
+		if asteroid.global_position.x < belt_center_x - 180.0 or asteroid.global_position.x > belt_center_x + 180.0:
+			direction.x = -direction.x
+		if absf(asteroid.global_position.y) > 430.0:
+			direction.y = -direction.y
+		drift_directions[index] = direction
 		asteroid.rotation += rotation_speed * (1.0 if index % 2 == 0 else -1.0) * delta
