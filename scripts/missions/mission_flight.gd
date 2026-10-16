@@ -166,8 +166,27 @@ func _process_current_phase(delta: float) -> void:
 			phase.title.to_upper(),
 			phase_time_remaining,
 		]
+	if phase.phase_type == MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY and not asteroid_belt_detected:
+		var distance_to_belt: float = absf(ASTEROID_BELT_X - player_ship.global_position.x)
+		if distance_to_belt <= ASTEROID_DETECTION_DISTANCE:
+			_detect_asteroid_belt(phase)
+		elif is_instance_valid(route_label):
+			route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD  /  %.0f M" % distance_to_belt
+		return
+	if phase.phase_type == MissionPhaseDefinition.PhaseType.DELIVERY:
+		if player_ship.global_position.distance_to(DESTINATION_POSITION) <= DESTINATION_ARRIVAL_DISTANCE:
+			if not is_instance_valid(destination_button):
+				_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+		elif is_instance_valid(destination_button):
+			destination_button.queue_free()
+			destination_button = null
+		if is_instance_valid(route_label):
+			route_label.text = "DESTINATION  /  %.0f M  /  %.1f SEC" % [
+				player_ship.global_position.distance_to(DESTINATION_POSITION),
+				phase_time_remaining,
+			]
 	if phase_time_remaining <= 0.0:
-		_resolve_mission(false, "Phase timer expired: %s was not completed in time." % phase.title)
+		_resolve_mission(false, "60-second deadline expired: %s was not completed in time." % phase.title)
 
 
 func _start_current_phase() -> void:
