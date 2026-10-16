@@ -1,26 +1,25 @@
-[gd_resource type="Resource" script_class="MissionDefinition" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="MissionDefinition" format=3 uid="uid://dmphjqno05y6x"]
 
-[ext_resource type="Script" path="res://scripts/missions/mission_definition.gd" id="1_mission"]
-[ext_resource type="Script" path="res://scripts/missions/mission_route_node.gd" id="2_node"]
+[ext_resource type="Script" uid="uid://d3n37tblotlbe" path="res://scripts/missions/mission_definition.gd" id="1_mission"]
+[ext_resource type="Script" uid="uid://dwwt3oiytsexm" path="res://scripts/missions/mission_route_node.gd" id="2_node"]
 
 [sub_resource type="Resource" id="quiet_corridor"]
 script = ExtResource("2_node")
 node_id = &"quiet_corridor"
 title = "Quiet Corridor"
 description = "Lower chance of hostile contact. Little salvage expected."
-node_kind = 1
+next_node_ids = null
 risk = 1
 bonus_credits = 15
 encounter_profile = 1
 depth = 1
-lane = 0
 
 [sub_resource type="Resource" id="salvage_lane"]
 script = ExtResource("2_node")
 node_id = &"salvage_lane"
 title = "Salvage Lane"
 description = "Unstable wreck field. Greater threat, better recovery prospects."
-node_kind = 1
+next_node_ids = null
 risk = 2
 bonus_credits = 65
 encounter_profile = 2
@@ -37,7 +36,8 @@ cargo_type = "High-Value Electronics"
 cargo_variant = 3
 cargo_description = "A compact navigation core with an extravagant declared value and a remarkably ordinary shipping label."
 cargo_value_credits = 1250
-cargo_damage_sensitivity = 1.0
+cargo_capacity_required = null
+cargo_damage_sensitivity = null
 minimum_delivery_integrity_percent = 60
 full_reward_integrity_percent = 90
 damaged_cargo_payout_penalty_percent = 45
@@ -47,7 +47,10 @@ base_reward_credits = 390
 risk_label = "High Value"
 recommended_power_min = 120
 recommended_power_max = 160
-layer_node_counts = Array[int]([1, 2, 3, 2, 1])
-branch_chance = 0.55
-risk_bias = 0
+mission_type = null
+phases = null
+objectives = null
+layer_node_counts = null
+branch_chance = null
+risk_bias = null
 fixed_beats = Array[ExtResource("2_node")]([SubResource("quiet_corridor"), SubResource("salvage_lane")])

@@ -44,7 +44,7 @@ var density_source: Callable = Callable()
 
 var _chunks: Dictionary = {}
 var _pool: Array = []
-var _meshes: Array[ArrayMesh] = []
+var _unit_polygons: Array[PackedVector2Array] = []
 var _time: float = 0.0
 var _last_cell: Vector2i = Vector2i(1 << 30, 1 << 30)
 var _strike_cooldown: float = 0.0
@@ -150,11 +150,17 @@ func _draw() -> void:
 			var rock_radius: float = chunk.radius[i]
 			var spin: float = 0.3 if chunk.variant[i] % 2 == 0 else -0.3
 			var angle: float = chunk.phase[i] * 3.0 + _time * spin
-			draw_mesh(
-				_meshes[chunk.variant[i]], null,
-				Transform2D(angle, Vector2(rock_radius, rock_radius), 0.0, _rock_position(chunk, i)),
-				chunk.tint[i]
-			)
+			draw_set_transform(_rock_position(chunk, i), angle, Vector2(rock_radius, rock_radius))
+			draw_colored_polygon(_unit_polygons[chunk.variant[i]], chunk.tint[i])
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+## Debug readout: loaded chunks and rocks. Rocks > 0 but nothing visible means a drawing problem.
+func get_debug_text() -> String:
+	var rock_count: int = 0
+	for chunk_value: Variant in _chunks.values():
+		rock_count += (chunk_value as Chunk).base.size()
+	return "CHUNKS %d  ROCKS %d" % [_chunks.size(), rock_count]
 
 
 func _build_meshes() -> void:
@@ -162,19 +168,8 @@ func _build_meshes() -> void:
 	rng.seed = 7731
 	for _v: int in range(VARIANT_COUNT):
 		var count: int = rng.randi_range(7, 10)
-		var vertices: PackedVector2Array = PackedVector2Array([Vector2.ZERO])
-		var indices: PackedInt32Array = PackedInt32Array()
+		var vertices: PackedVector2Array = PackedVector2Array()
 		for i: int in range(count):
 			var angle: float = TAU * float(i) / float(count)
 			vertices.append(Vector2.RIGHT.rotated(angle) * rng.randf_range(0.72, 1.0))
-		for i: int in range(count):
-			indices.append(0)
-			indices.append(1 + i)
-			indices.append(1 + (i + 1) % count)
-		var arrays: Array = []
-		arrays.resize(Mesh.ARRAY_MAX)
-		arrays[Mesh.ARRAY_VERTEX] = vertices
-		arrays[Mesh.ARRAY_INDEX] = indices
-		var mesh: ArrayMesh = ArrayMesh.new()
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		_meshes.append(mesh)
+		_unit_polygons.append(vertices)

@@ -23,10 +23,11 @@ const MissionPhaseScript = preload("res://scripts/missions/mission_phase_definit
 @export_multiline var briefing: String = ""
 @export_range(0, 100000, 1) var base_reward_credits: int = 100
 @export var risk_label: String = "Routine"
+@export var run_profile: RunProfile
 @export_group("Recommended Power")
 @export_range(1, 10000, 1) var recommended_power_min: int = 70
 @export_range(1, 10000, 1) var recommended_power_max: int = 110
-@export var run_profile: RunProfile
+
 
 @export_group("Mission Board")
 ## Shown on the mission card, e.g. "Standard  ·  Mining Colony". When empty the card

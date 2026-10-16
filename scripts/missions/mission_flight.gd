@@ -96,7 +96,7 @@ func _process(delta: float) -> void:
 	_hud_timer -= delta
 	if _hud_timer <= 0.0:
 		_hud_timer = 0.15
-		route_label.text = director.get_status_text()
+		route_label.text = director.get_status_text() + "     " + field.get_debug_text()
 	_update_arrival()
 
 
