@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scripts/player/ship.gd" id="1_ship"]
+[ext_resource type="Script" path="res://scripts/missions/mission_asteroid.gd" id="1_ship"]
 
 [node name="MissionAsteroid" type="CharacterBody2D" groups=["enemy", "mission_asteroid"]]
 script = ExtResource("1_ship")
