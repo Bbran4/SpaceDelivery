@@ -213,19 +213,12 @@ func _start_current_phase() -> void:
 		]
 	match phase.phase_type:
 		MissionPhaseDefinition.PhaseType.ASTEROID_BOUNTY:
-			phase_targets_remaining = phase.target_count
-			for index: int in range(phase.target_count):
-				var asteroid: Ship = ASTEROID_SCENE.instantiate() as Ship
-				if asteroid == null:
-					continue
-				add_child(asteroid)
-				var angle: float = TAU * float(index) / float(maxi(1, phase.target_count))
-				var radius: float = 190.0 + float(index % 3) * 28.0
-				asteroid.global_position = player_ship.global_position + Vector2.RIGHT.rotated(angle) * radius
-				asteroid.destroyed.connect(_on_phase_target_destroyed, CONNECT_ONE_SHOT)
-			if get_tree().get_nodes_in_group("mission_asteroid").is_empty():
-				_resolve_mission(false, "Asteroid bounty targets could not be created.")
+			asteroid_belt_detected = false
+			phase_time_remaining = float(phase.duration_seconds)
+			if is_instance_valid(route_label):
+				route_label.text = "DESTINATION  /  ASTEROID BELT AHEAD"
 		MissionPhaseDefinition.PhaseType.PIRATE_AMBUSH:
+			encounter_spawner.global_position = player_ship.global_position + Vector2(300.0, 0.0)
 			encounter_spawner.spawn_count = phase.target_count
 			var hostiles: Array[Ship] = encounter_spawner.spawn_encounter()
 			phase_targets_remaining = hostiles.size()
@@ -234,7 +227,8 @@ func _start_current_phase() -> void:
 			if phase_targets_remaining <= 0:
 				_resolve_mission(false, "Pirate ambush could not be spawned.")
 		MissionPhaseDefinition.PhaseType.DELIVERY:
-			_show_destination_button("COMPLETE DELIVERY  /  CONFIRM ARRIVAL")
+			if is_instance_valid(route_label):
+				route_label.text = "DESTINATION  /  FOLLOW MINIMAP BEACON"
 
 
 func _on_phase_target_destroyed() -> void:
